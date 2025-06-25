@@ -172,3 +172,100 @@ form#form-reservation button:hover {
 .vehicule-card button:hover {
   background-color: #0056b3;
 }
+
+
+
+/* === STYLES GÉNÉRAUX === */
+body {
+  font-family: sans-serif;
+  background-color: #f5f7fa;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  background-color: #004466;
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+nav a {
+  margin: 0 10px;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+nav a.active {
+  text-decoration: underline;
+}
+
+/* === PAGE AIDE === */
+.aide-section {
+  max-width: 800px;
+  margin: 30px auto;
+  background: #fff;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.1);
+}
+
+.aide-section h2,
+.aide-section h3 {
+  text-align: center;
+  color: #004466;
+}
+
+.faq ul,
+.urgence ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.faq li,
+.urgence li {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #eef5f8;
+  border-left: 5px solid #007bff;
+  border-radius: 5px;
+}
+
+/* === FORMULAIRE DE CONTACT === */
+.contact-form {
+  margin-top: 30px;
+}
+
+.contact-form form {
+  display: flex;
+  flex-direction: column;
+}
+
+.contact-form label {
+  margin-bottom: 15px;
+  font-weight: bold;
+}
+
+.contact-form input,
+.contact-form textarea {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  width: 100%;
+}
+
+.contact-form button {
+  background-color: #007bff;
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.contact-form button:hover {
+  background-color: #0056b3;
+}
