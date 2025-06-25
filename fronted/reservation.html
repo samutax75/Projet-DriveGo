@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Réserver un véhicule - DriveGo</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #004466;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h2, h3 {
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    form, #gestion-reservation {
+      background-color: #ffffff;
+      padding: 20px;
+      margin-top: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    button.danger {
+      background-color: #dc3545;
+    }
+
+    button.danger:hover {
+      background-color: #b02a37;
+    }
+
+    #confirmation {
+      text-align: center;
+      margin-top: 20px;
+      font-weight: bold;
+      color: green;
+      font-size: 18px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🚗 DriveGo</h1>
+</header>
+
+<h2>Réserver un véhicule</h2>
+
+<form id="form-reservation">
+  <label>Nom du conducteur :
+    <input type="text" id="nom" required>
+  </label>
+
+  <label>Date de sortie :
+    <input type="date" id="date" required>
+  </label>
+
+  <label>Heure de départ :
+    <input type="time" id="heure" required>
+  </label>
+
+  <label>Choisir un véhicule :
+    <select id="vehicule" required>
+      <option value="">-- Sélectionner --</option>
+      <option>Kangoo EF-123-DF</option>
+      <option>Berlingo FG-345-CV</option>
+      <option>Partner BN-654-QS</option>
+    </select>
+  </label>
+
+  <button type="submit">Réserver</button>
+</form>
+
+<div id="confirmation"></div>
+
+<!-- Gestion de réservation -->
+<section id="gestion-reservation">
+  <h3>Modifier ou annuler une réservation</h3>
+  <label>Identifiant de réservation :
+    <input type="text" id="reservation-id" placeholder="ex : 1234ABC">
+  </label>
+  <div class="actions">
+    <button onclick="modifierReservation()">✏️ Modifier</button>
+    <button class="danger" onclick="annulerReservation()">❌ Annuler</button>
+  </div>
+</section>
+
+<script>
+  document.getElementById("form-reservation").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const nom = document.getElementById("nom").value;
+    const date = document.getElementById("date").value;
+    const heure = document.getElementById("heure").value;
+    const vehicule = document.getElementById("vehicule").value;
+
+    // Exemple d'affichage, à connecter plus tard à une vraie logique
+    document.getElementById("confirmation").innerText =
+      `✅ Réservation enregistrée : ${nom}, ${vehicule}, ${date} à ${heure}`;
+  });
+
+  function modifierReservation() {
+    const id = document.getElementById("reservation-id").value.trim();
+    if (id) {
+      alert(`🛠️ Modifier la réservation avec l'ID : ${id}`);
+    } else {
+      alert("Veuillez entrer un ID de réservation à modifier.");
+    }
+  }
+
+  function annulerReservation() {
+    const id = document.getElementById("reservation-id").value.trim();
+    if (id) {
+      alert(`❌ Réservation ${id} annulée.`);
+    } else {
+      alert("Veuillez entrer un ID de réservation à annuler.");
+    }
+  }
+</script>
+
+</body>
+</html>
