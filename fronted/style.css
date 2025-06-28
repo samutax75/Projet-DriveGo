@@ -1,271 +1,116 @@
-/* ========== STYLES GÉNÉRAUX ========== */
-
-body {
-  font-family: sans-serif;
-  background-color: #f0f2f5;
+/* Réinitialisation de base */
+* {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
-/* ========== EN-TÊTE (HEADER & NAVIGATION) ========== */
-
-header {
-  background-color: #004466;
-  color: white;
-  padding: 20px;
-  text-align: center;
-}
-
-header nav {
-  margin-top: 10px;
-}
-
-header nav a {
-  color: white;
-  margin: 0 15px;
-  text-decoration: none;
-  font-weight: bold;
-}
-
-header nav a:hover {
-  text-decoration: underline;
-}
-
-/* ========== PAGE D'ACCUEIL (TABLEAU DE BORD) ========== */
-
-main {
-  text-align: center;
-  padding: 40px 20px;
-}
-
-main h2 {
-  color: #004466;
-}
-
-main p {
+/* Corps général */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
   color: #333;
-  font-size: 18px;
-}
-
-/* ========== PAGE DE RÉSERVATION ========== */
-
-
-
-body {
-      font-family: sans-serif;
-      background-color: #f0f2f5;
-      margin: 0;
-      padding: 0;
-    }
-
-    header {
-      background-color: #004466;
-      color: white;
-      padding: 20px;
-      text-align: center;
-    }
-
-    h2, h3 {
-      text-align: center;
-      margin-top: 30px;
-    }
-
-form#form-reservation {
-  background-color: #f7f0f0;
-  padding: 20px;
-  margin-top: 30px;
-  border-radius: 10px;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-  max-width: 400px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-form#form-reservation label {
-  display: block;
-  margin-bottom: 15px;
-  font-weight: bold;
-}
-
-form#form-reservation input,
-form#form-reservation select {
-  width: 100%;
-  padding: 10px;
-  margin-top: 5px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 16px;
-}
-
-form#form-reservation button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 6px;
-  font-size: 16px;
-  cursor: pointer;
-  margin-top: 10px;
-  width: 100%;
-}
-
-form#form-reservation button:hover {
-  background-color: #0056b3;
-}
-
-#confirmation {
-  text-align: center;
-  margin-top: 20px;
-  font-weight: bold;
-  color: green;
-  font-size: 18px;
-}
-
-/* ========== PAGE DES VÉHICULES ========== */
-
-.vehicule-list {
-  max-width: 900px;
-  margin: 40px auto;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 20px;
-}
-
-.vehicule-card {
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 20px;
-  width: 260px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s;
-  text-align: left;
-}
-
-.vehicule-card:hover {
-  transform: translateY(-5px);
-}
-
-.vehicule-card h4 {
-  margin-top: 0;
-  color: #004466;
-}
-
-.vehicule-card p {
-  margin: 8px 0;
-  font-size: 15px;
-}
-
-.vehicule-card button {
-  margin-top: 10px;
-  margin-right: 10px;
-  padding: 8px 12px;
-  font-size: 14px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.vehicule-card button:hover {
-  background-color: #0056b3;
-}
-
-
-
-/* === STYLES GÉNÉRAUX === */
-body {
-  font-family: sans-serif;
-  background-color: #f5f7fa;
-  margin: 0;
+  line-height: 1.6;
   padding: 0;
 }
 
+/* En-tête */
 header {
-  background-color: #004466;
+  background-color: #2c3e50;
   color: white;
-  padding: 20px;
+  padding: 1rem;
   text-align: center;
+}
+
+header h1 {
+  margin-bottom: 0.5rem;
+}
+
+nav {
+  margin-top: 0.5rem;
 }
 
 nav a {
-  margin: 0 10px;
-  color: white;
+  color: #ecf0f1;
+  margin: 0 1rem;
   text-decoration: none;
   font-weight: bold;
 }
 
-nav a.active {
+nav a:hover {
   text-decoration: underline;
 }
 
-/* === PAGE AIDE === */
-.aide-section {
+/* Contenu principal */
+main {
+  padding: 2rem;
   max-width: 800px;
-  margin: 30px auto;
-  background: #fff;
-  padding: 25px;
-  border-radius: 10px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.1);
+  margin: auto;
+  background-color: white;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+  border-radius: 8px;
+  margin-top: 2rem;
 }
 
-.aide-section h2,
-.aide-section h3 {
-  text-align: center;
-  color: #004466;
+h2 {
+  margin-bottom: 1.5rem;
+  color: #2c3e50;
 }
 
-.faq ul,
-.urgence ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.faq li,
-.urgence li {
-  margin-bottom: 15px;
-  padding: 10px;
-  background-color: #eef5f8;
-  border-left: 5px solid #007bff;
-  border-radius: 5px;
-}
-
-/* === FORMULAIRE DE CONTACT === */
-.contact-form {
-  margin-top: 30px;
-}
-
-.contact-form form {
-  display: flex;
-  flex-direction: column;
-}
-
-.contact-form label {
-  margin-bottom: 15px;
+/* Formulaire */
+form label {
+  display: block;
+  margin-top: 1rem;
   font-weight: bold;
 }
 
-.contact-form input,
-.contact-form textarea {
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 16px;
+input, select, button {
   width: 100%;
+  padding: 0.6rem;
+  margin-top: 0.4rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
 }
 
-.contact-form button {
-  background-color: #007bff;
+input:focus, select:focus {
+  border-color: #3498db;
+  outline: none;
+}
+
+button {
+  background-color: #3498db;
   color: white;
-  padding: 12px;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
+  font-weight: bold;
+  margin-top: 1.5rem;
   cursor: pointer;
+  border: none;
+  transition: background-color 0.3s;
 }
 
-.contact-form button:hover {
-  background-color: #0056b3;
+button:hover {
+  background-color: #2980b9;
 }
+
+/* Responsive design */
+@media (max-width: 600px) {
+  body {
+    padding: 1rem;
+  }
+
+  main {
+    padding: 1rem;
+  }
+
+  nav a {
+    display: block;
+    margin: 0.5rem 0;
+  }
+}
+ 
+
+
+
+
+
+
