@@ -105,3 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
   kmDepart.addEventListener("input", calculerDistance);
   kmArrivee.addEventListener("input", calculerDistance);
 });
+
+
+

@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion du Parc Automobile - Missions</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 1400px) {
+            .main-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .vehicle-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .vehicle-item {
+            padding: 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            position: relative;
+        }
+
+        .vehicle-item:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+        }
+
+        .vehicle-item.selected {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2);
+        }
+
+        .vehicle-item.in-mission {
+            border-color: #f59e0b;
+            background: #fef3c7;
+        }
+
+        .vehicle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .vehicle-name {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 1.1rem;
+        }
+
+        .vehicle-plate {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .status {
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .status.expired { color: #dc2626; }
+        .status.warning { color: #f59e0b; }
+        .status.caution { color: #eab308; }
+        .status.good { color: #16a34a; }
+        .status.unknown { color: #6b7280; }
+        .status.available { color: #16a34a; }
+        .status.mission { color: #f59e0b; }
+
+        .mission-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #f59e0b;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .details-section {
+            min-height: 500px;
+        }
+
+        .no-selection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        .no-selection svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .vehicle-details {
+            display: none;
+        }
+
+        .vehicle-details.active {
+            display: block;
+        }
+
+        .vehicle-header-detail {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .vehicle-header-detail h3 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .vehicle-header-detail p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .mission-control {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .mission-control h4 {
+            color: #1f2937;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #16a34a;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #15803d;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .mission-active {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+        }
+
+        .mission-active h4 {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mission-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .mission-info-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .mission-info-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .mission-info-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .progress-section {
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.2);
+            height: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .missions-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .mission-item {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .mission-item.completed {
+            border-left-color: #16a34a;
+            background: #f0fdf4;
+        }
+
+        .mission-item.active {
+            border-left-color: #f59e0b;
+            background: #fef3c7;
+        }
+
+        .mission-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .mission-destination {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .mission-status {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .mission-status.active {
+            background: #fbbf24;
+            color: #92400e;
+        }
+
+        .mission-status.completed {
+            background: #34d399;
+            color: #065f46;
+        }
+
+        .mission-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .mission-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .mission-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1> Gestion du Parc Automobile - Missions</h1>
+            <p>Sélectionnez un véhicule pour gérer ses missions</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Liste des véhicules -->
+            <div class="card">
+                <h2 class="card-title">
+                    📋 Véhicules Disponibles
+                </h2>
+                
+                <div class="vehicle-list" id="vehicleList">
+                    <!-- Les véhicules seront générés par JavaScript -->
+                </div>
+            </div>
+
+            <!-- Contrôle des missions -->
+            <div class="card details-section">
+                <h2 class="card-title">
+                    🎯 Contrôle des Missions
+                </h2>
+                
+                <div class="no-selection" id="noSelection">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
+                    </svg>
+                    <p>Sélectionnez un véhicule dans la liste<br>pour gérer ses missions</p>
+                </div>
+
+                <div class="vehicle-details" id="vehicleDetails">
+                    <!-- Les détails et contrôles seront affichés ici -->
+                </div>
+            </div>
+
+            <!-- Historique des missions -->
+            <div class="card">
+                <h2 class="card-title">
+                    📊 Historique des Missions
+                </h2>
+                
+                <div class="missions-list" id="missionsList">
+                    <p style="text-align: center; color: #6b7280; padding: 40px;">
+                        Aucune mission enregistrée
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Données des véhicules avec statuts de mission
+        const vehicles = [
+            {
+                id: 1,
+                nom: "TRAFIC BLANC",
+                immatriculation: "FV-088-JJ",
+                dateImmatriculation: "26/11/2020",
+                controle: "29/10/2024",
+                prochainControle: "28/10/2026",
+                finValidite: "30/09/2026",
+                numeroCarte: "4985080",
+                status: "disponible"
+            },
+            {
+                id: 2,
+                nom: "TRAFIC PMR",
+                immatriculation: "GT-176-AF",
+                dateImmatriculation: "14/12/2023",
+                controle: "",
+                prochainControle: "14/12/2027",
+                finValidite: "30/06/2029",
+                numeroCarte: "8954319",
+                status: "disponible"
+            },
+            {
+                id: 3,
+                nom: "TRAFIC VERT",
+                immatriculation: "EJ-374-TT",
+                dateImmatriculation: "02/02/2017",
+                controle: "12/03/2025",
+                prochainControle: "11/03/2027",
+                finValidite: "30/09/2026",
+                numeroCarte: "4985081",
+                status: "disponible"
+            },
+            {
+                id: 4,
+                nom: "TRAFIC ROUGE",
+                immatriculation: "CW-819-FR",
+                dateImmatriculation: "26/06/2013",
+                controle: "27/01/2025",
+                prochainControle: "26/01/2027",
+                finValidite: "30/09/2026",
+                numeroCarte: "4985082",
+                status: "disponible"
+            },
+            {
+                id: 5,
+                nom: "KANGOO",
+                immatriculation: "DS-429-PF",
+                dateImmatriculation: "22/06/2015",
+                controle: "29/01/2025",
+                prochainControle: "28/01/2027",
+                finValidite: "30/09/2026",
+                numeroCarte: "4985084",
+                status: "disponible"
+            }
+        ];
+
+        let selectedVehicle = null;
+        let missions = [];
+        let activeMissions = {};
+        let missionTimers = {};
+
+        // Fonctions utilitaires
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('/');
+            return new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+
+        function getStatusInfo(dateStr) {
+            if (!dateStr) return { class: 'unknown', text: 'Non renseigné' };
+            
+            const today = new Date();
+            const checkDate = parseDate(dateStr);
+            const diffTime = checkDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) return { class: 'expired', text: `Expiré depuis ${Math.abs(diffDays)} jours` };
+            if (diffDays < 30) return { class: 'warning', text: `Expire dans ${diffDays} jours` };
+            if (diffDays < 90) return { class: 'caution', text: `Expire dans ${diffDays} jours` };
+            return { class: 'good', text: `${diffDays} jours restants` };
+        }
+
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Génération de la liste des véhicules
+        function generateVehicleList() {
+            const vehicleList = document.getElementById('vehicleList');
+            vehicleList.innerHTML = '';
+
+            vehicles.forEach(vehicle => {
+                const status = getStatusInfo(vehicle.controle);
+                const isInMission = activeMissions[vehicle.id];
+                
+                const vehicleItem = document.createElement('div');
+                vehicleItem.className = `vehicle-item ${isInMission ? 'in-mission' : ''}`;
+                vehicleItem.onclick = () => selectVehicle(vehicle);
+                
+                vehicleItem.innerHTML = `
+                    <div class="vehicle-header">
+                        <div>
+                            <div class="vehicle-name">${vehicle.nom}</div>
+                            <div class="vehicle-plate">${vehicle.immatriculation}</div>
+                        </div>
+                        <div class="status ${isInMission ? 'mission' : 'available'}">
+                            ${isInMission ? '🚗 En mission' : '✅ Disponible'}
+                        </div>
+                    </div>
+                    ${isInMission ? '<div class="mission-badge">🎯</div>' : ''}
+                `;
+                
+                vehicleList.appendChild(vehicleItem);
+            });
+        }
+
+        // Sélection d'un véhicule
+        function selectVehicle(vehicle) {
+            selectedVehicle = vehicle;
+            
+            // Mise à jour de l'affichage de la liste
+            const vehicleItems = document.querySelectorAll('.vehicle-item');
+            vehicleItems.forEach((item, index) => {
+                if (index === vehicle.id - 1) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+
+            // Affichage des détails
+            showVehicleDetails(vehicle);
+        }
+
+        // Affichage des détails du véhicule
+        function showVehicleDetails(vehicle) {
+            document.getElementById('noSelection').style.display = 'none';
+            document.getElementById('vehicleDetails').style.display = 'block';
+
+            const isInMission = activeMissions[vehicle.id];
+
+            let missionControlHTML = '';
+
+            if (isInMission) {
+                const mission = activeMissions[vehicle.id];
+                const progress = (mission.elapsedTime / mission.totalTime) * 100;
+                
+                missionControlHTML = `
+                    <div class="mission-active">
+                        <h4>🎯 Mission en cours</h4>
+                        <div class="mission-info">
+                            <div class="mission-info-item">
+                                <div class="mission-info-label">Date</div>
+                                <div class="mission-info-value">${mission.missionDate}</div>
+                            </div>
+                            <div class="mission-info-item">
+                                <div class="mission-info-label">Heure de départ</div>
+                                <div class="mission-info-value">${mission.departureTime}</div>
+                            </div>
+                            <div class="mission-info-item">
+                                <div class="mission-info-label">Nature</div>
+                                <div class="mission-info-value">${mission.missionNature}</div>
+                            </div>
+                            <div class="mission-info-item">
+                                <div class="mission-info-label">Destination</div>
+                                <div class="mission-info-value">${mission.destination}</div>
+                            </div>
+                            <div class="mission-info-item">
+                                <div class="mission-info-label">Passagers</div>
+                                <div class="mission-info-value">${mission.passengers}</div>
+                            </div>
+                            <div class="mission-info-item">
+                                <div class="mission-info-label">Km départ</div>
+                                <div class="mission-info-value">${mission.kmDepart} km</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mission-control">
+                            <h4 style="color: #1f2937; margin-bottom: 20px;">🏁 Terminer la mission</h4>
+                            <form onsubmit="endMissionWithDetails(event, ${vehicle.id})">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="arrivalTime">🕐 Heure d'arrivée</label>
+                                        <input type="time" id="arrivalTime" name="arrivalTime" 
+                                               value="${new Date().toTimeString().slice(0,5)}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="kmArrivee">🛣️ Kilométrage d'arrivée</label>
+                                        <input type="number" id="kmArrivee" name="kmArrivee" 
+                                               placeholder="Ex: 45280" min="${mission.kmDepart}" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="notes">📝 Notes / Observations (optionnel)</label>
+                                    <textarea id="notes" name="notes" rows="3" 
+                                              placeholder="Remarques, incidents, observations..."></textarea>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-danger">
+                                    ⏹️ Terminer la mission
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+            } else {
+                missionControlHTML = `
+                    <div class="mission-control">
+                        <h4>🚀 Nouvelle Mission</h4>
+                        <form onsubmit="startMission(event, ${vehicle.id})">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="nom">Nom du conducteur</label>
+                                    <input type="text" id="nom" required placeholder="Entrez votre nom complet">
+                                    </div>
+                                
+                                <div class="form-group">
+                                    <label for="missionDate">📅 Date de mission</label>
+                                    <input type="date" id="missionDate" name="missionDate" 
+                                           value="${new Date().toISOString().split('T')[0]}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="departureTime">🕐 Heure de départ</label>
+                                    <input type="time" id="departureTime" name="departureTime" 
+                                           value="${new Date().toTimeString().slice(0,5)}" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="missionNature">📋 Nature de la mission</label>
+                                <select id="missionNature" name="missionNature" required>
+                                    <option value="">Sélectionner le type de mission</option>
+                                    <option value="transport-personnel">Transport de personnel</option>
+                                    <option value="livraison">Livraison</option>
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="urgence">Mission d'urgence</option>
+                                    <option value="formation">Formation/Conduite</option>
+                                    <option value="autre">Autre</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="destination">📍 Destination</label>
+                                    <input type="text" id="destination" name="destination" 
+                                           placeholder="Ex: Centre-ville, Aéroport..." required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="passengers">👥 Nombre de passagers</label>
+                                    <input type="number" id="passengers" name="passengers" 
+                                           placeholder="2" min="0" max="8" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="kmDepart">🛣️ Kilométrage de départ</label>
+                                <input type="number" id="kmDepart" name="kmDepart" 
+                                       placeholder="Ex: 45230" min="0" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                ▶️ Démarrer la mission
+                            </button>
+                        </form>
+                    </div>
+                `;
+            }
+
+            document.getElementById('vehicleDetails').innerHTML = `
+                <div class="vehicle-header-detail">
+                    <h3>${vehicle.nom}</h3>
+                    <p>${vehicle.immatriculation}</p>
+                </div>
+
+                ${missionControlHTML}
+            `;
+        }
+
+        // Démarrer une mission
+        function startMission(event, vehicleId) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const missionDate = formData.get('missionDate');
+            const departureTime = formData.get('departureTime');
+            const missionNature = formData.get('missionNature');
+            const destination = formData.get('destination');
+            const passengers = parseInt(formData.get('passengers'));
+            const kmDepart = parseInt(formData.get('kmDepart'));
+
+            const mission = {
+                id: Date.now(),
+                vehicleId: vehicleId,
+                vehicleName: vehicles.find(v => v.id === vehicleId).nom,
+                missionDate: missionDate,
+                departureTime: departureTime,
+                missionNature: missionNature,
+                destination: destination,
+                passengers: passengers,
+                kmDepart: kmDepart,
+                status: 'active',
+                startTime: new Date()
+            };
+
+            // Ajouter à la liste des missions actives
+            activeMissions[vehicleId] = mission;
+            
+            // Ajouter à l'historique
+            missions.push(mission);
+
+            // Mettre à jour l'affichage
+            generateVehicleList();
+            showVehicleDetails(selectedVehicle);
+            updateMissionsList();
+        }
+
+        // Terminer une mission avec détails
+        function endMissionWithDetails(event, vehicleId) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const arrivalTime = formData.get('arrivalTime');
+            const kmArrivee = parseInt(formData.get('kmArrivee'));
+            const notes = formData.get('notes');
+
+            if (activeMissions[vehicleId]) {
+                const mission = activeMissions[vehicleId];
+                
+                // Calculer la distance parcourue
+                const distanceParcourue = kmArrivee - mission.kmDepart;
+                
+                // Mettre à jour la mission
+                mission.status = 'completed';
+                mission.arrivalTime = arrivalTime;
+                mission.kmArrivee = kmArrivee;
+                mission.distanceParcourue = distanceParcourue;
+                mission.notes = notes;
+                mission.endTime = new Date();
+
+                // Retirer de la liste des missions actives
+                delete activeMissions[vehicleId];
+
+                // Mettre à jour l'affichage
+                generateVehicleList();
+                if (selectedVehicle && selectedVehicle.id === vehicleId) {
+                    showVehicleDetails(selectedVehicle);
+                }
+                updateMissionsList();
+                
+                // Afficher confirmation
+                alert(`Mission terminée !\nDistance parcourue: ${distanceParcourue} km\nDurée: ${mission.departureTime} - ${arrivalTime}`);
+            }
+        }
+
+        // Terminer une mission
+        function endMission(vehicleId, autoComplete = false) {
+            if (activeMissions[vehicleId]) {
+                const mission = activeMissions[vehicleId];
+                mission.status = 'completed';
+                mission.endTime = new Date();
+                mission.completed = autoComplete ? 'Terminée automatiquement' : 'Terminée manuellement';
+
+                // Arrêter le timer
+                if (missionTimers[vehicleId]) {
+                    clearInterval(missionTimers[vehicleId]);
+                    delete missionTimers[vehicleId];
+                }
+
+                // Retirer de la liste des missions actives
+                delete activeMissions[vehicleId];
+
+                // Mettre à jour l'affichage
+                generateVehicleList();
+                if (selectedVehicle && selectedVehicle.id === vehicleId) {
+                    showVehicleDetails(selectedVehicle);
+                }
+                updateMissionsList();
+            }
+        }
+
+        // Mettre à jour la liste des missions
+        function updateMissionsList() {
+            const missionsList = document.getElementById('missionsList');
+            
+            if (missions.length === 0) {
+                missionsList.innerHTML = `
+                    <p style="text-align: center; color: #6b7280; padding: 40px;">
+                        Aucune mission enregistrée
+                    </p>
+                `;
+                return;
+            }
+
+            const sortedMissions = [...missions].sort((a, b) => b.startTime - a.startTime);
+            
+            missionsList.innerHTML = sortedMissions.map(mission => `
+                <div class="mission-item ${mission.status}">
+                    <div class="mission-header">
+                        <div class="mission-destination">${mission.destination}</div>
+                        <div class="mission-status ${mission.status}">
+                            ${mission.status === 'active' ? '🟡 En cours' : '✅ Terminée'}
+                        </div>
+                    </div>
+                    <div class="mission-details">
+                        <div>🚗 ${mission.vehicleName}</div>
+                        <div>📅 ${mission.missionDate}</div>
+                        <div>📋 ${mission.missionNature}</div>
+                        <div>👥 ${mission.passengers} passagers</div>
+                        <div>🕐 ${mission.departureTime}${mission.arrivalTime ? ' - ' + mission.arrivalTime : ''}</div>
+                        <div>🛣️ Départ: ${mission.kmDepart} km</div>
+                        ${mission.kmArrivee ? `<div>🏁 Arrivée: ${mission.kmArrivee} km</div>` : ''}
+                        ${mission.distanceParcourue ? `<div>📏 Distance: ${mission.distanceParcourue} km</div>` : ''}
+                        ${mission.notes ? `<div>📝 ${mission.notes}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            generateVehicleList();
+            updateMissionsList();
+        });
+    </script>
+</body>
+</html>
