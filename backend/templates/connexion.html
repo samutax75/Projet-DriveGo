@@ -471,7 +471,7 @@
             </div>
 
             <div class="demo-credentials">
-                <h4>🔑 Comptes de démonstration</h4>
+                <h4>Comptes de démonstration</h4>
                 <p><strong>Admin:</strong> <code>admin@drivego.com</code> / <code>Admin123</code></p>
                 <p><strong>Utilisateur:</strong> <code>user@drivego.com</code> / <code>User123</code></p>
             </div>
@@ -523,14 +523,10 @@
                     <span>📧</span>
                     Google
                 </button>
-                <button type="button" class="btn-social" id="microsoftLogin">
-                    <span>🏢</span>
-                    Microsoft
-                </button>
             </div>
 
             <div class="signup-link">
-                Pas encore de compte ? <a href="signup.html">Créer un compte</a>
+                Pas encore de compte ? <a href="inscription.html">Créer un compte</a>
             </div>
         </div>
     </main>
@@ -688,9 +684,9 @@
                     // Redirection selon le rôle
                     setTimeout(() => {
                         if (user.role === 'admin') {
-                            window.location.href = 'admin-dashboard.html';
+                            window.location.href = 'index.html';
                         } else {
-                            window.location.href = 'dashboard.html';
+                            window.location.href = 'index.html';
                         }
                     }, 2000);
 
