@@ -307,3 +307,33 @@
                 gap: 10px;
             }
         }
+
+
+
+
+
+/*  Bouton de retour (croix) */
+
+      .close-button {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 40px;
+  height: 40px;
+  background-color: #dddddd96; /* fond gris */
+  color: black; /* croix noire */
+  font-size: 30px;
+  font-weight: bold;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 40px;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  transition: background-color 0.3s;
+}
+
+.close-button:hover {
+  background-color: #b1aaaa;
+}
+

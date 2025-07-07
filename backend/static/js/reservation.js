@@ -146,3 +146,8 @@
                 }
             });
         });
+
+        // Bouton de retour (croix) 
+function goToHomePage() {
+  window.location.href = "index.html";
+}

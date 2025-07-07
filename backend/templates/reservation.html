@@ -6,12 +6,16 @@
     <title>Réserver un véhicule - DriveGo</title>
     <link rel="stylesheet" href="../static/CSS/reservation.css">
 </head>
+
 <body>
     <!-- Header -->
     <header>
+        <!-- Bouton de retour (croix)  --> 
+<div class="close-button" onclick="goToHomePage()">×</div>
+
         <div class="nav-container">
             <a href="index.html" class="logo">
-                🚗 DriveGo
+                     DriveGo
             </a>
             <ul class="nav-links">
                 <li><a href="index.html">Accueil</a></li>
@@ -46,6 +50,11 @@
 
                     <div class="form-group">
                         <label for="heure">Heure de départ</label>
+                        <input type="time" id="heure" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="heure">Heure d'arrivée (Approximatif)</label>
                         <input type="time" id="heure" required>
                     </div>
 

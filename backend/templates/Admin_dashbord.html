@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - Gestion des Réservations</title>
+    <link rel="stylesheet" href="../static/CSS/admin_dashbord.css">
+</head>
+<body>
+    <div class="admin-container">
+        <div class="header">
+            <h1>🚗 Espace Administrateur</h1>
+            <p>Gestion complète des réservations, véhicules et utilisateurs</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showSection('dashboard')">📊 Tableau de bord</button>
+            <button class="nav-tab" onclick="showSection('reservations')">📅 Réservations</button>
+            <button class="nav-tab" onclick="showSection('vehicles')">🚗 Véhicules</button>
+            <button class="nav-tab" onclick="showSection('users')">👥 Utilisateurs</button>
+        </div>
+
+        <!-- Tableau de bord -->
+        <div id="dashboard" class="content-section active">
+            <h2 class="section-title">📊 Tableau de bord</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3 id="totalReservations">12</h3>
+                    <p>Réservations totales</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalVehicles">8</h3>
+                    <p>Véhicules disponibles</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalUsers">25</h3>
+                    <p>Utilisateurs actifs</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="pendingReservations">3</h3>
+                    <p>Réservations en attente</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gestion des réservations -->
+        <div id="reservations" class="content-section">
+            <h2 class="section-title">📅 Gestion des Réservations</h2>
+            
+            <div class="search-filter">
+                <input type="text" id="searchReservation" placeholder="Rechercher par nom ou email...">
+                <select id="filterStatus">
+                    <option value="">Tous les statuts</option>
+                    <option value="confirmed">Confirmée</option>
+                    <option value="pending">En attente</option>
+                    <option value="cancelled">Annulée</option>
+                </select>
+                <button class="btn btn-primary" onclick="filterReservations()">Filtrer</button>
+            </div>
+
+            <div class="table-container">
+                <table id="reservationsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Utilisateur</th>
+                            <th>Véhicule</th>
+                            <th>Date début</th>
+                            <th>Date fin</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reservationsTableBody">
+                        <!-- Les réservations seront ajoutées ici -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Gestion des véhicules -->
+        <div id="vehicles" class="content-section">
+            <h2 class="section-title">🚗 Gestion des Véhicules</h2>
+            
+            <button class="btn btn-success" onclick="showModal('addVehicleModal')">➕ Ajouter un véhicule</button>
+            
+            <div class="table-container">
+                <table id="vehiclesTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Marque</th>
+                            <th>Modèle</th>
+                            <th>Immatriculation</th>
+                            <th>Kilométrage</th>
+                            <th>Contrôle technique</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vehiclesTableBody">
+                        <!-- Les véhicules seront ajoutés ici -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Gestion des utilisateurs -->
+        <div id="users" class="content-section">
+            <h2 class="section-title">👥 Gestion des Utilisateurs</h2>
+            
+            <button class="btn btn-success" onclick="showModal('addUserModal')">➕ Ajouter un utilisateur</button>
+            
+            <div class="table-container">
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nom</th>
+                            <th>Email</th>
+                            <th>Téléphone</th>
+                            <th>Statut</th>
+                            <th>Date inscription</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Les utilisateurs seront ajoutés ici -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour ajouter/modifier un véhicule -->
+    <div id="addVehicleModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addVehicleModal')">&times;</span>
+            <h2>Ajouter un véhicule</h2>
+            <form id="vehicleForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="vehicleBrand">Marque</label>
+                        <input type="text" id="vehicleBrand" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="vehicleModel">Modèle</label>
+                        <input type="text" id="vehicleModel" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="vehicleYear">Année</label>
+                        <input type="number" id="vehicleYear" min="1990" max="2025" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="vehiclePlate">Immatriculation</label>
+                        <input type="text" id="vehiclePlate" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="vehicleKm">Kilométrage</label>
+                        <input type="number" id="vehicleKm" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="vehicleControl">Contrôle technique</label>
+                        <input type="date" id="vehicleControl" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="vehicleStatus">Statut</label>
+                    <select id="vehicleStatus" required>
+                        <option value="available">Disponible</option>
+                        <option value="maintenance">En maintenance</option>
+                        <option value="reserved">Réservé</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addVehicleModal')">Annuler</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal pour ajouter/modifier un utilisateur -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addUserModal')">&times;</span>
+            <h2>Ajouter un utilisateur</h2>
+            <form id="userForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userName">Nom complet</label>
+                        <input type="text" id="userName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="userEmail">Email</label>
+                        <input type="email" id="userEmail" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userPhone">Téléphone</label>
+                        <input type="tel" id="userPhone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="userStatus">Statut</label>
+                        <select id="userStatus" required>
+                            <option value="active">Actif</option>
+                            <option value="inactive">Inactif</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addUserModal')">Annuler</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="../static/js/admin_dashbord.js"></script>
+</body>
+</html>
