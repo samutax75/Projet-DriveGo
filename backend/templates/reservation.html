@@ -5,18 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Réserver un véhicule - DriveGo</title>
     <link rel="stylesheet" href="../static/CSS/reservation.css">
+    <link rel="stylesheet" href="gestion_vehicules.html">
 </head>
 
 <body>
     <!-- Header -->
     <header>
-        <!-- Bouton de retour (croix)  --> 
-<div class="close-button" onclick="goToHomePage()">×</div>
+        <!-- Bouton de retour (croix) -->
+        <div class="close-button" onclick="goToHomePage()">×</div>
 
         <div class="nav-container">
-            <a href="index.html" class="logo">
-                     DriveGo
-            </a>
+            <a href="index.html" class="logo">DriveGo</a>
             <ul class="nav-links">
                 <li><a href="index.html">Accueil</a></li>
                 <li><a href="gestion_vehicules.html">Départ missions</a></li>
@@ -29,14 +28,20 @@
 
     <!-- Main Content -->
     <div class="main-container">
-        <h2 class="page-title floating">Gestion des Réservations</h2>
+        <h2 class="page-title">📝 Gestion des Réservations</h2>
         
+        <!-- État des véhicules -->
+        <div class="vehicles-status">
+            <h3>🚗 État des Véhicules</h3>
+            <div class="vehicles-grid" id="vehicles-status">
+                <!-- Généré par JavaScript -->
+            </div>
+        </div>
+
         <div class="reservation-container">
             <!-- Formulaire de réservation -->
             <div class="card">
-                <h3>
-                    📝 Nouvelle Réservation
-                </h3>
+                <h3>📝 Nouvelle Réservation</h3>
                 <form id="form-reservation">
                     <div class="form-group">
                         <label for="nom">Nom du conducteur</label>
@@ -49,23 +54,20 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="heure">Heure de départ</label>
-                        <input type="time" id="heure" required>
+                        <label for="heure-depart">Heure de départ</label>
+                        <input type="time" id="heure-depart" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="heure">Heure d'arrivée (Approximatif)</label>
-                        <input type="time" id="heure" required>
+                        <label for="heure-arrivee">Heure d'arrivée (Approximatif)</label>
+                        <input type="time" id="heure-arrivee" required>
                     </div>
 
                     <div class="form-group">
                         <label for="vehicule">Choisir un véhicule</label>
                         <select id="vehicule" required>
                             <option value="">-- Sélectionner un véhicule --</option>
-                            <option value="kangoo" data-status="available">🚐 Kangoo EF-123-DF (Disponible)</option>
-                            <option value="berlingo" data-status="available">🚗 Berlingo FG-345-CV (Disponible)</option>
-                            <option value="partner" data-status="busy">🚙 Partner BN-654-QS (Occupé)</option>
-                            <option value="transit" data-status="maintenance">🚚 Transit XY-789-MN (Maintenance)</option>
+                            <!-- Généré par JavaScript -->
                         </select>
                     </div>
 
@@ -77,12 +79,10 @@
 
             <!-- Gestion des réservations existantes -->
             <div class="card">
-                <h3>
-                    🔧 Gérer une Réservation
-                </h3>
+                <h3>🔧 Gérer une Réservation</h3>
                 <div class="form-group">
                     <label for="reservation-id">Identifiant de réservation</label>
-                    <input type="text" id="reservation-id" placeholder="ex : RES-2024-001" maxlength="15">
+                    <input type="text" id="reservation-id" placeholder="ex : RES-2025-001" maxlength="15">
                 </div>
 
                 <div class="actions">

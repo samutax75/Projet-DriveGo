@@ -6,16 +6,16 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            color: #333;
         }
 
         /* Header */
         header {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             position: fixed;
             width: 100%;
             top: 0;
@@ -26,315 +26,295 @@
         .nav-container {
             max-width: 1200px;
             margin: 0 auto;
+            padding: 0 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 2rem;
-            
+            height: 70px;
         }
 
         .logo {
-            font-size: 2rem;
+            font-size: 24px;
             font-weight: bold;
             color: #667eea;
             text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
         }
 
         .nav-links {
             display: flex;
-            gap: 2rem;
             list-style: none;
+            gap: 30px;
         }
 
         .nav-links a {
             text-decoration: none;
             color: #333;
             font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 25px;
-            transition: all 0.3s ease;
+            transition: color 0.3s ease;
         }
 
         .nav-links a:hover {
-            background: #263c9c;
+            color: #667eea;
+        }
+
+        /* Close button */
+        .close-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+            color: #667eea;
+            z-index: 1001;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .close-button:hover {
+            background: #667eea;
             color: white;
-            transform: translateY(-2px);
+            transform: scale(1.1);
         }
 
         /* Main Content */
         .main-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 120px 2rem 2rem;
+            padding: 100px 20px 40px;
         }
 
         .page-title {
             text-align: center;
             color: white;
             font-size: 2.5rem;
-            margin-bottom: 3rem;
-            animation: fadeInUp 1s ease;
+            margin-bottom: 40px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .reservation-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            max-width: 1000px;
-            margin: 0 auto;
+            gap: 30px;
+            margin-bottom: 40px;
         }
 
         .card {
             background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 2rem;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            animation: fadeInUp 1s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .card h3 {
-            color: #333;
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
+            color: #667eea;
+            margin-bottom: 25px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
         }
 
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: block;
+            margin-bottom: 8px;
             font-weight: 600;
             color: #333;
-            margin-bottom: 0.5rem;
         }
 
         .form-group input,
         .form-group select {
             width: 100%;
-            padding: 1rem;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
             font-size: 1rem;
-            transition: all 0.3s ease;
-            background: white;
+            transition: border-color 0.3s ease;
         }
 
         .form-group input:focus,
         .form-group select:focus {
             outline: none;
             border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            transform: translateY(-2px);
         }
 
         .btn {
-            width: 100%;
-            padding: 1rem;
+            background: #667eea;
+            color: white;
             border: none;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
             transition: all 0.3s ease;
-            margin-top: 1rem;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+            background: #667eea;
+            width: 100%;
         }
 
         .btn-secondary {
             background: #6c757d;
-            color: white;
+            margin-right: 10px;
         }
 
         .btn-secondary:hover {
             background: #5a6268;
-            transform: translateY(-3px);
         }
 
         .btn-danger {
             background: #dc3545;
-            color: white;
         }
 
         .btn-danger:hover {
             background: #c82333;
-            transform: translateY(-3px);
         }
 
         .actions {
             display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
+            gap: 10px;
+            margin-bottom: 20px;
         }
 
-        .actions .btn {
-            flex: 1;
-            margin-top: 0;
-        }
-
-        #confirmation {
-            margin-top: 2rem;
-            padding: 1.5rem;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
+        /* Véhicules disponibles */
+        .vehicles-status {
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 1.1rem;
-            display: none;
-            animation: slideInDown 0.5s ease;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
-        .vehicle-option {
+        .vehicles-status h3 {
+            color: #667eea;
+            margin-bottom: 25px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .vehicles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .vehicle-item {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.3s ease;
+        }
+
+        .vehicle-item:hover {
+            transform: translateX(5px);
+        }
+
+        .vehicle-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem;
+            margin-bottom: 10px;
         }
 
-        .status-indicator {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
+        .vehicle-name {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1rem;
         }
 
-        .available {
-            background-color: #28a745;
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: uppercase;
         }
 
-        .busy {
-            background-color: #dc3545;
+        .status-available {
+            background: #d4edda;
+            color: #155724;
         }
 
-        .maintenance {
-            background-color: #ffc107;
+        .status-reserved {
+            background: #fff3cd;
+            color: #856404;
         }
 
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .status-maintenance {
+            background: #f8d7da;
+            color: #721c24;
         }
 
-        @keyframes slideInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .vehicle-info {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 10px;
         }
 
-        /* Responsive */
+        .reserved-by {
+            background: rgba(255, 193, 7, 0.2);
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .reserved-by strong {
+            color: #856404;
+        }
+
+        .confirmation {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid #f5c6cb;
+        }
+
         @media (max-width: 768px) {
             .nav-links {
                 display: none;
             }
-
+            
             .reservation-container {
                 grid-template-columns: 1fr;
-                gap: 1.5rem;
             }
-
-            .page-title {
-                font-size: 2rem;
-            }
-
-            .card {
-                padding: 1.5rem;
-            }
-
-            .actions {
-                flex-direction: column;
-                gap: 0.5rem;
+            
+            .vehicles-grid {
+                grid-template-columns: 1fr;
             }
         }
-
-        .floating {
-            animation: floating 3s ease-in-out infinite;
-        }
-
-        @keyframes floating {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-5px); }
-        }
-
-        /* Toast notification */
-        .toast {
-            position: fixed;
-            top: 100px;
-            right: 20px;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 10px;
-            font-weight: 600;
-            z-index: 1001;
-            transform: translateX(400px);
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-        }
-
-        .toast.show {
-            transform: translateX(0);
-        }
-
-        .toast.error {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-        }
-
-
-
-
-
-/*  Bouton de retour (croix) */
-
-      .close-button {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  width: 40px;
-  height: 40px;
-  background-color: #dddddd96; /* fond gris */
-  color: black; /* croix noire */
-  font-size: 30px;
-  font-weight: bold;
-  border-radius: 50%;
-  text-align: center;
-  line-height: 40px;
-  cursor: pointer;
-  z-index: 1000;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-  transition: background-color 0.3s;
-}
-
-.close-button:hover {
-  background-color: #b1aaaa;
-}
