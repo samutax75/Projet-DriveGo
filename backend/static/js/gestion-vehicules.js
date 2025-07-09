@@ -62,6 +62,35 @@ let missions = [];
 let activeMissions = {};
 let missionTimers = {};
 
+// NOUVELLE FONCTION : Charger les réservations depuis localStorage
+function loadReservations() {
+    vehicles.forEach(vehicle => {
+        const reservation = localStorage.getItem('reservation_' + vehicle.id);
+        if (reservation) {
+            const reservationData = JSON.parse(reservation);
+            vehicle.reservation = reservationData;
+        } else {
+            // Supprimer la réservation si elle n'existe plus
+            delete vehicle.reservation;
+        }
+    });
+}
+
+// FONCTION MODIFIÉE : Vérifier si un véhicule est réservé
+function isVehicleReserved(vehicleId) {
+    const reservation = localStorage.getItem('reservation_' + vehicleId);
+    return reservation !== null;
+}
+
+// FONCTION MODIFIÉE : Obtenir les détails de la réservation
+function getReservationDetails(vehicleId) {
+    const reservation = localStorage.getItem('reservation_' + vehicleId);
+    if (reservation) {
+        return JSON.parse(reservation);
+    }
+    return null;
+}
+
 // Fonctions utilitaires
 function parseDate(dateStr) {
     if (!dateStr) return null;
@@ -90,14 +119,34 @@ function formatTime(seconds) {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-// Génération de la liste des véhicules
+// Fonction pour gérer la sélection "Autre" dans nature de mission
+function checkAutre(selectElement) {
+    const autreText = document.getElementById("autreText");
+    if (autreText) {
+        if (selectElement.value === "autre") {
+            autreText.disabled = false;
+            autreText.required = true;
+            autreText.focus();
+        } else {
+            autreText.disabled = true;
+            autreText.required = false;
+            autreText.value = "";
+        }
+    }
+}
+
+// FONCTION MODIFIÉE : Génération de la liste des véhicules
 function generateVehicleList() {
+    // Charger les réservations avant d'afficher la liste
+    loadReservations();
+
     const vehicleList = document.getElementById('vehicleList');
     vehicleList.innerHTML = '';
 
     vehicles.forEach(vehicle => {
         const status = getStatusInfo(vehicle.controle);
         const isInMission = activeMissions[vehicle.id];
+        const reservationDetails = getReservationDetails(vehicle.id);
 
         // Récupération du nom du conducteur en mission
         let driverName = '';
@@ -106,22 +155,46 @@ function generateVehicleList() {
         }
 
         const vehicleItem = document.createElement('div');
-        vehicleItem.className = `vehicle-item ${isInMission ? 'in-mission' : ''}`;
 
+        // Définir les classes CSS selon le statut
+        let vehicleClass = 'vehicle-item';
+        let statusText = '✅ Disponible';
+        let statusClass = 'available';
+
+        if (isInMission) {
+            vehicleClass += ' in-mission';
+            statusText = '🚗 En mission';
+            statusClass = 'mission';
+        } else if (reservationDetails) {
+            vehicleClass += ' reserved';
+            statusText = '📅 Réservé';
+            statusClass = 'reserved';
+        }
+
+        vehicleItem.className = vehicleClass;
         vehicleItem.onclick = () => selectVehicle(vehicle);
+
+        // Affichage du nom du conducteur ou de la personne qui a réservé
+        let personInfo = '';
+        if (isInMission && driverName) {
+            personInfo = `<div class="driver-name">👤 ${driverName}</div>`;
+        } else if (reservationDetails) {
+            personInfo = `<div class="reserved-name">👤 ${reservationDetails.reservedBy}</div>`;
+        }
 
         vehicleItem.innerHTML = `
             <div class="vehicle-header">
                 <div>
                     <div class="vehicle-name">${vehicle.nom}</div>
                     <div class="vehicle-plate">${vehicle.immatriculation}</div>
-                    ${isInMission && driverName ? `<div class="driver-name">👤 ${driverName}</div>` : ''}
+                    ${personInfo}
                 </div>
-                <div class="status ${isInMission ? 'mission' : 'available'}">
-                    ${isInMission ? '🚗 En mission' : '✅ Disponible'}
+                <div class="status ${statusClass}">
+                    ${statusText}
                 </div>
             </div>
             ${isInMission ? '<div class="mission-badge">🎯</div>' : ''}
+            ${reservationDetails ? '<div class="reservation-badge">📅</div>' : ''}
         `;
 
         vehicleList.appendChild(vehicleItem);
@@ -146,18 +219,18 @@ function selectVehicle(vehicle) {
     showVehicleDetails(vehicle);
 }
 
-// Affichage des détails du véhicule
+// FONCTION MODIFIÉE : Affichage des détails du véhicule
 function showVehicleDetails(vehicle) {
     document.getElementById('noSelection').style.display = 'none';
     document.getElementById('vehicleDetails').style.display = 'block';
 
     const isInMission = activeMissions[vehicle.id];
+    const reservationDetails = getReservationDetails(vehicle.id);
 
     let missionControlHTML = '';
 
     if (isInMission) {
         const mission = activeMissions[vehicle.id];
-        const progress = (mission.elapsedTime / mission.totalTime) * 100;
 
         missionControlHTML = `
             <div class="mission-active">
@@ -222,6 +295,40 @@ function showVehicleDetails(vehicle) {
                 </div>
             </div>
         `;
+    } else if (reservationDetails) {
+        // NOUVEAU : Affichage des détails de réservation
+        missionControlHTML = `
+            <div class="reservation-active">
+                <h4>📅 Véhicule réservé</h4>
+                <div class="reservation-info">
+                    <div class="reservation-info-item">
+                        <div class="reservation-info-label">Réservé par</div>
+                        <div class="reservation-info-value">👤 ${reservationDetails.reservedBy}</div>
+                    </div>
+                    <div class="reservation-info-item">
+                        <div class="reservation-info-label">Date</div>
+                        <div class="reservation-info-value">${reservationDetails.reservationDate}</div>
+                    </div>
+                    <div class="reservation-info-item">
+                        <div class="reservation-info-label">Horaire</div>
+                        <div class="reservation-info-value">${reservationDetails.reservationTime}</div>
+                    </div>
+                    <div class="reservation-info-item">
+                        <div class="reservation-info-label">ID Réservation</div>
+                        <div class="reservation-info-value">${reservationDetails.reservationId}</div>
+                    </div>
+                </div>
+                
+                <div class="reservation-actions">
+                    <button onclick="cancelReservation(${vehicle.id})" class="btn btn-warning">
+                        ❌ Annuler la réservation
+                    </button>
+                    <button onclick="startMissionFromReservation(${vehicle.id})" class="btn btn-success">
+                        🚀 Commencer la mission
+                    </button>
+                </div>
+            </div>
+        `;
     } else {
         missionControlHTML = `
             <div class="mission-control">
@@ -247,7 +354,7 @@ function showVehicleDetails(vehicle) {
 
                     <div class="form-group">
                         <label for="missionNature">📋 Nature de la mission</label>
-                        <select id="missionNature" name="missionNature" required>
+                        <select id="missionNature" name="missionNature" required onchange="checkAutre(this)">
                             <option value="">Sélectionner le type de mission</option>
                             <option value="transport-personnel">Transport de personnel</option>
                             <option value="livraison">Livraison</option>
@@ -257,7 +364,10 @@ function showVehicleDetails(vehicle) {
                             <option value="autre">Autre</option>
                         </select>
                     </div>
-                    
+                    <div class="form-group">
+                        <label for="autreText">✏️ Si autre, précisez</label>
+                        <input type="text" id="autreText" name="autreText" placeholder="Décrivez la mission" disabled>
+                    </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="destination">📍 Destination</label>
@@ -295,6 +405,46 @@ function showVehicleDetails(vehicle) {
     `;
 }
 
+// NOUVELLE FONCTION : Annuler une réservation
+function cancelReservation(vehicleId) {
+    const reservationDetails = getReservationDetails(vehicleId);
+    if (reservationDetails) {
+        if (confirm(`Êtes-vous sûr de vouloir annuler la réservation ${reservationDetails.reservationId} de ${reservationDetails.reservedBy}?`)) {
+            localStorage.removeItem('reservation_' + vehicleId);
+
+            // Mettre à jour l'affichage
+            generateVehicleList();
+            if (selectedVehicle && selectedVehicle.id === vehicleId) {
+                showVehicleDetails(selectedVehicle);
+            }
+
+            alert('Réservation annulée avec succès');
+        }
+    }
+}
+
+// NOUVELLE FONCTION : Commencer une mission depuis une réservation
+function startMissionFromReservation(vehicleId) {
+    const reservationDetails = getReservationDetails(vehicleId);
+    if (reservationDetails) {
+        // Pré-remplir les champs avec les données de la réservation
+        setTimeout(() => {
+            document.getElementById('nom').value = reservationDetails.reservedBy;
+            document.getElementById('missionDate').value = reservationDetails.reservationDate.split('/').reverse().join('-');
+            document.getElementById('departureTime').value = reservationDetails.reservationTime.split('-')[0];
+        }, 100);
+
+        // Supprimer la réservation
+        localStorage.removeItem('reservation_' + vehicleId);
+
+        // Mettre à jour l'affichage
+        generateVehicleList();
+        showVehicleDetails(selectedVehicle);
+
+        alert('Réservation convertie en mission. Complétez les informations manquantes.');
+    }
+}
+
 // Démarrer une mission
 function startMission(event, vehicleId) {
     event.preventDefault();
@@ -303,10 +453,16 @@ function startMission(event, vehicleId) {
     const nom = formData.get('nom');
     const missionDate = formData.get('missionDate');
     const departureTime = formData.get('departureTime');
-    const missionNature = formData.get('missionNature');
+    let missionNature = formData.get('missionNature');
+    const autreText = formData.get('autreText');
     const destination = formData.get('destination');
     const passengers = parseInt(formData.get('passengers'));
     const kmDepart = parseInt(formData.get('kmDepart'));
+
+    // Si "autre" est sélectionné, utiliser le texte saisi
+    if (missionNature === 'autre' && autreText) {
+        missionNature = autreText;
+    }
 
     const mission = {
         id: Date.now(),
@@ -438,16 +594,20 @@ function updateMissionsList() {
     `).join('');
 }
 
+// Bouton de retour (croix) 
+function goToHomePage() {
+    window.location.href = "index.html";
+}
+
 // Initialisation
 document.addEventListener('DOMContentLoaded', function () {
     generateVehicleList();
     updateMissionsList();
+
+    // Masquer la section "noSelection" et afficher les détails si nécessaire
+    const noSelection = document.getElementById('noSelection');
+    if (noSelection) noSelection.style.display = 'none';
+
+    const details = document.getElementById('vehicleDetails');
+    if (details) details.style.display = 'block';
 });
-
-
-
-
-// Bouton de retour (croix) 
-function goToHomePage() {
-  window.location.href = "index.html";
-}
