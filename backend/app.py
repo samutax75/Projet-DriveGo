@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import re
+import datetime
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Changez cette clé en production
@@ -9,12 +10,12 @@ app.secret_key = 'your-secret-key-here'  # Changez cette clé en production
 # Configuration de la base de données
 DATABASE = 'drivego.db'
 
-
 def init_db():
     """Initialise la base de données avec les tables nécessaires"""
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-
+    
+    
     # Table des utilisateurs
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -32,7 +33,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-
 def validate_email(email):
     """Valide le format de l'email"""
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -45,9 +45,22 @@ def validate_password(password):
         return False, "Le mot de passe doit contenir au moins 6 caractères"
     return True, "Mot de passe valide"
 
+
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/vehicles')
+def vehicles_page():
+    """Page de gestion des véhicules"""
+    return render_template('fiches_vehicules.html')
+
+@app.route('/reservation')
+def reservation():
+    """Page de réservation"""
+    return render_template('reservation.html')
 
 @app.route('/inscription')
 def inscription():
@@ -56,6 +69,16 @@ def inscription():
 @app.route('/connexion')
 def connexion():
     return render_template('connexion.html')
+
+
+def gestion_vehicules():
+    """Page de gestion des véhicules"""
+    return render_template('gestion_vehicules.html')
+
+@app.route('/support')
+def support():
+    """Page de support"""
+    return render_template('support.html')
 
 
 @app.route('/dashboard')
