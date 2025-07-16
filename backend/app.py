@@ -23,7 +23,12 @@ def init_db():
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             nom TEXT NOT NULL,
-            prenom TEXT NOT NULL, 
+            prenom TEXT NOT NULL,
+            telephone TEXT,
+            role TEXT DEFAULT 'client',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
 
     # Table des véhicules (adaptée à vos données réelles)
     cursor.execute('''
@@ -95,7 +100,7 @@ def validate_password(password):
 def index():
     return render_template('index.html')
 
-@app.route('/vehicules')
+@app.route('/vehicles')
 def vehicles_page():
     """Page de gestion des véhicules"""
     return render_template('fiches_vehicules.html')
@@ -145,7 +150,7 @@ def admin():
     if 'user_id' not in session or session.get('role') != 'admin':
         flash('Accès non autorisé')
         return redirect(url_for('connexion'))
-    return render_template('admin_dashbord.html')
+    return render_template('admin.html')
 
 # ================= API UTILISATEURS =================
 
