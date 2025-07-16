@@ -3,10 +3,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import re
 import datetime
+import os
 from decimal import Decimal
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'  # Changez cette clé en production
+# Configuration pour la production
+app.secret_key = os.environ.get('SECRET_KEY', 'fallback-secret-key-change-in-production')
 
 # Configuration de la base de données
 DATABASE = 'drivego.db'
@@ -63,6 +65,15 @@ def init_db():
             FOREIGN KEY (vehicule_id) REFERENCES vehicules (id)
         )
     ''')
+
+    # Créer un utilisateur admin par défaut si aucun n'existe
+    cursor.execute('SELECT COUNT(*) FROM users WHERE role = "admin"')
+    if cursor.fetchone()[0] == 0:
+        admin_password = generate_password_hash('admin123')  # Changez ce mot de passe !
+        cursor.execute('''
+            INSERT INTO users (email, password_hash, nom, prenom, telephone, role)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', ('admin@drivego.com', admin_password, 'Admin', 'DriveGo', '', 'admin'))
 
     # Insérer vos véhicules réels
     cursor.execute('SELECT COUNT(*) FROM vehicules')
@@ -644,6 +655,12 @@ def logout():
     flash('Vous avez été déconnecté')
     return redirect(url_for('index'))
 
+# Route de santé pour vérifier que l'app fonctionne
+@app.route('/health')
+def health_check():
+    return jsonify({'status': 'healthy'}), 200
+
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
