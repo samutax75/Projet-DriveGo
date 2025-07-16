@@ -23,12 +23,7 @@ def init_db():
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             nom TEXT NOT NULL,
-            prenom TEXT NOT NULL,
-            telephone TEXT,
-            role TEXT DEFAULT 'client',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+            prenom TEXT NOT NULL, 
 
     # Table des véhicules (adaptée à vos données réelles)
     cursor.execute('''
