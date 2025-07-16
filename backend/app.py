@@ -105,6 +105,9 @@ def validate_password(password):
         return False, "Le mot de passe doit contenir au moins 6 caractères"
     return True, "Mot de passe valide"
 
+# Initialiser la base de données au démarrage
+init_db()
+
 # ================= ROUTES PRINCIPALES =================
 
 @app.route('/')
@@ -662,4 +665,4 @@ def health_check():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=False)
