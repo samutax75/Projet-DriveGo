@@ -130,9 +130,9 @@ init_db()
 def index():
     return render_template('index.html')
 
-@app.route('/vehicles')
+@app.route('/fiches_vehicules')
 def vehicles_page():
-    """Page de gestion des véhicules"""
+    """Page de infos des véhicules"""
     return render_template('fiches_vehicules.html')
 
 @app.route('/reservation')
@@ -420,75 +420,6 @@ def api_register():
         }), 500
 
 # ================= API UTILISATEURS =================
-
-@app.route('/api/register', methods=['POST'])
-def api_register():
-    """API pour l'inscription des utilisateurs"""
-    try:
-        data = request.get_json()
-
-        # Validation des données
-        required_fields = ['email', 'password', 'nom', 'prenom']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({
-                    'success': False,
-                    'message': f'Le champ {field} est requis'
-                }), 400
-
-        email = data['email'].lower().strip()
-        password = data['password']
-        nom = data['nom'].strip()
-        prenom = data['prenom'].strip()
-        telephone = data.get('telephone', '').strip()
-
-        # Validation de l'email
-        if not validate_email(email):
-            return jsonify({
-                'success': False,
-                'message': 'Format d\'email invalide'
-            }), 400
-
-        # Validation du mot de passe
-        is_valid, message = validate_password(password)
-        if not is_valid:
-            return jsonify({
-                'success': False,
-                'message': message
-            }), 400
-
-        # Vérification que l'email n'existe pas déjà
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
-        cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
-        if cursor.fetchone():
-            conn.close()
-            return jsonify({
-                'success': False,
-                'message': 'Cette adresse email est déjà utilisée'
-            }), 409
-
-        # Création du compte
-        password_hash = generate_password_hash(password)
-        cursor.execute('''
-            INSERT INTO users (email, password_hash, nom, prenom, telephone, role)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (email, password_hash, nom, prenom, telephone, 'client'))
-
-        conn.commit()
-        conn.close()
-
-        return jsonify({
-            'success': True,
-            'message': 'Compte créé avec succès',
-            'redirect': url_for('connexion')
-        }), 201
-
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': 'Erreur lors de la création du compte'
-        }), 500
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
