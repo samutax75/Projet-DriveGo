@@ -620,3 +620,33 @@
         saveBtn.style.zIndex = '1000';
         saveBtn.onclick = saveData;
         document.body.appendChild(saveBtn);
+
+
+
+        function sendInvitation(event) {
+    event.preventDefault();
+    const email = document.getElementById('inviteEmail').value;
+    const messageDiv = document.getElementById('inviteMessage');
+
+    fetch('/api/generate-invitation', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: email })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            messageDiv.textContent = "✅ Invitation envoyée à " + email;
+            messageDiv.style.color = "green";
+        } else {
+            messageDiv.textContent = "❌ " + data.message;
+            messageDiv.style.color = "red";
+        }
+    })
+    .catch(error => {
+        messageDiv.textContent = "❌ Une erreur est survenue";
+        messageDiv.style.color = "red";
+    });
+}

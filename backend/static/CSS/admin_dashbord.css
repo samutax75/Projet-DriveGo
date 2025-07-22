@@ -346,3 +346,27 @@
                 text-align: center;
             }
         }
+/* Token d'invitaion inscription */
+        .invite-token-form {
+    margin: 20px 0;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.invite-token-form input[type="email"] {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    min-width: 10px;
+}
+
+.invite-token-form .btn.btn-primary {
+    padding: 6px 10px;
+    font-size: 14px;
+    max-width: 180px; /* ou 150px si tu veux encore plus court */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

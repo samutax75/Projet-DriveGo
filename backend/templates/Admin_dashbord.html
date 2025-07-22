@@ -14,6 +14,15 @@
         </div>
 
         <div class="nav-tabs">
+            <div class="invite-token-form">
+                <form id="invitationForm" onsubmit="sendInvitation(event)">
+                    <input type="email" id="inviteEmail" placeholder="📧 Email à inviter" required />
+                    <button type="submit" class="btn btn-primary">Envoyer une invitation</button>
+                </form>
+                <div id="inviteMessage" style="margin-top: 8px; font-size: 0.9em;"></div>
+            </div>
+
+            
             <button class="nav-tab active" onclick="showSection('dashboard')">📊 Tableau de bord</button>
             <button class="nav-tab" onclick="showSection('reservations')">📅 Réservations</button>
             <button class="nav-tab" onclick="showSection('vehicles')">🚗 Véhicules</button>
