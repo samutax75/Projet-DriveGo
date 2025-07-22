@@ -623,30 +623,49 @@
 
 
 
-        function sendInvitation(event) {
+
+
+
+// Fonction token invitation
+function sendInvitation(event) {
     event.preventDefault();
-    const email = document.getElementById('inviteEmail').value;
+
+    const emailInput = document.getElementById('inviteEmail');
+    const email = emailInput.value.trim();
     const messageDiv = document.getElementById('inviteMessage');
+
+    if (!validateEmail(email)) {
+        messageDiv.textContent = "❌ Adresse email invalide.";
+        messageDiv.style.color = "red";
+        return;
+    }
 
     fetch('/api/generate-invitation', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email: email })
+        body: JSON.stringify({ email })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            messageDiv.textContent = "✅ Invitation envoyée à " + email;
+            messageDiv.textContent = `✅ Invitation envoyée à ${email}`;
             messageDiv.style.color = "green";
+            emailInput.value = "";
         } else {
-            messageDiv.textContent = "❌ " + data.message;
+            messageDiv.textContent = `❌ ${data.message || "Erreur inconnue."}`;
             messageDiv.style.color = "red";
         }
     })
     .catch(error => {
-        messageDiv.textContent = "❌ Une erreur est survenue";
+        console.error("Erreur d'invitation :", error);
+        messageDiv.textContent = "❌ Une erreur s'est produite lors de l'envoi.";
         messageDiv.style.color = "red";
     });
+}
+
+function validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
 }

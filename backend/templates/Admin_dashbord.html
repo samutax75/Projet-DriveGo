@@ -16,11 +16,13 @@
         <div class="nav-tabs">
             <div class="invite-token-form">
                 <form id="invitationForm" onsubmit="sendInvitation(event)">
-                    <input type="email" id="inviteEmail" placeholder="📧 Email à inviter" required />
+                    <label for="inviteEmail" style="font-weight: bold;">Inviter un conducteur par e-mail :</label>
+                    <input type="email" id="inviteEmail" placeholder="📧 Email à inviter pour inscription" required />
                     <button type="submit" class="btn btn-primary">Envoyer une invitation</button>
-                </form>
-                <div id="inviteMessage" style="margin-top: 8px; font-size: 0.9em;"></div>
-            </div>
+    </form>
+    <div id="inviteMessage" style="margin-top: 8px; font-size: 0.9em;"></div>
+</div>
+
 
             
             <button class="nav-tab active" onclick="showSection('dashboard')">📊 Tableau de bord</button>
