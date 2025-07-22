@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Redirection après 2 secondes
                 setTimeout(() => {
-                    window.location.href = data.redirect || '/connexion';
+                    window.location.href = data.redirect || 'connexion';
                 }, 2000);
             } else {
                 // Erreur retournée par l'API

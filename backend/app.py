@@ -2,9 +2,11 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import re
-import datetime
+from datetime import datetime, timedelta
 import os
 from decimal import Decimal
+import secrets
+import urllib.parse
 
 app = Flask(__name__)
 # Configuration pour la production
@@ -31,6 +33,20 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    
+    #  table pour gérer les tokens d'invitation :
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS invitation_tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        token TEXT UNIQUE NOT NULL,
+        email TEXT NOT NULL,
+        created_by INTEGER NOT NULL,
+        used BOOLEAN DEFAULT 0,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (created_by) REFERENCES users (id)
+    )
+''')
 
     # Table des véhicules (adaptée à vos données réelles)
     cursor.execute('''
@@ -165,6 +181,243 @@ def admin():
         flash('Accès non autorisé')
         return redirect(url_for('connexion'))
     return render_template('admin.html')
+
+
+# Route pour générer un lien d'invitation (admin uniquement)
+@app.route('/api/generate-invitation', methods=['POST'])
+def generate_invitation():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return jsonify({'success': False, 'message': 'Accès non autorisé'}), 403
+    
+    try:
+        data = request.get_json()
+        email = data.get('email', '').lower().strip()
+        
+        if not email or not validate_email(email):
+            return jsonify({
+                'success': False,
+                'message': 'Email valide requis'
+            }), 400
+        
+        # Vérifier que l'utilisateur n'existe pas déjà
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Un utilisateur avec cet email existe déjà'
+            }), 409
+        
+        # Générer un token unique
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.now() + timedelta(days=7)  # Expire dans 7 jours
+        
+        # Sauvegarder le token
+        cursor.execute('''
+            INSERT INTO invitation_tokens (token, email, created_by, expires_at)
+            VALUES (?, ?, ?, ?)
+        ''', (token, email, session['user_id'], expires_at))
+        
+        conn.commit()
+        conn.close()
+        
+        # Générer le lien d'invitation
+        base_url = request.url_root.rstrip('/')
+        invitation_link = f"{base_url}/inscription?token={token}"
+        
+        return jsonify({
+            'success': True,
+            'message': 'Lien d\'invitation généré avec succès',
+            'invitation_link': invitation_link,
+            'email': email,
+            'expires_at': expires_at.isoformat()
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la génération du lien'
+        }), 500
+
+# Route pour valider un token d'invitation
+@app.route('/api/validate-token', methods=['POST'])
+def validate_token():
+    try:
+        data = request.get_json()
+        token = data.get('token', '')
+        
+        if not token:
+            return jsonify({
+                'success': False,
+                'message': 'Token requis'
+            }), 400
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT email, expires_at, used FROM invitation_tokens 
+            WHERE token = ?
+        ''', (token,))
+        
+        token_data = cursor.fetchone()
+        conn.close()
+        
+        if not token_data:
+            return jsonify({
+                'success': False,
+                'message': 'Token invalide'
+            }), 404
+        
+        email, expires_at, used = token_data
+        
+        # Vérifier si le token a déjà été utilisé
+        if used:
+            return jsonify({
+                'success': False,
+                'message': 'Ce lien d\'invitation a déjà été utilisé'
+            }), 410
+        
+        # Vérifier si le token a expiré
+        if datetime.now() > datetime.fromisoformat(expires_at):
+            return jsonify({
+                'success': False,
+                'message': 'Ce lien d\'invitation a expiré'
+            }), 410
+        
+        return jsonify({
+            'success': True,
+            'email': email,
+            'message': 'Token valide'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la validation du token'
+        }), 500
+
+# Modifier la route d'inscription pour gérer les tokens
+@app.route('/api/register', methods=['POST'])
+def api_register():
+    try:
+        data = request.get_json()
+        token = data.get('token', '')
+
+        # Validation des données
+        required_fields = ['email', 'password', 'nom', 'prenom']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({
+                    'success': False,
+                    'message': f'Le champ {field} est requis'
+                }), 400
+
+        email = data['email'].lower().strip()
+        password = data['password']
+        nom = data['nom'].strip()
+        prenom = data['prenom'].strip()
+        telephone = data.get('telephone', '').strip()
+
+        # Si un token est fourni, le valider
+        if token:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT email, expires_at, used FROM invitation_tokens 
+                WHERE token = ?
+            ''', (token,))
+            
+            token_data = cursor.fetchone()
+            
+            if not token_data:
+                conn.close()
+                return jsonify({
+                    'success': False,
+                    'message': 'Token d\'invitation invalide'
+                }), 400
+            
+            token_email, expires_at, used = token_data
+            
+            # Vérifications du token
+            if used:
+                conn.close()
+                return jsonify({
+                    'success': False,
+                    'message': 'Ce lien d\'invitation a déjà été utilisé'
+                }), 400
+            
+            if datetime.now() > datetime.fromisoformat(expires_at):
+                conn.close()
+                return jsonify({
+                    'success': False,
+                    'message': 'Ce lien d\'invitation a expiré'
+                }), 400
+            
+            # Vérifier que l'email correspond au token
+            if email != token_email:
+                conn.close()
+                return jsonify({
+                    'success': False,
+                    'message': 'L\'email ne correspond pas au lien d\'invitation'
+                }), 400
+            
+            conn.close()
+
+        # Validation de l'email
+        if not validate_email(email):
+            return jsonify({
+                'success': False,
+                'message': 'Format d\'email invalide'
+            }), 400
+
+        # Validation du mot de passe
+        is_valid, message = validate_password(password)
+        if not is_valid:
+            return jsonify({
+                'success': False,
+                'message': message
+            }), 400
+
+        # Vérification que l'email n'existe pas déjà
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Cette adresse email est déjà utilisée'
+            }), 409
+
+        # Création du compte
+        password_hash = generate_password_hash(password)
+        cursor.execute('''
+            INSERT INTO users (email, password_hash, nom, prenom, telephone, role)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (email, password_hash, nom, prenom, telephone, 'client'))
+
+        # Si un token était utilisé, le marquer comme utilisé
+        if token:
+            cursor.execute('''
+                UPDATE invitation_tokens SET used = 1 WHERE token = ?
+            ''', (token,))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'message': 'Compte créé avec succès',
+            'redirect': url_for('connexion')
+        }), 201
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la création du compte'
+        }), 500
 
 # ================= API UTILISATEURS =================
 
@@ -638,6 +891,7 @@ def api_delete_vehicule(vehicule_id):
         # Supprimer le véhicule
         cursor.execute('DELETE FROM vehicules WHERE id = ?', (vehicule_id,))
         conn.commit()
+        
         conn.close()
 
         return jsonify({
@@ -658,10 +912,6 @@ def logout():
     flash('Vous avez été déconnecté')
     return redirect(url_for('index'))
 
-# Route de santé pour vérifier que l'app fonctionne
-@app.route('/health')
-def health_check():
-    return jsonify({'status': 'healthy'}), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
