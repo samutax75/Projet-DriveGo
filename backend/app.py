@@ -148,6 +148,8 @@ def inscription():
 def connexion():
     return render_template('connexion.html')
 
+
+
 @app.route('/gestion_vehicules')
 def gestion_vehicules():
     """Page de gestion des véhicules (admin)"""

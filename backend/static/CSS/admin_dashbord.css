@@ -759,3 +759,33 @@
             color: #e53e3e;
             border: 1px solid rgba(229, 62, 62, 0.3);
         }
+
+
+        /* La modale en elle-même afin de voir les bouton même quand la fenêtre est reduit*/
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  overflow: auto; /* Important pour permettre le scroll si contenu trop long */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+/* Le contenu de la modale */
+.modal-content {
+  background-color: #111827;
+  color: #f8fafc;
+  border-radius: 10px;
+  padding: 30px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh; /* pour limiter la hauteur */
+  overflow-y: auto; /* permet de scroller le contenu */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+}
