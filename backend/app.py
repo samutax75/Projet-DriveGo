@@ -149,22 +149,21 @@ def connexion():
     return render_template('connexion.html')
 
 
-
 @app.route('/gestion_vehicules')
 def gestion_vehicules():
-    """Page de gestion des véhicules (admin)"""
-    if 'user_id' not in session or session.get('role') != 'admin':
-        flash('Accès non autorisé')
-        return redirect(url_for('connexion'))
+    # """Page de gestion des véhicules (admin)"""
+    # if 'user_id' not in session or session.get('role') != 'admin':
+    #     flash('Accès non autorisé')
+    #     return redirect(url_for('connexion'))
     return render_template('gestion_vehicules.html')
 
-@app.route('/gestion_utilisateurs')
-def gestion_utilisateurs():
-    """Page de gestion des utilisateurs (admin)"""
-    if 'user_id' not in session or session.get('role') != 'admin':
-        flash('Accès non autorisé')
-        return redirect(url_for('connexion'))
-    return render_template('gestion_utilisateurs.html')
+# @app.route('/gestion_utilisateurs')
+# def gestion_utilisateurs():
+#     """Page de gestion des utilisateurs (admin)"""
+#     if 'user_id' not in session or session.get('role') != 'admin':
+#         flash('Accès non autorisé')
+#         return redirect(url_for('connexion'))
+#     return render_template('gestion_utilisateurs.html')
 
 @app.route('/support')
 def support():
