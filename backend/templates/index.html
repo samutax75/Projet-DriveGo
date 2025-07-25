@@ -4,22 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriveGo - Accueil</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='../static/CSS/index.css') }}">
+    <link rel="stylesheet" href="../static/CSS/index.css">
 </head>
 <body>
     <!-- Header -->
     <header>
         <div class="nav-container">
-            <a href="{{ url_for('index') }}" class="logo">
+            <a href="#" class="logo">
               DriveGo
             </a>
             <ul class="nav-links">
-                <li><a href="{{ url_for('gestion_vehicules') }}">Départ missions</a></li>
-                <li><a href="{{ url_for('reservation') }}">Demande de réservation</a></li>
-                <li><a href="{{ url_for('vehicles_page') }}">Fiches véhicules</a></li>
-                <li><a href="{{ url_for('support') }}">Support</a></li>
-                <li><a href="{{ url_for('connexion') }}" id="loginLink">Connexion</a></li>
-                <li><a href="{{ url_for('logout') }}" id="logoutBtn" class="logout-btn" style="display: none;">Se déconnecter</a></li>
+                <li><a href="gestion_vehicules.html">Départ missions</a></li>
+                <li><a href="reservation.html">Demande de réservation</a></li>
+                <li><a href="fiches_vehicules.html">Fiches véhicules</a></li>
+                <li><a href="support.html">Support</a></li>
+                <li><a href="connexion.html" id="loginLink">Connexion</a></li>
+                <li><a href="#" id="logoutBtn" class="logout-btn" style="display: none;">Se déconnecter</a></li>
             </ul>
             <div class="burger-menu" id="burgerMenu">
                 <div class="burger-line"></div>
@@ -32,12 +32,12 @@
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu">
         <ul>
-            <li><a href="{{ url_for('gestion_vehicules') }}">🚀 Départ missions</a></li>
-            <li><a href="{{ url_for('reservation') }}">📅 Demande de réservation</a></li>
-            <li><a href="{{ url_for('vehicles_page') }}">📋 Fiches véhicules</a></li>
-            <li><a href="{{ url_for('support') }}">🛠️ Support</a></li>
-            <li><a href="{{ url_for('connexion') }}" id="loginLinkMobile">🔑 Connexion</a></li>
-            <li><a href="{{ url_for('logout') }}" id="logoutBtnMobile" class="logout-btn" style="display: none;">🚪 Se déconnecter</a></li>
+            <li><a href="gestion_vehicules.html">🚀 Départ missions</a></li>
+            <li><a href="reservation.html">📅 Demande de réservation</a></li>
+            <li><a href="fiches_vehicules.html">📋 Fiches véhicules</a></li>
+            <li><a href="support.html">🛠️ Support</a></li>
+            <li><a href="connexion.html" id="loginLinkMobile">🔑 Connexion</a></li>
+            <li><a href="#" id="logoutBtnMobile" class="logout-btn" style="display: none;">🚪 Se déconnecter</a></li>
         </ul>
     </div>
 
@@ -50,7 +50,7 @@
             <h1 class="floating">Bienvenue chez DriveGo</h1>
             <p id="welcomeMessage">La solution moderne dédiée aux éducateurs de la Fondation Perce-Neige. Simplifiez l'accès aux véhicules pour vos missions d'accompagnement.</p>
             <div class="cta-buttons">
-                <a href="{{ url_for('reservation') }}" class="btn btn-primary">
+                <a href="reservation.html" class="btn btn-primary">
                     ⚡ Réserver maintenant
                 </a>
                 <a href="https://www.perce-neige.org/" class="btn btn-secondary">
@@ -87,7 +87,6 @@
             <p>&copy; 2024 DriveGo - Fondation Perce-Neige. | Mobilité solidaire au service de l'accompagnement</p>
         </div>
     </footer>
-    
-    <script src="{{ url_for('static', filename='../static/js/index.js') }}"></script>
+<script src="../static/js/index.js"></script>
 </body>
 </html>
