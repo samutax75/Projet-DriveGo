@@ -3,27 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion du Parc Automobile - Missions</title>
-    <link rel="stylesheet" href="../static/CSS/gestion-vehicules.css">  
-    <link rel="stylesheet" href="re">
-
+    <title>DriveGo - Gestion du Parc Automobile</title>
+    <link rel="stylesheet" href="../static/CSS/gestion-vehicules.css">
 </head>
 <body>
-    <!-- Bouton de retour (croix)  -->
+    <!-- Bouton de retour -->
     <div class="close-button" onclick="goToHomePage()">×</div>
+    
     <div class="container">
         <header class="header">
-            <h1> Gestion du Parc Automobile - Missions</h1>
-            <p>Sélectionnez un véhicule pour gérer ses missions</p>
+            <h1>🚗 Tableau de Bord - Missions</h1>
+            <p>Sélectionnez un véhicule pour consulter et gérer ses missions</p>
         </header>
 
         <div class="main-grid">
             <!-- Liste des véhicules -->
             <div class="card">
                 <h2 class="card-title">
-                    📋 Véhicules Disponibles
+                    🚙 Flotte Véhicules
                 </h2>
-                
                 <div class="vehicle-list" id="vehicleList">
                     <!-- Les véhicules seront générés par JavaScript -->
                 </div>
@@ -32,36 +30,35 @@
             <!-- Contrôle des missions -->
             <div class="card details-section">
                 <h2 class="card-title">
-                    🎯 Contrôle des Missions
+                    🎯 Centre de Contrôle
                 </h2>
                 
                 <div class="no-selection" id="noSelection">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
                     </svg>
-                    <p>Sélectionnez un véhicule dans la liste<br>pour gérer ses missions</p>
+                    <p>Sélectionnez un véhicule<br>pour commencer une mission</p>
                 </div>
 
                 <div class="vehicle-details" id="vehicleDetails">
-                    <!-- Les détails et contrôles seront affichés ici -->
+                    <!-- Les détails seront affichés ici -->
                 </div>
             </div>
 
             <!-- Historique des missions -->
             <div class="card">
                 <h2 class="card-title">
-                    📊 Historique des Missions
+                    📊 Journal des Missions
                 </h2>
-                
                 <div class="missions-list" id="missionsList">
                     <p style="text-align: center; color: #6b7280; padding: 40px;">
-                        Aucune mission enregistrée
+                        🔍 Aucune mission enregistrée
                     </p>
                 </div>
             </div>
         </div>
     </div>
-    
+
 <script src="../static/js/gestion-vehicules.js"></script>
 </body>
 </html>
