@@ -624,3 +624,26 @@
 
             console.log('🚗 DriveGo - Système de gestion véhicules initialisé');
         });
+        
+
+
+        // Fonction de synchronisation avec les réservations
+function syncVehicleData() {
+    if (window.DriveGoData) {
+        vehicles = window.DriveGoData.getVehicles();
+        // Actualiser l'affichage des véhicules
+        displayVehicles(); // Remplacez par le nom de votre fonction d'affichage
+        console.log('🔄 Données véhicules synchronisées depuis les réservations');
+    }
+}
+
+// Au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    // Votre code existant...
+    
+    // Ajouter la synchronisation
+    syncVehicleData();
+    
+    // Écouter les changements de réservations
+    window.addEventListener('drivegoDataUpdate', syncVehicleData);
+});
