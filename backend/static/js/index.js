@@ -1,4 +1,4 @@
- // ========================================
+// ========================================
         // MENU BURGER FUNCTIONALITY
         // ========================================
         const burgerMenu = document.getElementById('burgerMenu');
@@ -138,13 +138,6 @@
             }
         }
 
-        // Fonction pour simuler une connexion (pour test)
-        function simulateLogin(username = 'Éducateur Test') {
-            localStorage.setItem('userLoggedIn', 'true');
-            localStorage.setItem('username', username);
-            localStorage.setItem('userToken', 'sample-token-123');
-            checkLoginStatus();
-        }
 
         // ========================================
         // ANIMATIONS ET EFFETS VISUELS

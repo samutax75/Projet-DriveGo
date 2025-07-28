@@ -19,7 +19,7 @@
 
         // Gestion des modals
         function showModal(modalId) {
-            document.getElementById(modalId).style.display = 'block';
+            document.getElementById(modalId).style.display = 'flex';
             document.body.style.overflow = 'hidden';
         }
 

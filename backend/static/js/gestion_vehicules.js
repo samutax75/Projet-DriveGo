@@ -647,3 +647,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Écouter les changements de réservations
     window.addEventListener('drivegoDataUpdate', syncVehicleData);
 });
+
+// Le système filtre automatiquement les véhicules disponibles
+const availableVehicles = vehicles.filter(v => v.status === 'available');

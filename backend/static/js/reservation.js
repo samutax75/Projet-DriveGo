@@ -593,6 +593,9 @@
             exportBtn.style.marginLeft = '20px';
             header.appendChild(exportBtn);
         }
+
+        // Le système filtre automatiquement les véhicules disponibles
+const availableVehicles = vehicles.filter(v => v.status === 'available');
         
         // Console log pour debug
         console.log('🚗 DriveGo - Système de réservation avec synchronisation initialisé');

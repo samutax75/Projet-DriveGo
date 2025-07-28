@@ -14,7 +14,7 @@ const successMessage = document.getElementById('successMessage');
 passwordToggle.addEventListener('click', () => {
     const isPassword = passwordInput.type === 'password';
     passwordInput.type = isPassword ? 'text' : 'password';
-    passwordToggle.textContent = isPassword ? '🙈' : '👁️';
+    passwordToggle.textContent = isPassword ? '🙈' : '👀';
 });
 
 // Validation en temps réel

@@ -770,7 +770,7 @@
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.7);
   overflow: auto; /* Important pour permettre le scroll si contenu trop long */
-  display: flex;
+  display: none;
   justify-content: center;
   align-items: center;
   padding: 20px;
