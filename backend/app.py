@@ -11,6 +11,8 @@ import secrets
 import urllib.parse
 from functools import wraps
 import jinja2
+from flask import Blueprint
+
 
 app = Flask(__name__)
 
@@ -216,6 +218,62 @@ def logout():
     flash('Vous avez été déconnecté', 'info')
     return redirect(url_for('index'))
 
+
+
+
+@app.route('/profil', methods=['GET', 'POST'])
+def profil():
+    if 'user_id' not in session:
+        return redirect(url_for('connexion'))
+
+    user_id = session['user_id']
+
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        nom = request.form['nom'].strip()
+        prenom = request.form['prenom'].strip()
+        email = request.form['email'].strip().lower()
+        password = request.form['password']
+
+        # Mise à jour sans le mot de passe
+        if password == '':
+            cursor.execute('''
+                UPDATE users SET nom = ?, prenom = ?, email = ? WHERE id = ?
+            ''', (nom, prenom, email, user_id))
+        else:
+            password_hash = generate_password_hash(password)
+            cursor.execute('''
+                UPDATE users SET nom = ?, prenom = ?, email = ?, password_hash = ? WHERE id = ?
+            ''', (nom, prenom, email, password_hash, user_id))
+
+        conn.commit()
+
+        # Mise à jour de la session
+        session['nom'] = prenom
+        session['prenom'] = nom
+        session['email'] = email
+
+        flash("Profil mis à jour avec succès", "success")
+        return redirect(url_for('profil'))
+
+    # Requête utilisateur pour pré-remplir le formulaire
+    cursor.execute("SELECT nom, prenom, email FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+
+    if not user:
+        flash("Utilisateur introuvable", "error")
+        return redirect(url_for('index'))
+
+    utilisateur = {
+        'nom': user[0],
+        'prenom': user[1],
+        'email': user[2]
+    }
+
+    return render_template('profil.html', user=utilisateur)
 # ============================================================================
 # API AUTHENTIFICATION
 # ============================================================================
@@ -678,6 +736,13 @@ def api_delete_user(user_id):
             'message': 'Erreur lors de la suppression de l\'utilisateur'
         }), 500
 
+@app.route('/login/<int:user_id>')
+def login(user_id):
+    # Simule une connexion d'utilisateur : on stocke l'id en session
+    if user_id in init_db:
+        session['user_id'] = user_id
+        return redirect(url_for('profil'))
+    return "Utilisateur non trouvé", 404
 # ============================================================================
 # API GESTION DES VÉHICULES
 # ============================================================================

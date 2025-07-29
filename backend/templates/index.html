@@ -6,25 +6,26 @@
     <title>DriveGo - Accueil</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/index.css') }}">
 </head>
-<body>
-    <!-- Header -->
+<body>  <!-- Header -->
     <header>
         <div class="nav-container">
             <a href="{{ url_for('index') }}" class="logo">🏎️ DriveGo</a>
             <ul class="nav-links">
-                <!-- Support toujours visible -->
-                <li><a href="{{ url_for('support') }}">Support</a></li>
-                
+
+
                 {% if user_logged_in %}
                     <!-- Liens pour utilisateurs connectés -->
                     <li><a href="{{ url_for('gestion_vehicules') }}">Départ missions</a></li>
                     <li><a href="{{ url_for('reservation') }}">Demande de réservation</a></li>
                     <li><a href="{{ url_for('vehicles_page') }}">Fiches véhicules</a></li>
+
+                    <li><a href="{{ url_for('profil') }}">👤 Profil</a></li>
+
                     <li class="user-name">👋 Bonjour {{ user_name }}</li>
                     <li><a href="{{ url_for('logout') }}" class="logout-btn">Se déconnecter</a></li>
                 {% else %}
                     <!-- Lien pour utilisateurs non connectés -->
-                    <li><a href="{{ url_for('connexion') }}">Se connecter</a></li>
+                    <!-- <li><a href="{{ url_for('connexion') }}">Se connecter</a></li> -->
                 {% endif %}
             </ul>
 
@@ -41,9 +42,13 @@
         <ul>
             {% if user_logged_in %}
                 <li class="user-name">👋 Bonjour {{ user_name }}</li>
-                <li><a href="{{ url_for('gestion_vehicules') }}">🚀 Départ missions</a></li>
+                <li><a href="{{ url_for('gestion_vehicules') }}">🚀 missions</a></li>
                 <li><a href="{{ url_for('reservation') }}">📅 Demande de réservation</a></li>
                 <li><a href="{{ url_for('vehicles_page') }}">📋 Fiches véhicules</a></li>
+
+                <li><a href="{{ url_for('profil') }}">👤Profil</a></li>
+
+                
                 <li><a href="{{ url_for('support') }}">🛠️ Support</a></li>
                 <li><a href="{{ url_for('logout') }}" class="logout-btn">🚪 Se déconnecter</a></li>
             {% else %}
@@ -59,20 +64,19 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-container fade-in-up">
+            {% if user_logged_in and user_name %}
+                <!-- <p class="user-greeting">👋 Bonjour {{ user_name }} !</p> -->
+            {% endif %}
             <h1 class="floating">Bienvenue chez DriveGo</h1>
 
-            {% if user_logged_in and user_name %}
-                <p class="user-greeting">👋 Bonjour {{ user_name }} !</p>
-            {% endif %}
-
-            <p id="welcomeMessage">
+            <p id="">
                 La solution moderne dédiée aux éducateurs de la Fondation Perce-Neige. Simplifiez l'accès aux véhicules pour vos missions d'accompagnement.
             </p>
             <div class="cta-buttons">
                 {% if user_logged_in %}
                     <a href="{{ url_for('reservation') }}" class="btn btn-primary">⚡ Réserver maintenant</a>
                 {% else %}
-                    <a href="{{ url_for('connexion') }}" class="btn btn-primary">⚡ Se connecter pour réserver</a>
+                    <a href="{{ url_for('connexion') }}" class="btn btn-primary">⚡ Se connecter</a>
                 {% endif %}
                 <a href="https://www.perce-neige.org/" class="btn btn-secondary">💙 En savoir plus sur Perce-Neige</a>
             </div>
