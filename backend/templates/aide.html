@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact - DriveGo</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/aide.css') }}">
+    
+</head>
+<body>
+    <div class="bg-particles" id="particles"></div>
+
+    <nav>
+        <div class="nav-content">
+            <a href="/" class="logo">
+                <i class="fas fa-car"></i> DriveGo
+            </a>
+            <ul class="nav-links"
+                <li><a href="/aide" class="active">Aide/Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <div class="container">
+            <div class="hero">
+                <h1><i class="fas fa-paper-plane"></i> Contactez-nous</h1>
+                <p>Notre équipe est à votre disposition pour répondre à toutes vos questions. Envoyez-nous votre message et nous vous répondrons rapidement !</p>
+            </div>
+
+            <div class="contact-section">
+                <h2><i class="fas fa-envelope-open"></i> Formulaire de Contact</h2>
+                
+                <div id="statusMessage" class="status-message"></div>
+
+                <form id="contactForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="nom"><i class="fas fa-user"></i> Nom complet *</label>
+                            <input type="text" id="nom" name="nom" required placeholder="Votre nom et prénom">
+                        </div>
+                        <div class="form-group">
+                            <label for="email"><i class="fas fa-envelope"></i> Email *</label>
+                            <input type="email" id="email" name="email" required placeholder="votre@email.com">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="telephone"><i class="fas fa-phone"></i> Téléphone</label>
+                            <input type="tel" id="telephone" name="telephone" placeholder="+33 6 12 34 56 78">
+                        </div>
+                        <div class="form-group">
+                            <label for="sujet"><i class="fas fa-tag"></i> Sujet *</label>
+                            <select id="sujet" name="sujet" required>
+                                <option value="">Sélectionnez un sujet</option>
+                                <option value="reservation">🚗 Question sur une réservation</option>
+                                <option value="vehicule">🔧 Question sur un véhicule</option>
+                                <option value="technique">⚙️ Problème technique</option>
+                                <option value="autre">💬 Autre</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message"><i class="fas fa-comment-dots"></i> Message *</label>
+                        <textarea id="message" name="message" placeholder="Décrivez votre demande en détail... Plus vous êtes précis, mieux nous pourrons vous aider !" required></textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        <span class="btn-text">Envoyer le message</span>
+                    </button>
+                </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 DriveGo. Tous droits réservés. | 
+            <a href="/mentions-legales">Mentions légales</a> | 
+            <a href="/confidentialite">Confidentialité</a></p>
+        </div>
+    </footer>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/aide.css') }}">
+    
+</body>
+</html>

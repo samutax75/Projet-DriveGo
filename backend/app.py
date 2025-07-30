@@ -11,7 +11,6 @@ import secrets
 import urllib.parse
 from functools import wraps
 import jinja2
-from flask import Blueprint
 
 
 app = Flask(__name__)
@@ -168,6 +167,12 @@ def index():
 
     return render_template('index.html', user_logged_in=user_logged_in, user_name=user_name)
 
+
+@app.route('/aide')
+def aide():
+    return render_template('aide.html')
+
+
 @app.route('/fiches_vehicules')
 def vehicles_page():
     """Page d'affichage des véhicules"""
@@ -217,8 +222,6 @@ def logout():
     session.clear()
     flash('Vous avez été déconnecté', 'info')
     return redirect(url_for('index'))
-
-
 
 
 @app.route('/profil', methods=['GET', 'POST'])
