@@ -54,7 +54,8 @@
                         <input type="checkbox" id="remember" name="remember">
                         <label for="remember">Se souvenir de moi</label>
                     </div>
-                    <a href="#" class="forgot-password" id="forgotPassword">Mot de passe oublié ?</a>
+                    <a href="{{ url_for('mot_de_passe_oublie') }}" class="forgot-password">Mot de passe oublié ?</a>
+
                 </div>
 
                 <button type="submit" class="btn btn-primary" id="submitBtn">
@@ -75,7 +76,8 @@
             </div>
 
             <div class="signup-link">
-                Pas encore de compte ? <a href="inscription.html">Créer un compte</a>
+                Pas encore de compte ? <a href="{{ url_for('inscription') }}">Créer un compte</a>
+
             </div>
         </div>
     </main>

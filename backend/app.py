@@ -168,6 +168,12 @@ def index():
     return render_template('index.html', user_logged_in=user_logged_in, user_name=user_name)
 
 
+
+@app.route('/mot-de-passe-oublie')
+def mot_de_passe_oublie():
+    return render_template('mot_de_passe_oublie.html')
+
+
 @app.route('/aide')
 def aide():
     return render_template('aide.html')
