@@ -1,4 +1,4 @@
-# app.py - Application Flask DriveGO Organisée et Corrigée
+# app.py - Application Flask DriveGO 
 
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -169,73 +169,19 @@ def index():
 
 
 
-
-@app.route('/mot-de-passe-oublie', methods=['GET', 'POST'])
+@app.route('/mot_de_passe_oublie', methods=['GET', 'POST'])
 def mot_de_passe_oublie():
     if request.method == 'POST':
-        email = request.form.get('email')
-        conn = sqlite3.connect('drivego.db')
-        cursor = conn.cursor()
-        cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
-        user = cursor.fetchone()
-
-        if user:
-            token = secrets.token_urlsafe(32)
-            expiration = datetime.now() + timedelta(hours=1)
-            cursor.execute("UPDATE users SET reset_token = ?, reset_token_expiration = ? WHERE email = ?", (token, expiration, email))
-            conn.commit()
-            conn.close()
-
-            reset_link = url_for('reset_password_with_token', token=token, _external=True, _scheme='https')
-
-            print("Lien de réinitialisation :", reset_link)  # À remplacer par un envoi d’email
-            flash("Un lien de réinitialisation a été envoyé à votre adresse e-mail.", "success")
-            return redirect(url_for('connexion'))
-        else:
-            flash("Adresse e-mail non trouvée.", "error")
-
-    return render_template("mot_de_passe_oublie.html")
+        email = request.form['email']
+        # Envoie du lien de réinitialisation
+        return redirect(url_for('reset_password'))  # ou autre
+    return render_template('mot_de_passe_oublie.html')
 
 
-
-# @app.route('/reset-password/<token>', methods=['GET', 'POST'])
-# def reset_password_with_token(token):
-#     conn = sqlite3.connect('drivego.db')
-#     cursor = conn.cursor()
-#     cursor.execute("SELECT id, reset_token_expiration FROM users WHERE reset_token = ?", (token,))
-#     user = cursor.fetchone()
-
-#     if not user:
-#         conn.close()
-#         flash("Lien invalide ou expiré.", "error")
-#         return redirect(url_for("mot_de_passe_oublie"))
-
-#     user_id, expiration = user
-#     expiration = datetime.fromisoformat(expiration)
-
-#     if datetime.now() > expiration:
-#         conn.close()
-#         flash("Le lien a expiré.", "error")
-#         return redirect(url_for("mot_de_passe_oublie"))
-
-#     if request.method == 'POST':
-#         new_password = request.form.get('password')
-#         hashed_password = generate_password_hash(new_password)
-#         cursor.execute("UPDATE users SET password = ?, reset_token = NULL, reset_token_expiration = NULL WHERE id = ?", (hashed_password, user_id))
-#         conn.commit()
-#         conn.close()
-#         flash("Mot de passe mis à jour avec succès.", "success")
-#         return redirect(url_for('connexion'))
-
-#     conn.close()
-#     return render_template("reset_password.html", token=token)
 
 @app.route('/reset_password')
 def reset_password():
     return render_template('reset_password.html')
- 
- 
- 
  
 
 @app.route('/aide')

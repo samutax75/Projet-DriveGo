@@ -29,7 +29,9 @@
             Pas de souci ! Entrez votre adresse email et nous vous enverrons un lien sécurisé pour réinitialiser votre mot de passe.
         </p>
 
-        <form method="POST" action="/mot-de-passe-oublie">
+        <form method="POST" action="{{ url_for('mot_de_passe_oublie') }}">
+
+
             <div class="form-group">
                 <div class="input-container">
                     <svg class="input-icon" viewBox="0 0 24 24">
