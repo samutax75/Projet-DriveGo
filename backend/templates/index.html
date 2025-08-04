@@ -17,10 +17,12 @@
             <ul class="nav-links">
                 {% if user_logged_in %}
                     <!-- Liens pour utilisateurs connectés -->
-                    <li><a href="{{ url_for('gestion_vehicules') }}">Départ missions</a></li>
-                    <li><a href="{{ url_for('reservation') }}">Demande de réservation</a></li>
-                    <li><a href="{{ url_for('vehicles_page') }}">Fiches véhicules</a></li>
+                    <li><a href="{{ url_for('gestion_vehicules') }}">🚀 Départ missions</a></li>
+                    <li><a href="{{ url_for('reservation') }}">📅 Demande de réservation</a></li>
+                    <li><a href="{{ url_for('vehicles_page') }}">ℹ️ Fiches véhicules</a></li>
                     <li><a href="{{ url_for('profil') }}">👤 Profil</a></li>
+                    <li><a href="{{ url_for('support') }}">🛠️ Support</a></li>
+
                     <li class="user-name">👋 Bonjour {{ user_name }}</li>
                     <li><a href="{{ url_for('logout') }}" class="logout-btn">Se déconnecter</a></li>
                 {% else %}
@@ -29,11 +31,11 @@
                 {% endif %}
             </ul>
 
-            <!-- <div class="burger-menu" id="burgerMenu">
+            <div class="burger-menu" id="burgerMenu">
                 <div class="burger-line"></div>
                 <div class="burger-line"></div>
                 <div class="burger-line"></div>
-            </div> -->
+            </div>
         </div>
     </header>
 
@@ -75,7 +77,6 @@
                 {% else %}
                     <a href="{{ url_for('connexion') }}" class="btn btn-primary">⚡ Se connecter</a>
                     <a href="{{ url_for('inscription') }}" class="btn btn-primary">📝 S'inscrire</a>
-
                     <a href="{{ url_for('aide') }}" class="btn btn-primary"> ℹ️ Aide</a>
 
                 {% endif %}
