@@ -5,12 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriveGo - Accueil</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/index.css') }}">
+    
 </head>
 <body>  
     <!-- Header -->
     <header>
         <div class="nav-container">
-            <a href="{{ url_for('index') }}" class="logo">🏎️ DriveGo</a>
+           <a href="{{ url_for('index') }}" class="logo">
+    <img src="../static/images/logo perce-neige.PNG"
+         alt="Logo Fondation Perce-Neige" class="logo-image">DriveGo</a>
             <ul class="nav-links">
                 {% if user_logged_in %}
                     <!-- Liens pour utilisateurs connectés -->
@@ -26,11 +29,11 @@
                 {% endif %}
             </ul>
 
-            <div class="burger-menu" id="burgerMenu">
+            <!-- <div class="burger-menu" id="burgerMenu">
                 <div class="burger-line"></div>
                 <div class="burger-line"></div>
                 <div class="burger-line"></div>
-            </div>
+            </div> -->
         </div>
     </header>
 
@@ -71,6 +74,8 @@
                     <a href="{{ url_for('reservation') }}" class="btn btn-primary">⚡ Réserver maintenant</a>
                 {% else %}
                     <a href="{{ url_for('connexion') }}" class="btn btn-primary">⚡ Se connecter</a>
+                    <a href="{{ url_for('inscription') }}" class="btn btn-primary">📝 S'inscrire</a>
+
                     <a href="{{ url_for('aide') }}" class="btn btn-primary"> ℹ️ Aide</a>
 
                 {% endif %}
