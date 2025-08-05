@@ -7,7 +7,7 @@
 }
 
 :root {
-    /* Palette noir et blanc raffinée */
+    /* Palette noir et blanc raffinée avec touches de couleur */
     --primary-color: #ffffff;           /* Blanc pur */
     --secondary-color: #f8f8f8;         /* Blanc cassé */
     --accent-color: #e8e8e8;           /* Gris très clair */
@@ -20,24 +20,29 @@
     --border-light: #1a1a1a;           /* Bordure sombre */
     --border-subtle: #0f0f0f;          /* Bordure très subtile */
     
-    /* Touches de couleur subtiles */
+    /* Touches de couleur plus présentes mais raffinées */
     --color-accent-blue: #4a90e2;      /* Bleu subtil */
     --color-accent-purple: #8b5cf6;    /* Violet subtil */
     --color-accent-green: #10b981;     /* Vert subtil */
     --color-accent-rose: #f43f5e;      /* Rose subtil */
+    --color-accent-amber: #f59e0b;     /* Ambre subtil */
+    --color-accent-cyan: #06b6d4;      /* Cyan subtil */
     
-    /* Gradients raffinés */
+    /* Gradients raffinés avec couleur */
     --gradient-primary: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
     --gradient-secondary: linear-gradient(145deg, #0a0a0a 0%, #1a1a1a 100%);
     --gradient-card: linear-gradient(145deg, #0a0a0a 0%, #151515 100%);
     --gradient-subtle: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
     --gradient-accent: linear-gradient(135deg, #4a90e2 0%, #8b5cf6 100%);
+    --gradient-accent-warm: linear-gradient(135deg, #f59e0b 0%, #f43f5e 100%);
+    --gradient-accent-cool: linear-gradient(135deg, #06b6d4 0%, #10b981 100%);
     
-    /* Ombres élégantes */
+    /* Ombres élégantes avec couleur */
     --shadow-soft: 0 4px 20px rgba(255, 255, 255, 0.05);
     --shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.6);
     --shadow-strong: 0 12px 40px rgba(0, 0, 0, 0.8);
     --shadow-accent: 0 4px 15px rgba(74, 144, 226, 0.2);
+    --shadow-colorful: 0 4px 25px rgba(74, 144, 226, 0.15);
 }
 
 body {
@@ -55,7 +60,7 @@ body {
     position: relative;
 }
 
-/* Filtre élégant pour lisibilité */
+/* Filtre avec subtiles touches de couleur */
 body::before {
     content: "";
     position: fixed;
@@ -65,12 +70,12 @@ body::before {
     height: 100%;
     background: linear-gradient(135deg, 
         rgba(0, 0, 0, 0.85) 0%, 
-        rgba(0, 0, 0, 0.75) 50%, 
+        rgba(10, 10, 20, 0.75) 35%,
         rgba(0, 0, 0, 0.8) 100%);
     z-index: -1;
 }
 
-/* ======== HEADER MINIMALISTE ======== */
+/* ======== HEADER MINIMALISTE AVEC COULEUR ======== */
 header {
     background: rgba(5, 5, 5, 0.95);
     backdrop-filter: blur(20px);
@@ -112,9 +117,10 @@ header {
     bottom: -2px;
     left: 0;
     width: 0;
-    height: 1px;
+    height: 2px;
     background: var(--gradient-accent);
     transition: width 0.3s ease;
+    border-radius: 1px;
 }
 
 .logo:hover::after {
@@ -123,6 +129,7 @@ header {
 
 .logo:hover {
     transform: translateY(-1px);
+    color: var(--color-accent-blue);
 }
 
 .logo-image {
@@ -132,16 +139,16 @@ header {
     object-fit: cover;
     transition: all 0.3s ease;
     border: 1px solid var(--border-light);
-    filter: grayscale(100%);
+    filter: grayscale(80%);
 }
 
 .logo:hover .logo-image {
     filter: grayscale(0%);
     border-color: var(--color-accent-blue);
-    box-shadow: 0 0 15px rgba(74, 144, 226, 0.3);
+    box-shadow: 0 0 20px rgba(74, 144, 226, 0.4);
 }
 
-/* ======== NAVIGATION ÉPURÉE ======== */
+/* ======== NAVIGATION AVEC COULEURS ======== */
 .nav-links {
     display: flex;
     list-style: none;
@@ -161,26 +168,34 @@ header {
 }
 
 .nav-links a:hover {
-    color: var(--text-primary);
+    color: var(--color-accent-blue);
 }
 
 .nav-links a::after {
     content: '';
     position: absolute;
     width: 0;
-    height: 1px;
+    height: 2px;
     bottom: 2px;
     left: 50%;
-    background: var(--color-accent-blue);
+    background: var(--gradient-accent);
     transition: all 0.3s ease;
     transform: translateX(-50%);
+    border-radius: 1px;
 }
 
 .nav-links a:hover::after {
     width: 100%;
 }
 
-/* ======== MENU BURGER MINIMALISTE ======== */
+/* Couleurs alternées pour les liens de navigation */
+.nav-links a:nth-child(1):hover { color: var(--color-accent-blue); }
+.nav-links a:nth-child(2):hover { color: var(--color-accent-purple); }
+.nav-links a:nth-child(3):hover { color: var(--color-accent-green); }
+.nav-links a:nth-child(4):hover { color: var(--color-accent-rose); }
+.nav-links a:nth-child(5):hover { color: var(--color-accent-cyan); }
+
+/* ======== MENU BURGER AVEC COULEUR ======== */
 .burger-menu {
     display: none;
     flex-direction: column;
@@ -209,7 +224,8 @@ header {
 
 .burger-menu:hover {
     border-color: var(--color-accent-blue);
-    box-shadow: var(--shadow-accent);
+    box-shadow: var(--shadow-colorful);
+    background: linear-gradient(145deg, #0a0a0a 0%, rgba(74, 144, 226, 0.05) 100%);
 }
 
 .burger-line {
@@ -218,6 +234,10 @@ header {
     background: var(--text-primary);
     margin: 2px 0;
     transition: all 0.3s ease;
+}
+
+.burger-menu:hover .burger-line {
+    background: var(--color-accent-blue);
 }
 
 .burger-menu.active .burger-line:nth-child(1) {
@@ -232,7 +252,7 @@ header {
     transform: rotate(-45deg) translate(4px, -4px);
 }
 
-/* ======== MENU MOBILE ÉPURÉ ======== */
+/* ======== MENU MOBILE AVEC COULEUR ======== */
 .mobile-menu {
     position: fixed;
     top: 80px;
@@ -274,7 +294,7 @@ header {
 
 .mobile-menu a:hover {
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(74, 144, 226, 0.05);
     padding-right: 35px;
 }
 
@@ -284,8 +304,8 @@ header {
     right: 0;
     top: 0;
     height: 100%;
-    width: 2px;
-    background: var(--color-accent-blue);
+    width: 3px;
+    background: var(--gradient-accent);
     transform: scaleY(0);
     transition: transform 0.3s ease;
 }
@@ -313,7 +333,7 @@ header {
     visibility: visible;
 }
 
-/* ======== HERO SECTION ÉLÉGANTE ======== */
+/* ======== HERO SECTION AVEC COULEURS ======== */
 .hero {
     padding: 150px 30px 100px;
     text-align: center;
@@ -329,8 +349,9 @@ header {
     right: 0;
     bottom: 0;
     background: 
-        radial-gradient(circle at 30% 70%, rgba(74, 144, 226, 0.03) 0%, transparent 50%),
-        radial-gradient(circle at 70% 30%, rgba(139, 92, 246, 0.02) 0%, transparent 50%);
+        radial-gradient(circle at 25% 75%, rgba(74, 144, 226, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 75% 25%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.04) 0%, transparent 70%);
     z-index: -1;
 }
 
@@ -358,10 +379,10 @@ header {
     bottom: -10px;
     left: 50%;
     transform: translateX(-50%);
-    width: 60px;
-    height: 2px;
+    width: 80px;
+    height: 3px;
     background: var(--gradient-accent);
-    border-radius: 1px;
+    border-radius: 2px;
 }
 
 .floating {
@@ -384,7 +405,7 @@ header {
     font-weight: 300;
 }
 
-/* ======== BOUTONS RAFFINÉS ======== */
+/* ======== BOUTONS AVEC COULEURS ======== */
 .cta-buttons {
     display: flex;
     gap: 25px;
@@ -415,7 +436,7 @@ header {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     transition: left 0.5s;
 }
 
@@ -424,7 +445,7 @@ header {
 }
 
 .btn-primary {
-    background: var(--text-primary);
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--secondary-color) 100%);
     color: var(--dark-bg);
     border: none;
     font-weight: 600;
@@ -432,8 +453,9 @@ header {
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-soft);
-    background: var(--secondary-color);
+    box-shadow: var(--shadow-colorful);
+    background: linear-gradient(135deg, var(--color-accent-blue) 0%, var(--color-accent-purple) 100%);
+    color: white;
 }
 
 .btn-secondary {
@@ -444,17 +466,17 @@ header {
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: var(--color-accent-blue);
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border: 1px solid var(--color-accent-blue);
     color: var(--color-accent-blue);
     transform: translateY(-2px);
-    box-shadow: var(--shadow-accent);
+    box-shadow: var(--shadow-colorful);
 }
 
-/* ======== SECTION FEATURES MINIMALISTE ======== */
+/* ======== SECTION FEATURES AVEC COULEURS ======== */
 .features {
     padding: 80px 30px;
-    background: rgba(10, 10, 10, 0.3);
+    background: linear-gradient(135deg, rgba(10, 10, 10, 0.4) 0%, rgba(15, 15, 25, 0.3) 100%);
     backdrop-filter: blur(10px);
 }
 
@@ -483,16 +505,22 @@ header {
     top: 0;
     left: 0;
     right: 0;
-    height: 1px;
+    height: 2px;
     background: var(--gradient-accent);
     transform: scaleX(0);
     transition: transform 0.3s ease;
 }
 
+/* Couleurs alternées pour les cartes */
+.feature-card:nth-child(1)::before { background: var(--gradient-accent); }
+.feature-card:nth-child(2)::before { background: var(--gradient-accent-warm); }
+.feature-card:nth-child(3)::before { background: var(--gradient-accent-cool); }
+
 .feature-card:hover {
     transform: translateY(-5px);
     border-color: var(--color-accent-blue);
-    box-shadow: var(--shadow-medium);
+    box-shadow: var(--shadow-colorful);
+    background: linear-gradient(145deg, #0a0a0a 0%, rgba(74, 144, 226, 0.05) 100%);
 }
 
 .feature-card:hover::before {
@@ -509,7 +537,13 @@ header {
 
 .feature-card:hover .feature-icon {
     color: var(--color-accent-blue);
+    filter: drop-shadow(0 0 10px rgba(74, 144, 226, 0.3));
 }
+
+/* Couleurs d'icônes alternées */
+.feature-card:nth-child(1):hover .feature-icon { color: var(--color-accent-blue); }
+.feature-card:nth-child(2):hover .feature-icon { color: var(--color-accent-amber); }
+.feature-card:nth-child(3):hover .feature-icon { color: var(--color-accent-cyan); }
 
 .feature-card h3 {
     font-family: 'Playfair Display', serif;
@@ -517,6 +551,11 @@ header {
     font-weight: 500;
     margin-bottom: 15px;
     color: var(--text-primary);
+    transition: color 0.3s ease;
+}
+
+.feature-card:hover h3 {
+    color: var(--color-accent-blue);
 }
 
 .feature-card p {
@@ -526,13 +565,24 @@ header {
     font-weight: 300;
 }
 
-/* ======== FOOTER MINIMALISTE ======== */
+/* ======== FOOTER AVEC COULEUR ======== */
 footer {
-    background: var(--dark-nav);
-    border-top: 1px solid var(--border-light);
+    background: linear-gradient(135deg, var(--dark-nav) 0%, rgba(10, 10, 20, 0.95) 100%);
+    border-top: 1px solid var(--color-accent-blue);
     text-align: center;
     padding: 40px 30px;
     margin-top: 0;
+    position: relative;
+}
+
+footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--gradient-accent);
 }
 
 .footer-container {
@@ -544,6 +594,11 @@ footer {
     color: var(--text-muted);
     font-size: 0.9rem;
     font-weight: 300;
+    transition: color 0.3s ease;
+}
+
+footer:hover .footer-container p {
+    color: var(--text-secondary);
 }
 
 /* ======== STYLES GÉNÉRAUX POUR LIENS ======== */
@@ -620,7 +675,7 @@ a:hover {
     }
 }
 
-/* ======== ANIMATIONS SUBTILES ======== */
+/* ======== ANIMATIONS AVEC COULEUR ======== */
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -645,13 +700,56 @@ a:hover {
     animation: pulse 2s infinite;
 }
 
-/* ======== ACCENTS DE COULEUR SUBTILS ======== */
+@keyframes colorShift {
+    0% { color: var(--color-accent-blue); }
+    25% { color: var(--color-accent-purple); }
+    50% { color: var(--color-accent-green); }
+    75% { color: var(--color-accent-rose); }
+    100% { color: var(--color-accent-blue); }
+}
+
+.color-shift {
+    animation: colorShift 8s infinite;
+}
+
+/* ======== ACCENTS DE COULEUR ======== */
 .accent-blue { color: var(--color-accent-blue); }
 .accent-purple { color: var(--color-accent-purple); }
 .accent-green { color: var(--color-accent-green); }
 .accent-rose { color: var(--color-accent-rose); }
+.accent-amber { color: var(--color-accent-amber); }
+.accent-cyan { color: var(--color-accent-cyan); }
 
 .border-accent-blue { border-color: var(--color-accent-blue); }
 .border-accent-purple { border-color: var(--color-accent-purple); }
 .border-accent-green { border-color: var(--color-accent-green); }
 .border-accent-rose { border-color: var(--color-accent-rose); }
+.border-accent-amber { border-color: var(--color-accent-amber); }
+.border-accent-cyan { border-color: var(--color-accent-cyan); }
+
+/* ======== ÉLÉMENTS INTERACTIFS COLORÉS ======== */
+.interactive-accent:hover {
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border-color: var(--color-accent-blue);
+    color: var(--color-accent-blue);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-colorful);
+}
+
+/* ======== SCROLLBAR PERSONNALISÉE ======== */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--dark-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--color-accent-blue) 0%, var(--color-accent-purple) 100%);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, var(--color-accent-purple) 0%, var(--color-accent-blue) 100%);
+}
