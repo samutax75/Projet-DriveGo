@@ -46,13 +46,21 @@
 }
 
 body {
-    background: var(--dark-bg);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
     color: var(--text-primary);
+    background: var(--dark-bg);
     min-height: 100vh;
     overflow-x: hidden;
+    background-image: url("/static/images/pexels-gya-den-768256-2303781.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     position: relative;
 }
 
+/* Filtre avec subtiles touches de couleur */
 body::before {
     content: "";
     position: fixed;
@@ -60,16 +68,12 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background: 
-        linear-gradient(135deg, rgba(0,0,0,0.85) 0%, rgba(10,10,20,0.75) 35%, rgba(0,0,0,0.8) 100%),
-        url("/static/images/pexels-gya-den-768256-2303781.jpg");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: scroll; /* ou fixed si tu veux tester */
+    background: linear-gradient(135deg, 
+        rgba(0, 0, 0, 0.85) 0%, 
+        rgba(10, 10, 20, 0.75) 35%,
+        rgba(0, 0, 0, 0.8) 100%);
     z-index: -1;
 }
-
 
 /* ======== HEADER MINIMALISTE AVEC COULEUR ======== */
 header {
@@ -610,13 +614,6 @@ a:hover {
 }
 
 /* ======== RESPONSIVE DESIGN ======== */
-
-@media (max-width: 768px) {
-    body {
-        background-attachment: scroll;
-    }
-}
-
 @media (max-width: 768px) {
     .nav-links {
         display: none;
