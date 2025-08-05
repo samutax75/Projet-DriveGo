@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriveGo - Connexion</title>
-    <link rel="stylesheet" href="../static/CSS/connexion.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/connexion.css') }}">
+    
 
 </head>
 <body>    
@@ -78,6 +79,7 @@
             <p>&copy; 2024 DriveGo. Tous droits réservés. | Votre partenaire mobilité de confiance</p>
         </div>
     </footer>
-    <script src="../static/js/connexion.js"></script>
+    <script src="{{ url_for('static', filename='js/connexion.js') }}"></script>
+    
 </body>
 </html>

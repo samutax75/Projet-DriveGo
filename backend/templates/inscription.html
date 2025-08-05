@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriveGo - Création de compte</title>
-    <link rel="stylesheet" href="../static/CSS/inscription.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/inscription.css') }}">
+    
 </head>
 <body>
     <!-- Header -->
@@ -120,6 +121,7 @@
         </div>
     </footer>
 
-    <script src="../static/js/inscription.js"></script>
+    <script src="{{ url_for('static', filename='js/inscription.js') }}"></script>
+    
 </body>
 </html>
