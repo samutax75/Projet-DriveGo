@@ -614,6 +614,13 @@ a:hover {
 }
 
 /* ======== RESPONSIVE DESIGN ======== */
+
+@media (max-width: 768px) {
+    body {
+        background-attachment: scroll;
+    }
+}
+
 @media (max-width: 768px) {
     .nav-links {
         display: none;
