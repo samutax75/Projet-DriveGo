@@ -566,6 +566,120 @@
 
 
 
+/* image van fond d'écran */
+
+/* ======== STYLE DE BASE ======== */
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    color: white;
+    min-height: 100vh;
+    background-image: url('../images/pexels-pierre-blache-651604-3073666.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Filtre sombre léger pour rendre le texte lisible */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Ajuste ici si tu veux plus clair ou plus foncé */
+    z-index: -1;
+}
+
+/* ======== RÉINITIALISATION DE CERTAINS ÉLÉMENTS ======== */
+
+main, header, .container, .content {
+    background: transparent !important; /* on enlève les fonds opaques */
+    position: relative;
+    z-index: 1;
+}
+
+/* Si tu utilises .card ou .box, ajoute aussi : */
+.card, .box {
+    background-color: rgba(0, 0, 0, 0.6); /* léger fond noir transparent */
+    border-radius: 10px;
+    padding: 20px;
+    z-index: 1;
+}
+
+/* ======== LIENS ET TEXTE ======== */
+a {
+    color: #ffd700;
+}
+a:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+
+
+
+a,
+a:visited,
+a:active {
+    text-decoration: none;
+    outline: none;
+}
+
+a:hover {
+    text-decoration: underline; /* facultatif, si tu veux une réaction au survol */
+}
+
+
+.btn {
+    text-decoration: none !important;
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: #007bff; /* bleu par défaut */
+    color: white;
+    border-radius: 6px;
+    transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+    text-decoration: none;
+}
+
+
+
+
+/* Supprime le soulignement dans le menu burger */
+.mobile-menu a,
+.mobile-menu a:visited,
+.mobile-menu a:focus,
+.mobile-menu a:active {
+    text-decoration: none;
+    color: white; /* ou autre couleur selon ton thème */
+}
+
+
+/* Supprimer le soulignement des liens dans le menu principal */
+.nav-links a,
+.nav-links a:visited,
+.nav-links a:focus,
+.nav-links a:active {
+    text-decoration: none;
+    color: white; /* ou une autre couleur selon ton thème */
+}
+
+
+
+
+
+
 
 
 
