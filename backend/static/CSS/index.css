@@ -60,6 +60,59 @@ body {
     position: relative;
 }
 
+/* Effet de brouillage initial - ne se joue qu'une fois */
+.page-blur-effect {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(20px);
+    z-index: 10000;
+    pointer-events: none;
+    animation: clearBlur 2.5s ease-out forwards;
+    animation-delay: 0.5s;
+}
+
+@keyframes clearBlur {
+    0% {
+        backdrop-filter: blur(20px);
+        opacity: 1;
+    }
+    60% {
+        backdrop-filter: blur(8px);
+        opacity: 0.8;
+    }
+    85% {
+        backdrop-filter: blur(2px);
+        opacity: 0.4;
+    }
+    100% {
+        backdrop-filter: blur(0px);
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+/* Animation d'apparition du contenu */
+.content-reveal {
+    opacity: 0;
+    animation: fadeInContent 1.5s ease-out forwards;
+    animation-delay: 1.8s;
+}
+
+@keyframes fadeInContent {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Filtre avec subtiles touches de couleur */
 body::before {
     content: "";
@@ -78,7 +131,6 @@ body::before {
 /* ======== HEADER MINIMALISTE AVEC COULEUR ======== */
 header {
     background: rgba(5, 5, 5, 0.95);
-    backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border-light);
     position: fixed;
     width: 100%;
@@ -123,13 +175,42 @@ header {
     border-radius: 1px;
 }
 
-.logo:hover::after {
+.logo:hover::after,
+.logo:active::after,
+.logo:focus::after {
     width: 100%;
 }
 
-.logo:hover {
+.logo:hover,
+.logo:active,
+.logo:focus {
     transform: translateY(-1px);
     color: var(--color-accent-blue);
+}
+
+/* Spécifique mobile - effet au toucher */
+@media (max-width: 768px) {
+    .logo:active::after {
+        width: 100%;
+        animation: mobileTap 0.6s ease-out;
+    }
+    
+    .logo:active {
+        transform: translateY(-1px);
+        color: var(--color-accent-blue);
+    }
+    
+    @keyframes mobileTap {
+        0% {
+            width: 0;
+        }
+        50% {
+            width: 120%;
+        }
+        100% {
+            width: 100%;
+        }
+    }
 }
 
 .logo-image {
@@ -142,7 +223,9 @@ header {
     filter: grayscale(80%);
 }
 
-.logo:hover .logo-image {
+.logo:hover .logo-image,
+.logo:active .logo-image,
+.logo:focus .logo-image {
     filter: grayscale(0%);
     border-color: var(--color-accent-blue);
     box-shadow: 0 0 20px rgba(74, 144, 226, 0.4);
@@ -260,7 +343,6 @@ header {
     width: 320px;
     height: calc(100vh - 80px);
     background: rgba(5, 5, 5, 0.98);
-    backdrop-filter: blur(25px);
     border-left: 1px solid var(--border-light);
     transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     z-index: 999;
@@ -339,6 +421,10 @@ header {
     text-align: center;
     position: relative;
     overflow: hidden;
+    min-height: calc(100vh - 80px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .hero::before {
@@ -360,6 +446,7 @@ header {
     margin: 0 auto;
     position: relative;
     z-index: 1;
+    width: 100%;
 }
 
 .hero h1 {
@@ -459,10 +546,9 @@ header {
 }
 
 .btn-secondary {
-    background: transparent;
+    background: rgba(10, 10, 10, 0.8);
     color: var(--text-primary);
     border: 1px solid var(--border-light);
-    backdrop-filter: blur(10px);
 }
 
 .btn-secondary:hover {
@@ -476,8 +562,7 @@ header {
 /* ======== SECTION FEATURES AVEC COULEURS ======== */
 .features {
     padding: 80px 30px;
-    background: linear-gradient(135deg, rgba(10, 10, 10, 0.4) 0%, rgba(15, 15, 25, 0.3) 100%);
-    backdrop-filter: blur(10px);
+    background: rgba(10, 10, 10, 0.6);
 }
 
 .features-container {
@@ -644,18 +729,34 @@ a:hover {
     }
 
     .hero {
-        padding: 130px 20px 80px;
+        padding: 100px 20px 80px;
+        min-height: calc(100vh - 80px);
+        justify-content: center;
+        align-items: center;
+    }
+
+    .hero-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        text-align: center;
     }
 
     .cta-buttons {
         flex-direction: column;
         align-items: center;
+        gap: 20px;
+        margin-top: 40px;
     }
 
     .btn {
         width: 100%;
         max-width: 280px;
         justify-content: center;
+        padding: 18px 35px;
+        font-size: 1.1rem;
     }
 
     .features-container {
@@ -676,9 +777,9 @@ a:hover {
     /* Ajustement du filtre pour mobile */
     body::before {
         background: linear-gradient(135deg, 
-            rgba(0, 0, 0, 0.9) 0%, 
-            rgba(10, 10, 20, 0.85) 35%,
-            rgba(0, 0, 0, 0.85) 100%);
+            rgba(0, 0, 0, 0.88) 0%, 
+            rgba(10, 10, 20, 0.82) 35%,
+            rgba(0, 0, 0, 0.83) 100%);
     }
 
     .mobile-menu {
@@ -687,14 +788,82 @@ a:hover {
 
     .nav-container {
         padding: 0 15px;
+        height: 70px;
+    }
+
+    .logo {
+        font-size: 1.6rem;
+    }
+
+    .logo-image {
+        width: 35px;
+        height: 35px;
     }
 
     .hero {
-        padding: 110px 15px 60px;
+        padding: 90px 15px 60px;
+        min-height: calc(100vh - 70px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .hero-container {
+        text-align: center;
+        padding: 0 10px;
+    }
+
+    .hero h1 {
+        font-size: clamp(2rem, 6vw, 3.2rem);
+        margin-bottom: 25px;
+        line-height: 1.1;
+    }
+
+    .hero p {
+        font-size: 1.1rem;
+        margin-bottom: 35px;
+        line-height: 1.6;
+        padding: 0 10px;
+    }
+
+    .cta-buttons {
+        gap: 15px;
+        margin-bottom: 40px;
+    }
+
+    .btn {
+        padding: 16px 30px;
+        font-size: 1rem;
+        border-radius: 10px;
+        max-width: 260px;
     }
 
     .feature-card {
         padding: 30px 20px;
+    }
+
+    /* Amélioration du bouton d'aide */
+    .btn-help {
+        position: fixed;
+        top: 90px;
+        right: 15px;
+        z-index: 999;
+        background: rgba(255, 255, 255, 0.95);
+        color: var(--dark-bg);
+        padding: 12px 20px;
+        border-radius: 25px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        border: 1px solid rgba(74, 144, 226, 0.3);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .btn-help:hover {
+        background: var(--color-accent-blue);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
     }
 }
 
@@ -708,21 +877,44 @@ a:hover {
     
     body::before {
         background: linear-gradient(135deg, 
-            rgba(0, 0, 0, 0.92) 0%, 
-            rgba(10, 10, 20, 0.88) 35%,
-            rgba(0, 0, 0, 0.87) 100%);
+            rgba(0, 0, 0, 0.9) 0%, 
+            rgba(10, 10, 20, 0.85) 35%,
+            rgba(0, 0, 0, 0.85) 100%);
     }
 
     .nav-container {
         padding: 0 10px;
+        height: 65px;
+    }
+
+    .logo {
+        font-size: 1.4rem;
     }
 
     .hero {
-        padding: 100px 10px 50px;
+        padding: 80px 10px 50px;
+        min-height: calc(100vh - 65px);
+    }
+
+    .hero h1 {
+        font-size: clamp(1.8rem, 7vw, 2.8rem);
+        margin-bottom: 20px;
+    }
+
+    .hero p {
+        font-size: 1rem;
+        margin-bottom: 30px;
+        padding: 0 5px;
+    }
+
+    .btn {
+        max-width: 240px;
+        padding: 14px 25px;
+        font-size: 0.95rem;
     }
 }
 
-/* ======== ANIMATIONS AVEC COULEUR ======== */
+/* ======== ANIMATIONS AVEC COULEUR + OPTIMISATIONS MOBILE ======== */
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -757,6 +949,75 @@ a:hover {
 
 .color-shift {
     animation: colorShift 8s infinite;
+}
+
+/* Animation pour mobile - effet de fondu au scroll */
+@keyframes slideInFromBottom {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mobile-slide-in {
+    animation: slideInFromBottom 0.6s ease-out;
+}
+
+/* Effet de particules flottantes lors du défloutage (optionnel) */
+@keyframes floatParticles {
+    0% {
+        transform: translateY(100vh) scale(0);
+        opacity: 0;
+    }
+    50% {
+        opacity: 0.6;
+        transform: translateY(50vh) scale(1);
+    }
+    100% {
+        transform: translateY(-100vh) scale(0);
+        opacity: 0;
+    }
+}
+
+.particle {
+    position: fixed;
+    width: 4px;
+    height: 4px;
+    background: rgba(74, 144, 226, 0.4);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+.particle:nth-child(1) { left: 10%; animation: floatParticles 3s ease-out; animation-delay: 1s; }
+.particle:nth-child(2) { left: 20%; animation: floatParticles 3.2s ease-out; animation-delay: 1.2s; }
+.particle:nth-child(3) { left: 30%; animation: floatParticles 2.8s ease-out; animation-delay: 1.1s; }
+.particle:nth-child(4) { left: 70%; animation: floatParticles 3.1s ease-out; animation-delay: 1.3s; }
+.particle:nth-child(5) { left: 80%; animation: floatParticles 2.9s ease-out; animation-delay: 1.4s; }
+.particle:nth-child(6) { left: 90%; animation: floatParticles 3.3s ease-out; animation-delay: 1.1s; }
+
+/* Réduction des animations pour les utilisateurs sensibles */
+@media (prefers-reduced-motion: reduce) {
+    .page-blur-effect,
+    .content-reveal,
+    .particle {
+        animation: none !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        backdrop-filter: none !important;
+    }
+    
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 
 /* ======== ACCENTS DE COULEUR ======== */
