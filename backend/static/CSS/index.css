@@ -52,7 +52,7 @@ body {
     background: var(--dark-bg);
     min-height: 100vh;
     overflow-x: hidden;
-    background-image: url("/static/images/pexels-gya-den-768256-2303781.jpg");
+    background-image: url("../images/fond_ecran.jpg");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
