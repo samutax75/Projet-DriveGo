@@ -54,7 +54,7 @@ body {
     overflow-x: hidden;
     background-image: url("../images/fond_ecran.jpg");
     background-size: cover;
-    background-position: center;
+    background-position: center center;
     background-repeat: no-repeat;
     background-attachment: fixed;
     position: relative;
@@ -615,6 +615,13 @@ a:hover {
 
 /* ======== RESPONSIVE DESIGN ======== */
 @media (max-width: 768px) {
+    /* Optimisation de l'image de fond pour tablette */
+    body {
+        background-size: cover;
+        background-position: center center;
+        background-attachment: scroll; /* Meilleure performance sur mobile */
+    }
+
     .nav-links {
         display: none;
     }
@@ -658,6 +665,22 @@ a:hover {
 }
 
 @media (max-width: 480px) {
+    /* Optimisation spécifique pour mobile */
+    body {
+        background-size: cover;
+        background-position: center center;
+        background-attachment: scroll;
+        min-height: 100vh;
+    }
+
+    /* Ajustement du filtre pour mobile */
+    body::before {
+        background: linear-gradient(135deg, 
+            rgba(0, 0, 0, 0.9) 0%, 
+            rgba(10, 10, 20, 0.85) 35%,
+            rgba(0, 0, 0, 0.85) 100%);
+    }
+
     .mobile-menu {
         width: 100vw;
     }
@@ -672,6 +695,30 @@ a:hover {
 
     .feature-card {
         padding: 30px 20px;
+    }
+}
+
+/* Optimisation supplémentaire pour très petits écrans */
+@media (max-width: 360px) {
+    body {
+        background-size: cover;
+        background-position: center center;
+        background-attachment: scroll;
+    }
+    
+    body::before {
+        background: linear-gradient(135deg, 
+            rgba(0, 0, 0, 0.92) 0%, 
+            rgba(10, 10, 20, 0.88) 35%,
+            rgba(0, 0, 0, 0.87) 100%);
+    }
+
+    .nav-container {
+        padding: 0 10px;
+    }
+
+    .hero {
+        padding: 100px 10px 50px;
     }
 }
 
