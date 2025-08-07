@@ -8,17 +8,20 @@
 </head>
 <body>
   <header>
-    <h1>🏎️ DriveGo</h1>
+    <a href="{{ url_for('index') }}" class="logo">
+    <img src="../static/images/logo perce-neige.PNG"
+         alt="Logo Fondation Perce-Neige" class="logo-image"></a>
+         
     <nav>
-      <a href="index.html">Accueil</a>
-      <a href="reservation.html">Demande de réservation</a>
-      <a href="support.html" class="active">Support</a>
-      <a href="Fiches_vehicules.html">Fiches véhicules</a>
+      <a href="{{ url_for('index') }}">Accueil</a>
+      <a href="{{ url_for('reservation') }}">Demande de réservation</a>
+      <a href="{{ url_for('support') }}" class="active">Support</a>
+      <a href="{{ url_for('vehicles_page') }}">Fiches véhicules</a>
     </nav>
   </header>
 
   <main>
-    <h2 class="page-title">🆘 Support & Assistance</h2>
+    <h2 class="page-title">Support & Assistance</h2>
 
     <!-- Section Numéros Utiles -->
     <div class="support-grid">

@@ -4,26 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Réserver un véhicule - DriveGo</title>
-    <link rel="stylesheet" href="../static/CSS/reservation.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/reservation.css') }}">
+    
 </head>
 
 <body>
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <div class="logo"> DriveGo</div>
+             <a href="{{ url_for('index') }}" class="logo">
+    <img src="../static/images/logo perce-neige.PNG"
+         alt="Logo Fondation Perce-Neige" class="logo-image"> Accueil</a>
             <nav>
                 <ul class="nav-links">
-                    <li><a href="reservation.html">📋 Demande de réservation</a></li>
+                    <li><a href="{{ url_for('reservation') }}">📋 Demande de réservation</a></li>
+                    
+
                     </ul>
             </nav>
             
-            <div class="close-button" onclick="goToHomePage()">×</div>
             </header>
 
         <!-- État des véhicules -->
         <div class="card vehicles-status">
-            <h3>🚗 État des Véhicules</h3>
+            <h3>État des Véhicules</h3>
             <div class="vehicles-grid" id="vehicles-status">
                 <!-- Généré par JavaScript -->
             </div>
@@ -99,6 +103,7 @@
 
         <div id="confirmation"></div>
     </div>
-<script src="../static/js/reservation.js"></script>
+    <script src="{{ url_for('static', filename='js/reservation.js') }}"></script>
+
 </body>
 </html>
