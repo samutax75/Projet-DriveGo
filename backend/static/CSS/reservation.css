@@ -660,3 +660,17 @@ body {
 body.loaded {
     opacity: 1;
 }
+
+
+
+
+
+/* Enlève la ligne dorée au-dessus du header Accueil */
+.header::after {
+    display: none !important;
+}
+
+/* Enlève la ligne dorée au-dessus des cartes comme "État des Véhicules" */
+.card::before {
+    display: none !important;
+}
