@@ -71,7 +71,7 @@
                         {
                             id: 5,
                             name: "KANGOO",
-                            type: "🚗",
+                            type: "🏎️🏁",
                             immatriculation: "DS-429-PF",
                             dateImmatriculation: "22/06/2015",
                             controletech: "29/01/2025",
