@@ -320,6 +320,13 @@
                                     <input type="time" id="departureTime" name="departureTime" 
                                            value="${new Date().toTimeString().slice(0, 5)}" required>
                                 </div>
+
+                                <div class="form-row">
+                                <div class="form-group">
+                                    <label for="departureTime">🕐 Heure de retour</label>
+                                    <input type="time" id="departureTime" name="departureTime" 
+                                           value="${new Date().toTimeString().slice(0, 5)}" required>
+                                </div>
                                 
                                 <div class="form-group">
                                     <label for="passengers">👥 Nombre de passagers</label>
