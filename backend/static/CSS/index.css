@@ -52,7 +52,7 @@ body {
     background: var(--dark-bg);
     min-height: 100vh;
     overflow-x: hidden;
-    background-image: url("../images/fond_ecran.jpg");
+    background-image: url("../images/coccinelle.png");
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
