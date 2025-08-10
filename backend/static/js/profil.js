@@ -301,3 +301,39 @@
                 updateDisplayName();
             }
         });
+
+
+
+        // gérer l'image 
+
+        function handleAvatarUpload(event) {
+    const file = event.target.files[0];
+    const avatar = document.getElementById('avatar');
+    
+    if (file) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            // Créer un élément img
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.alt = "Photo de profil";
+            
+            // Vider le contenu actuel et ajouter l'image
+            avatar.innerHTML = '';
+            avatar.appendChild(img);
+            
+            // Ajouter la classe pour masquer le gradient
+            avatar.classList.add('has-image');
+            
+            // Remettre le bouton upload
+            const uploadBtn = document.createElement('button');
+            uploadBtn.className = 'avatar-upload';
+            uploadBtn.onclick = () => document.getElementById('avatarInput').click();
+            uploadBtn.innerHTML = '📷';
+            avatar.appendChild(uploadBtn);
+        };
+        
+        reader.readAsDataURL(file);
+    }
+}

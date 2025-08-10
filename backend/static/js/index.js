@@ -247,10 +247,6 @@
                 // Le sessionStorage se vide automatiquement à la fermeture
             });
         });
-// Sur les actions importantes
-if (navigator.vibrate) {
-    navigator.vibrate(50); // Vibration courte
-}
 
 
 

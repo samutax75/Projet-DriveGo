@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DriveGo - Support & Assistance</title>
-  <link rel="stylesheet" href="../static/CSS/support.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/support.css') }}">
+  
 </head>
 <body>
   <header>
@@ -272,6 +273,7 @@
 
   </main>
 
-  <script src="../static/js/support.js"></script>
+    <script src="{{ url_for('static', filename='js/support.js') }}"></script>
+  
 </body>
 </html>
