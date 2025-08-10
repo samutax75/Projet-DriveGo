@@ -1063,9 +1063,183 @@ a:hover {
 }
 
 
+/* script chargement app */
 
+  /* Splash Screen Styles */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: splashFadeOut 0.8s ease-out 2.5s forwards;
+        }
 
+        .splash-logo {
+            width: 90px;
+            height: 90px;
+            background: white;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            animation: logoEntry 1.2s ease-out;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+            overflow: hidden;
+        }
 
+        .splash-logo img {
+            width: 45px;
+            height: auto;
+            opacity: 0;
+            animation: logoImageFade 0.8s ease-out 0.4s forwards;
+        }
+
+        .splash-title {
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            opacity: 0;
+            animation: titleSlideUp 0.8s ease-out 0.8s forwards;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .splash-subtitle {
+            color: rgba(255,255,255,0.85);
+            font-size: 16px;
+            font-weight: 300;
+            text-align: center;
+            opacity: 0;
+            animation: subtitleFade 0.8s ease-out 1.2s forwards;
+            max-width: 280px;
+            line-height: 1.4;
+        }
+
+        .loading-indicator {
+            margin-top: 40px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .loading-dot {
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.4;
+            animation: dotPulse 1.8s ease-in-out infinite;
+        }
+
+        .loading-dot:nth-child(2) { animation-delay: 0.3s; }
+        .loading-dot:nth-child(3) { animation-delay: 0.6s; }
+
+        /* Main content hidden initially */
+        .main-content {
+            opacity: 0;
+            transform: scale(0.96);
+            animation: contentEntry 1s ease-out 3.3s forwards;
+        }
+
+        /* Animations */
+        @keyframes logoEntry {
+            0% { 
+                transform: scale(0.3) rotate(-10deg); 
+                opacity: 0; 
+            }
+            60% { 
+                transform: scale(1.1) rotate(2deg); 
+            }
+            100% { 
+                transform: scale(1) rotate(0deg); 
+                opacity: 1; 
+            }
+        }
+
+        @keyframes logoImageFade {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes titleSlideUp {
+            0% { 
+                opacity: 0; 
+                transform: translateY(30px); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        @keyframes subtitleFade {
+            0% { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { 
+                opacity: 0.4; 
+                transform: scale(1); 
+            }
+            50% { 
+                opacity: 1; 
+                transform: scale(1.3); 
+            }
+        }
+
+        @keyframes splashFadeOut {
+            0% { 
+                opacity: 1; 
+                visibility: visible; 
+            }
+            100% { 
+                opacity: 0; 
+                visibility: hidden; 
+                pointer-events: none; 
+            }
+        }
+
+        @keyframes contentEntry {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.96); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1); 
+            }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .splash-logo {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .splash-title {
+                font-size: 28px;
+            }
+            
+            .splash-subtitle {
+                font-size: 14px;
+                max-width: 250px;
+            }
+        }
 
 
 

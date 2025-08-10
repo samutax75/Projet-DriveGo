@@ -3,122 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
     <title>DriveGo - Accueil</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/index.css') }}">
     <link rel="preload" href="{{ url_for('static', filename='images/fond_ecran.jpg') }}" as="image">
-
-    
     
 </head>
 <body>  
-    <!-- Header -->
-    <header>
-        <div class="nav-container">
-           <a href="{{ url_for('index') }}" class="logo">
-    <img src="../static/images/logo perce-neige.PNG"
-         alt="Logo Fondation Perce-Neige" class="logo-image">DriveGo</a>
-            <ul class="nav-links">
-                {% if user_logged_in %}
-                    <!-- Liens pour utilisateurs connectés -->
-                    <li><a href="{{ url_for('gestion_vehicules') }}">🚀 Départ missions</a></li>
-                    <li><a href="{{ url_for('reservation') }}">📅 Demande de réservation</a></li>
-                    <li><a href="{{ url_for('vehicles_page') }}">ℹ️ Fiches véhicules</a></li>
-                    <li><a href="{{ url_for('profil') }}">👤 Profil</a></li>
-                    <li><a href="{{ url_for('support') }}">🧑‍💻 Support</a></li>
-
-                    <!-- <li class="user-name">👋 Bonjour {{ user_name }}</li> -->
-                    <li><a href="{{ url_for('logout') }}" class="logout-btn">Se déconnecter</a></li>
-                {% else %}
-                    <!-- Liens pour utilisateurs non connectés -->
-                    <!-- <li><a href="{{ url_for('connexion') }}">Se connecter</a></li> -->
-                {% endif %}
-            </ul>
-
-            <div class="burger-menu" id="burgerMenu">
-                <div class="burger-line"></div>
-                <div class="burger-line"></div>
-                <div class="burger-line"></div>
-            </div>
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-logo">
+            <img src="../static/images/logo perce-neige.PNG" alt="Logo Perce-Neige">
         </div>
-    </header>
-
-    <!-- Mobile Menu -->
-    <div class="mobile-menu" id="mobileMenu">
-        <ul>
-            {% if user_logged_in %}
-                <li class="user-name">👋 Bonjour {{ user_name }}</li>
-                <li><a href="{{ url_for('gestion_vehicules') }}">🚀 Départ missions</a></li>
-                <li><a href="{{ url_for('reservation') }}">📅 Demande de réservation</a></li>
-                <li><a href="{{ url_for('vehicles_page') }}"> ℹ️ Fiches véhicules</a></li>
-                <li><a href="{{ url_for('profil') }}">👤 Profil</a></li>
-                <li><a href="{{ url_for('support') }}">🧑‍💻 Support</a></li>
-                <li><a href="{{ url_for('logout') }}" class="logout-btn">Se déconnecter</a></li>
-            {% else %}
-                <!-- <li><a href="{{ url_for('connexion') }}">🔑 Se connecter</a></li> -->
-            
-            {% endif %}
-        </ul>
+        <div class="splash-title">DriveGo</div>
+        <div class="splash-subtitle">Solution de mobilité pour la Fondation Perce-Neige</div>
+        <div class="loading-indicator">
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+        </div>
     </div>
 
-    <!-- Overlay -->
-    <div class="overlay" id="overlay"></div>
+    <!-- Main Content (wrapped for animation) -->
+    <div class="main-content">
+        <!-- Header -->
+        <header>
+            <div class="nav-container">
+               <a href="{{ url_for('index') }}" class="logo">
+        <img src="../static/images/logo perce-neige.PNG"
+             alt="Logo Fondation Perce-Neige" class="logo-image">DriveGo</a>
+                <ul class="nav-links">
+                    {% if user_logged_in %}
+                        <!-- Liens pour utilisateurs connectés -->
+                        <li><a href="{{ url_for('gestion_vehicules') }}">🚀 Départ missions</a></li>
+                        <li><a href="{{ url_for('reservation') }}">📅 Demande de réservation</a></li>
+                        <li><a href="{{ url_for('vehicles_page') }}">ℹ️ Fiches véhicules</a></li>
+                        <li><a href="{{ url_for('profil') }}">👤 Profil</a></li>
+                        <li><a href="{{ url_for('support') }}">🧑‍💻 Support</a></li>
+                        <li><a href="{{ url_for('logout') }}" class="logout-btn">Se déconnecter</a></li>
+                    {% else %}
+                        <!-- Liens pour utilisateurs non connectés -->
+                    {% endif %}
+                </ul>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-container fade-in-up">
-            {% if user_logged_in and user_name %}
-                <p class="user-greeting">👋 Bonjour {{ user_name }} !</p>
-            {% endif %}
-            <h1 class="floating">Bienvenue chez DriveGo</h1>
+                <div class="burger-menu" id="burgerMenu">
+                    <div class="burger-line"></div>
+                    <div class="burger-line"></div>
+                    <div class="burger-line"></div>
+                </div>
+            </div>
+        </header>
 
-            <p>
-                La solution moderne dédiée aux éducateurs de la Fondation Perce-Neige. Simplifiez l'accès aux véhicules pour vos missions d'accompagnement.
-            </p>
-            <div class="cta-buttons">
+        <!-- Mobile Menu -->
+        <div class="mobile-menu" id="mobileMenu">
+            <ul>
                 {% if user_logged_in %}
-                    <a href="{{ url_for('reservation') }}" class="btn btn-primary">⚡ Réserver maintenant</a>
+                    <li class="user-name">👋 Bonjour {{ user_name }}</li>
+                    <li><a href="{{ url_for('gestion_vehicules') }}">🚀 Départ missions</a></li>
+                    <li><a href="{{ url_for('reservation') }}">📅 Demande de réservation</a></li>
+                    <li><a href="{{ url_for('vehicles_page') }}"> ℹ️ Fiches véhicules</a></li>
+                    <li><a href="{{ url_for('profil') }}">👤 Profil</a></li>
+                    <li><a href="{{ url_for('support') }}">🧑‍💻 Support</a></li>
+                    <li><a href="{{ url_for('logout') }}" class="logout-btn">Se déconnecter</a></li>
                 {% else %}
-                    <a href="{{ url_for('connexion') }}" class="btn btn-primary">⚡ Se connecter</a>
-                    <a href="{{ url_for('inscription') }}" class="btn btn-primary">📝 S'inscrire</a>
-                    <a href="{{ url_for('aide') }}" class="btn btn-primary"> ℹ️ Aide</a>
-
                 {% endif %}
-                <a href="https://www.perce-neige.org/" class="btn btn-secondary">💙 En savoir plus sur Perce-Neige</a>
-            </div>
+            </ul>
         </div>
-    </section>
 
-    <!-- Features Section -->
-    <section class="features">
-        <div class="features-container">
-            <div class="feature-card fade-in-up">
-                <span class="feature-icon">🏎️</span>
-                <h3>Réservation Simplifiée</h3>
-                <p>Réservez rapidement un véhicule pour vos missions d'accompagnement. Interface pensée pour les éducateurs.</p>
-            </div>
-            <div class="feature-card fade-in-up">
-                <span class="feature-icon">🎯</span>
-                <h3>Missions Prioritaires</h3>
-                <p>Gérez vos déplacements professionnels avec les personnes accompagnées en toute sérénité.</p>
-            </div>
-            <div class="feature-card fade-in-up">
-                <span class="feature-icon">💙</span>
-                <h3>Au Service du Handicap</h3>
-                <p>Un outil dédié à la noble mission de la Fondation Perce-Neige.</p>
-            </div>
-        </div>
-    </section>
+        <!-- Overlay -->
+        <div class="overlay" id="overlay"></div>
 
-    <!-- Footer -->
-    <footer>
-        <div class="footer-container">
-            <p>&copy; 2024 DriveGo - Fondation Perce-Neige. | Mobilité solidaire au service de l'accompagnement</p>
-        </div>
-    </footer>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-container fade-in-up">
+                {% if user_logged_in and user_name %}
+                    <p class="user-greeting">👋 Bonjour {{ user_name }} !</p>
+                {% endif %}
+                <h1 class="floating">Bienvenue chez DriveGo</h1>
+
+                <p>
+                    La solution moderne dédiée aux éducateurs de la Fondation Perce-Neige. Simplifiez l'accès aux véhicules pour vos missions d'accompagnement.
+                </p>
+                <div class="cta-buttons">
+                    {% if user_logged_in %}
+                        <a href="{{ url_for('reservation') }}" class="btn btn-primary">⚡ Réserver maintenant</a>
+                    {% else %}
+                        <a href="{{ url_for('connexion') }}" class="btn btn-primary">⚡ Se connecter</a>
+                        <a href="{{ url_for('inscription') }}" class="btn btn-primary">📝 S'inscrire</a>
+                        <a href="{{ url_for('aide') }}" class="btn btn-primary"> ℹ️ Aide</a>
+                    {% endif %}
+                    <a href="https://www.perce-neige.org/" class="btn btn-secondary">💙 En savoir plus sur Perce-Neige</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features">
+            <div class="features-container">
+                <div class="feature-card fade-in-up">
+                    <span class="feature-icon">🏎️</span>
+                    <h3>Réservation Simplifiée</h3>
+                    <p>Réservez rapidement un véhicule pour vos missions d'accompagnement. Interface pensée pour les éducateurs.</p>
+                </div>
+                <div class="feature-card fade-in-up">
+                    <span class="feature-icon">🎯</span>
+                    <h3>Missions Prioritaires</h3>
+                    <p>Gérez vos déplacements professionnels avec les personnes accompagnées en toute sérénité.</p>
+                </div>
+                <div class="feature-card fade-in-up">
+                    <span class="feature-icon">💙</span>
+                    <h3>Au Service du Handicap</h3>
+                    <p>Un outil dédié à la noble mission de la Fondation Perce-Neige.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-container">
+                <p>&copy; 2024 DriveGo - Fondation Perce-Neige. | Mobilité solidaire au service de l'accompagnement</p>
+            </div>
+        </footer>
+    </div>
 
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
     
-
 </body>
 </html>

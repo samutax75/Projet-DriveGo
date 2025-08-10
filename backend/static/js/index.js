@@ -216,7 +216,22 @@
 
 
 
-
+// script pour l'animation de chargement 
+        document.addEventListener('DOMContentLoaded', function() {
+            // Simulation du chargement des ressources
+            const splash = document.getElementById('splashScreen');
+            
+            // Optionnel: raccourcir l'animation si le contenu est déjà prêt
+            window.addEventListener('load', function() {
+                // Tout est chargé, on peut accélérer si besoin
+                console.log('DriveGo prêt !');
+            });
+            
+            // Cache le splash après l'animation
+            setTimeout(() => {
+                splash.style.display = 'none';
+            }, 3500);
+        });
 
 
 
