@@ -217,24 +217,40 @@
 
 
 // script pour l'animation de chargement 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Simulation du chargement des ressources
+      document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier si c'est la première visite de la session
+            const hasSeenSplash = sessionStorage.getItem('drivego_splash_seen');
             const splash = document.getElementById('splashScreen');
+            const mainContent = document.querySelector('.main-content');
             
-            // Optionnel: raccourcir l'animation si le contenu est déjà prêt
-            window.addEventListener('load', function() {
-                // Tout est chargé, on peut accélérer si besoin
-                console.log('DriveGo prêt !');
-            });
-            
-            // Cache le splash après l'animation
-            setTimeout(() => {
+            if (hasSeenSplash) {
+                // Si déjà vu dans cette session, masquer immédiatement le splash
                 splash.style.display = 'none';
-            }, 3500);
+                mainContent.style.opacity = '1';
+                mainContent.style.transform = 'scale(1)';
+                mainContent.style.animation = 'none';
+            } else {
+                // Première fois : montrer l'animation complète
+                console.log('Première ouverture DriveGo - Animation complète');
+                
+                // Marquer comme vu pour cette session
+                sessionStorage.setItem('drivego_splash_seen', 'true');
+                
+                // Cache le splash après l'animation
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                }, 3500);
+            }
+            
+            // Reset si l'utilisateur ferme complètement l'onglet/navigateur
+            window.addEventListener('beforeunload', function() {
+                // Le sessionStorage se vide automatiquement à la fermeture
+            });
         });
-
-
-
+// Sur les actions importantes
+if (navigator.vibrate) {
+    navigator.vibrate(50); // Vibration courte
+}
 
 
 

@@ -1065,7 +1065,7 @@ a:hover {
 
 /* script chargement app */
 
-  /* Splash Screen Styles */
+   /* Splash Screen Styles */
         .splash-screen {
             position: fixed;
             top: 0;
@@ -1241,7 +1241,11 @@ a:hover {
             }
         }
 
-
+/* Vibration subtile au clic */
+.btn:active {
+    transform: scale(0.98);
+    transition: transform 0.1s;
+}
 
 
 
