@@ -11,6 +11,8 @@ import secrets
 import urllib.parse
 from functools import wraps
 import jinja2
+from flask import send_from_directory
+
 
 
 app = Flask(__name__)
@@ -167,7 +169,13 @@ def index():
 
     return render_template('index.html', user_logged_in=user_logged_in, user_name=user_name)
 
+@app.route('/static/manifest.json')
+def manifest():
+    return send_from_directory('static', 'manifest.json')
 
+@app.route('/static/service-worker.js')  
+def service_worker():
+    return send_from_directory('static', 'service-worker.js')
 
 @app.route('/mot_de_passe_oublie', methods=['GET', 'POST'])
 def mot_de_passe_oublie():

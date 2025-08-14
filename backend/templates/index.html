@@ -57,7 +57,7 @@
         <div class="mobile-menu" id="mobileMenu">
             <ul>
                 {% if user_logged_in %}
-                    <li class="user-name">👋 Bonjour {{ user_name }}</li>
+                    <!-- <li class="user-name">👋 Bonjour {{ user_name }}</li> -->
                     <li><a href="{{ url_for('gestion_vehicules') }}">🚀 Départ missions</a></li>
                     <li><a href="{{ url_for('reservation') }}">📅 Demande de réservation</a></li>
                     <li><a href="{{ url_for('vehicles_page') }}"> ℹ️ Fiches véhicules</a></li>
