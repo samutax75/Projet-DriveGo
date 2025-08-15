@@ -4,7 +4,7 @@ const urlsToCache = [
   '/index.html',
   '/css/style.css',
   '/js/app.js',
-  '/static/images/logo perce-neige.PNG'
+  '/static/images/logo-192.png'
 ];
 
 // Installation du Service Worker

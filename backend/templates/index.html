@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="DriveGo">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo perce-neige.PNG') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo-192.png') }}">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <title>DriveGo - Accueil</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/index.css') }}">
@@ -133,10 +133,28 @@
 
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
    <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register("{{ url_for('static', filename='service-worker.js') }}");
-  }
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  const btnInstall = document.getElementById('btn-install');
+  btnInstall.style.display = 'block';
+
+  btnInstall.addEventListener('click', () => {
+    btnInstall.style.display = 'none';
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(choiceResult => {
+      console.log(choiceResult.outcome);
+      deferredPrompt = null;
+    });
+  });
+});
 </script>
+
+<button id="btn-install" style="display:none;">Installer DriveGo</button>
+
     
 </body>
 </html>
