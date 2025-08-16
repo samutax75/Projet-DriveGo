@@ -5,19 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriveGo - Mon Profil</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/profil.css') }}">
-    
 </head>
 <body>
     <header>
         <div class="nav-container">
             <a href="{{ url_for('index') }}" class="logo-button">
-    <img src="../static/images/logo perce-neige.PNG"
-         alt="Logo Fondation Perce-Neige" class="logo-image">
-    driveGo
-</a>
-
+                <img src="{{ url_for('static', filename='images/logo perce-neige.PNG') }}" alt="Logo Fondation Perce-Neige" class="logo-image">
+                driveGo
+            </a>
         </div>
     </header>
+    
     <div class="container slide-in">
         <div class="header">
             <h1>DriveGo</h1>
@@ -28,16 +26,6 @@
             <div class="profile-avatar">
                 <div class="avatar floating-animation" id="avatar">
                     👤
-                    <button class="avatar-upload" onclick="document.getElementById('avatarInput').click()">📷</button>
-                    <input type="file" id="avatarInput" accept="image/*" onchange="handleAvatarUpload(event)">
-                </div>
-            
-
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <span class="stat-number">127</span>
-                        <div class="stat-label">🚗 Trajets</div>
-                    </div>
                 </div>
             </div>
 
@@ -71,6 +59,7 @@
                         Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.
                     </div>
                 </div>
+
                 <div class="security-section">
                     <h3 class="section-title">🔒 Sécurité & Confidentialité</h3>
                     <div class="security-options">
@@ -81,6 +70,17 @@
                             📥 Télécharger mes données
                         </button>
                     </div>
+                </div>
+
+                <div class="danger-section">
+                    <h3 class="section-title">⚠️ Attention</h3>
+                    <p>
+                        <strong>Supprimer définitivement votre compte.</strong><br>
+                        Cette action est irréversible. Toutes vos données (historique des réservations, préférences, etc.) seront définitivement supprimées de nos serveurs.
+                    </p>
+                    <button type="button" class="btn btn-danger" onclick="deleteAccount()">
+                        🗑️ Supprimer mon compte
+                    </button>
                 </div>
 
                 <div class="form-actions">
