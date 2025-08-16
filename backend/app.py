@@ -166,14 +166,42 @@ def index():
     user_logged_in = 'user_id' in session
     user_name = f"{session.get('prenom', '')} {session.get('nom', '')}" if user_logged_in else ''
     
-    # Ajouter le rôle depuis la session si vous l'avez
-    user_role = session.get('fonction', 'Éducateur/trice') if user_logged_in else ''
+    # Adaptation du rôle selon le genre automatiquement détecté
+    user_role = ''
+    if user_logged_in:
+        fonction_base = session.get('fonction', 'Éducateur/trice')
+        prenom = session.get('prenom', '')
+        
+        # Fonction simple pour détecter le genre par la terminaison du prénom
+        def detect_gender(prenom):
+            if not prenom:
+                return None
+            
+            prenom_lower = prenom.lower()
+            
+            # Terminaisons typiquement féminines
+            if prenom_lower.endswith(('a', 'e', 'ia', 'ine', 'elle', 'ette')):
+                return 'feminin'
+            # Terminaisons typiquement masculines ou neutres
+            else:
+                return 'masculin'
+        
+        # Détecter le genre et adapter le rôle
+        if 'éducateur' in fonction_base.lower():
+            genre = detect_gender(prenom)
+            if genre == 'feminin':
+                user_role = 'Éducatrice'
+            else:
+                user_role = 'Éducateur'  # Par défaut masculin
+        else:
+            user_role = fonction_base  # Garde l'original pour autres rôles
     
-    print("SESSION:", dict(session))  # DEBUG dans ta console Flask
+    print("SESSION:", dict(session))  # DEBUG
+    print(f"RÔLE: {user_role}")  # DEBUG
 
     return render_template('index.html', 
         user_logged_in=user_logged_in, 
-        user_name=user_name.strip(),  # .strip() pour enlever les espaces si prenom ou nom vide
+        user_name=user_name.strip(),
         user_role=user_role
     )
 

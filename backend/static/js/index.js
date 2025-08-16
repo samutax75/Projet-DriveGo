@@ -128,8 +128,267 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ========================================
-// SYSTÈME DE NOTIFICATIONS
+// PROFIL DROPDOWN FUNCTIONALITY
 // ========================================
+function initProfileDropdown() {
+    const profileHeader = document.getElementById('profileHeader');
+    const profileDropdown = document.getElementById('profileDropdown');
+    const dropdownArrow = document.querySelector('.profile-dropdown-arrow');
+    
+    if (profileHeader && profileDropdown) {
+        // Toggle dropdown au clic sur le header
+        profileHeader.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isOpen = profileDropdown.classList.contains('active');
+            
+            if (isOpen) {
+                closeProfileDropdown();
+            } else {
+                openProfileDropdown();
+            }
+        });
+        
+        // Fermer si on clique ailleurs
+        document.addEventListener('click', function(e) {
+            if (!profileHeader.contains(e.target) && !profileDropdown.contains(e.target)) {
+                closeProfileDropdown();
+            }
+        });
+        
+        // Gestion des actions personnalisées
+        setupProfileDropdownActions();
+    }
+}
+
+function openProfileDropdown() {
+    const profileDropdown = document.getElementById('profileDropdown');
+    const dropdownArrow = document.querySelector('.profile-dropdown-arrow');
+    
+    profileDropdown.classList.add('active');
+    if (dropdownArrow) {
+        dropdownArrow.style.transform = 'rotate(180deg)';
+    }
+}
+
+function closeProfileDropdown() {
+    const profileDropdown = document.getElementById('profileDropdown');
+    const dropdownArrow = document.querySelector('.profile-dropdown-arrow');
+    
+    profileDropdown.classList.remove('active');
+    if (dropdownArrow) {
+        dropdownArrow.style.transform = 'rotate(0deg)';
+    }
+}
+
+function setupProfileDropdownActions() {
+    // Bouton Paramètres
+    const settingsBtn = document.getElementById('settingsBtn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            showSettingsModal();
+            closeProfileDropdown();
+        });
+    }
+    
+    // Bouton Contact
+    const contactBtn = document.getElementById('contactBtn');
+    if (contactBtn) {
+        contactBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            showContactModal();
+            closeProfileDropdown();
+        });
+    }
+    
+    // Fermer le dropdown après clic sur les liens
+    document.querySelectorAll('.profile-dropdown-item').forEach(item => {
+        item.addEventListener('click', function() {
+            if (!this.getAttribute('href').startsWith('#')) {
+                closeProfileDropdown();
+            }
+        });
+    });
+}
+
+// ========================================
+// MODAL PARAMÈTRES
+// ========================================
+function showSettingsModal() {
+    const modal = createSettingsModal();
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('show'), 50);
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal(modal);
+        }
+    });
+}
+
+function createSettingsModal() {
+    const modal = document.createElement('div');
+    modal.className = 'profile-modal';
+    modal.innerHTML = `
+        <div class="profile-modal-content">
+            <div class="profile-modal-header">
+                <h3 class="profile-modal-title">⚙️ Paramètres</h3>
+                <button class="profile-modal-close" onclick="closeModal(this.closest('.profile-modal'))">✕</button>
+            </div>
+            <div class="settings-content">
+                <div class="settings-group">
+                    <h4 class="settings-group-title">🔔 Notifications</h4>
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <input type="checkbox" class="setting-checkbox" checked>
+                            <span>Notifications de réservation</span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <input type="checkbox" class="setting-checkbox" checked>
+                            <span>Rappels de missions</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="settings-group">
+                    <h4 class="settings-group-title">🌙 Apparence</h4>
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <select class="setting-select">
+                                <option value="auto">Automatique</option>
+                                <option value="light">Mode clair</option>
+                                <option value="dark" selected>Mode sombre</option>
+                            </select>
+                            <span>Thème de l'application</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="settings-group">
+                    <h4 class="settings-group-title">🚗 Préférences véhicules</h4>
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <input type="checkbox" class="setting-checkbox">
+                            <span>Véhicules adaptés PMR uniquement</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-save" onclick="saveSettings(this)">💾 Sauvegarder</button>
+                <button class="btn-cancel" onclick="closeModal(this.closest('.profile-modal'))">❌ Annuler</button>
+            </div>
+        </div>
+    `;
+    return modal;
+}
+
+// ========================================
+// MODAL CONTACT
+// ========================================
+function showContactModal() {
+    const modal = createContactModal();
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('show'), 50);
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal(modal);
+        }
+    });
+}
+
+function createContactModal() {
+    const modal = document.createElement('div');
+    modal.className = 'profile-modal';
+    modal.innerHTML = `
+        <div class="profile-modal-content">
+            <div class="profile-modal-header">
+                <h3 class="profile-modal-title">📞 Nous contacter</h3>
+                <button class="profile-modal-close" onclick="closeModal(this.closest('.profile-modal'))">✕</button>
+            </div>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <div class="contact-icon">🏢</div>
+                        <div class="contact-details">
+                            <h4>Fondation Perce-Neige</h4>
+                            <p>Service informatique</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">📧</div>
+                        <div class="contact-details">
+                            <h4>Email</h4>
+                            <p><a href="mailto:support.drivego@perce-neige.org">support.drivego@perce-neige.org</a></p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">📞</div>
+                        <div class="contact-details">
+                            <h4>Téléphone</h4>
+                            <p><a href="tel:0123456789">01 23 45 67 89</a></p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">🕒</div>
+                        <div class="contact-details">
+                            <h4>Horaires support</h4>
+                            <p>Lundi - Vendredi: 8h - 18h</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <form class="contact-form" onsubmit="sendContactMessage(event)">
+                    <h4>💬 Message rapide</h4>
+                    <div class="form-group">
+                        <label>Sujet</label>
+                        <select class="form-input" required>
+                            <option value="">Choisir un sujet</option>
+                            <option value="bug">🐛 Signaler un bug</option>
+                            <option value="feature">💡 Demande de fonctionnalité</option>
+                            <option value="help">❓ Besoin d'aide</option>
+                            <option value="other">📝 Autre</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Message</label>
+                        <textarea class="form-input" rows="4" placeholder="Décrivez votre demande..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn-save">📤 Envoyer</button>
+                </form>
+            </div>
+        </div>
+    `;
+    return modal;
+}
+
+// ========================================
+// FONCTIONS UTILITAIRES MODALES
+// ========================================
+function closeModal(modal) {
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
+}
+
+function saveSettings(button) {
+    // Simuler la sauvegarde des paramètres
+    showNotification('⚙️ Paramètres sauvegardés avec succès !', 'success');
+    closeModal(button.closest('.profile-modal'));
+}
+
+function sendContactMessage(event) {
+    event.preventDefault();
+    
+    // Simuler l'envoi du message
+    showNotification('📤 Message envoyé ! Nous vous répondrons rapidement.', 'success');
+    closeModal(event.target.closest('.profile-modal'));
+}
 function showNotification(message, type = 'info', duration = 4000) {
     // Supprimer les notifications existantes
     document.querySelectorAll('.notification').forEach(n => n.remove());
@@ -169,6 +428,9 @@ function showNotification(message, type = 'info', duration = 4000) {
 // ========================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DriveGo - Application initialisée');
+    
+    // Initialiser le dropdown profil
+    initProfileDropdown();
     
     // Event listeners pour les boutons de déconnexion (s'ils existent)
     const logoutBtns = document.querySelectorAll('[href*="logout"], .logout-btn');
@@ -210,7 +472,9 @@ function debugSession() {
 window.DriveGo = {
     showNotification: showNotification,
     closeMenu: closeMenu,
-    logout: logout
+    logout: logout,
+    openProfileDropdown: openProfileDropdown,
+    closeProfileDropdown: closeProfileDropdown
 };
 
 console.log('✅ DriveGo JavaScript chargé - Version Flask/Jinja2');
