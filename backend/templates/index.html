@@ -2,13 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#000000">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="DriveGo">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo-192.png') }}">
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DriveGo - Accueil</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/index.css') }}">
     <link rel="preload" href="{{ url_for('static', filename='images/fond_ecran.jpg') }}" as="image">
@@ -61,13 +55,50 @@
 
         <!-- Mobile Menu -->
         <div class="mobile-menu" id="mobileMenu">
+            {% if user_logged_in %}
+            <!-- NOUVELLE SECTION PROFIL DYNAMIQUE -->
+            <div class="mobile-profile-section">
+                <div class="mobile-profile-header">
+                    <div class="mobile-profile-avatar" id="mobileProfileAvatar">
+                        {% if user_name %}
+                            {% set initials = user_name.split() %}
+                            {% if initials|length > 1 %}
+                                {{ initials[0][0] }}{{ initials[1][0] }}
+                            {% else %}
+                                {{ initials[0][0:2] }}
+                            {% endif %}
+                        {% else %}
+                            ??
+                        {% endif %}
+                    </div>
+                    <div class="mobile-profile-info">
+                        <div class="mobile-profile-name" id="mobileProfileName">
+                            {{ user_name if user_name else "Utilisateur" }}
+                        </div>
+                        <div class="mobile-profile-role" id="mobileProfileRole">
+                            {{ user_role if user_role else "Éducateur/trice" }}
+                        </div>
+                        <div class="mobile-profile-status">
+                            <span class="status-dot"></span>
+                            <span id="mobileProfileStatus">
+                                {{ user_status if user_status else "En ligne" }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mobile-profile-actions">
+                    <a href="{{ url_for('profil') }}" class="profile-action-btn" data-action="view-profile">
+                        👤 Voir profil
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
             <ul>
                 {% if user_logged_in %}
-                    <!-- <li class="user-name">👋 Bonjour {{ user_name }}</li> -->
                     <li><a href="{{ url_for('gestion_vehicules') }}">🚀 Départ missions</a></li>
                     <li><a href="{{ url_for('reservation') }}">📅 Demande de réservation</a></li>
                     <li><a href="{{ url_for('vehicles_page') }}"> ℹ️ Fiches véhicules</a></li>
-                    <li><a href="{{ url_for('profil') }}">👤 Profil</a></li>
                     <li><a href="{{ url_for('support') }}">🧑‍💻 Support</a></li>
                     <li><a href="{{ url_for('logout') }}" class="logout-btn">Se déconnecter</a></li>
                 {% else %}
@@ -132,29 +163,6 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
-   <script>
-let deferredPrompt;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-
-  const btnInstall = document.getElementById('btn-install');
-  btnInstall.style.display = 'block';
-
-  btnInstall.addEventListener('click', () => {
-    btnInstall.style.display = 'none';
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(choiceResult => {
-      console.log(choiceResult.outcome);
-      deferredPrompt = null;
-    });
-  });
-});
-</script>
-
-<button id="btn-install" style="display:none;">Installer DriveGo</button>
-
     
 </body>
 </html>

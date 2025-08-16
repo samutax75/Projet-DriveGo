@@ -165,17 +165,17 @@ init_db()
 def index():
     user_logged_in = 'user_id' in session
     user_name = f"{session.get('prenom', '')} {session.get('nom', '')}" if user_logged_in else ''
+    
+    # Ajouter le rôle depuis la session si vous l'avez
+    user_role = session.get('fonction', 'Éducateur/trice') if user_logged_in else ''
+    
     print("SESSION:", dict(session))  # DEBUG dans ta console Flask
 
-    return render_template('index.html', user_logged_in=user_logged_in, user_name=user_name)
-
-@app.route('/static/manifest.json')
-def manifest():
-    return send_from_directory('static', 'manifest.json')
-
-@app.route('/static/service-worker.js')  
-def service_worker():
-    return send_from_directory('static', 'service-worker.js')
+    return render_template('index.html', 
+        user_logged_in=user_logged_in, 
+        user_name=user_name.strip(),  # .strip() pour enlever les espaces si prenom ou nom vide
+        user_role=user_role
+    )
 
 @app.route('/mot_de_passe_oublie', methods=['GET', 'POST'])
 def mot_de_passe_oublie():
