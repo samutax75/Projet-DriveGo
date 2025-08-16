@@ -315,7 +315,6 @@ function createContactModal() {
                         <div class="contact-icon">🏢</div>
                         <div class="contact-details">
                             <h4>Fondation Perce-Neige</h4>
-                            <p>Service informatique</p>
                         </div>
                     </div>
                     
@@ -476,5 +475,9 @@ window.DriveGo = {
     openProfileDropdown: openProfileDropdown,
     closeProfileDropdown: closeProfileDropdown
 };
+
+
+
+
 
 console.log('✅ DriveGo JavaScript chargé - Version Flask/Jinja2');
