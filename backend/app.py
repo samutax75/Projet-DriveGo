@@ -489,6 +489,31 @@ def api_login():
 
 
 
+@app.route('/delete-profile-picture', methods=['DELETE'])
+def delete_profile_picture():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'Non connecté'}), 401
+    
+    try:
+        # Supprimer de la base de données
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET profile_picture = '' WHERE id = ?", 
+                       (session['user_id'],))
+        conn.commit()
+        conn.close()
+        
+        # Mettre à jour la session
+        session['profile_picture_url'] = ''
+        
+        return jsonify({'success': True, 'message': 'Photo supprimée'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': 'Erreur serveur'}), 500
+
+
+
+
 @app.route('/api/register', methods=['POST'])
 def api_register():
     """API pour l'inscription des utilisateurs"""
