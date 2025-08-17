@@ -291,20 +291,36 @@ def get_user_profile_picture(user_id):
     return result[0] if result and result[0] else ''
 
 
+# Page pour saisir email
 @app.route('/mot_de_passe_oublie', methods=['GET', 'POST'])
 def mot_de_passe_oublie():
     if request.method == 'POST':
         email = request.form['email']
-        # Envoie du lien de réinitialisation
-        return redirect(url_for('reset_password'))  # ou autre
+        flash(f"Email {email} reçu. Vous pouvez maintenant changer votre mot de passe.", "info")
+        return redirect(url_for('change_password'))  # redirige vers change_password
     return render_template('mot_de_passe_oublie.html')
 
+# Page pour changer le mot de passe
+@app.route("/change_password", methods=["GET", "POST"])
+def change_password():
+    if request.method == "POST":
+        new_password = request.form.get("new_password")
+        confirm_password = request.form.get("confirm_password")
 
+        if new_password != confirm_password:
+            flash("Les mots de passe ne correspondent pas", "error")
+            return render_template("change_password.html")
 
-@app.route('/reset_password')
-def reset_password():
-    return render_template('reset_password.html')
- 
+        if len(new_password) < 8:
+            flash("Le mot de passe doit contenir au moins 8 caractères", "error")
+            return render_template("change_password.html")
+
+        # Ici : enregistrer le mot de passe hashé dans la DB
+        flash("Mot de passe changé avec succès ✅", "success")
+        return redirect(url_for("mot_de_passe_oublie"))
+
+    return render_template("change_password.html")
+
 
 @app.route('/aide')
 def aide():
@@ -1524,5 +1540,5 @@ def api_recent_activities():
 # ============================================================================
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
