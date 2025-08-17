@@ -476,7 +476,119 @@ window.DriveGo = {
     closeProfileDropdown: closeProfileDropdown
 };
 
+ // Fonction pour l'upload rapide de photo de profil
+        function quickPhotoUpload() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    uploadProfilePicture(file);
+                }
+            };
+            input.click();
+        }
 
+        // Fonction pour gérer l'upload de la photo
+        async function uploadProfilePicture(file) {
+            const avatar = document.getElementById('mobileProfileAvatar');
+            
+            // Validation du fichier
+            if (!file.type.startsWith('image/')) {
+                alert('Veuillez sélectionner un fichier image valide.');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) { // 5MB max
+                alert('La taille du fichier ne doit pas dépasser 5MB.');
+                return;
+            }
+
+            try {
+                // Afficher l'état de chargement
+                avatar.classList.add('avatar-uploading');
+                
+                // Créer FormData pour l'envoi
+                const formData = new FormData();
+                formData.append('profile_picture', file);
+                
+                // Envoyer la requête (remplacez par votre endpoint)
+                const response = await fetch('/upload-profile-picture', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Mettre à jour l'avatar avec la nouvelle image
+                    if (result.success && result.image_url) {
+                        // Remplacer complètement le contenu de l'avatar
+                        avatar.innerHTML = `
+                            <img src="${result.image_url}" alt="Photo de profil" 
+                                 style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                            <div class="avatar-overlay">
+                                <span class="camera-icon">📷</span>
+                            </div>
+                        `;
+                        
+                        // Notification de succès
+                        showNotification('Photo de profil mise à jour avec succès !', 'success');
+                    }
+                } else {
+                    throw new Error('Erreur lors de l\'upload');
+                }
+                
+            } catch (error) {
+                console.error('Erreur upload:', error);
+                showNotification('Erreur lors de la mise à jour de la photo', 'error');
+            } finally {
+                // Retirer l'état de chargement
+                avatar.classList.remove('avatar-uploading');
+            }
+        }
+
+        // Fonction pour afficher les notifications
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 10000;
+                animation: slideIn 0.3s ease-out;
+                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Supprimer après 3 secondes
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in forwards';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Ajouter les animations CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
 
 
 

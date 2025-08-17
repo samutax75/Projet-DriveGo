@@ -362,3 +362,77 @@ window.addEventListener('beforeunload', function(event) {
         return event.returnValue;
     }
 });
+
+
+
+ // Fonction pour générer une couleur d'avatar basée sur les initiales
+        function generateAvatarColor(initials) {
+            const colors = [
+                'avatar-color-1', 'avatar-color-2', 'avatar-color-3', 'avatar-color-4',
+                'avatar-color-5', 'avatar-color-6', 'avatar-color-7', 'avatar-color-8'
+            ];
+            
+            // Utiliser le code ASCII des initiales pour choisir une couleur
+            let hash = 0;
+            for (let i = 0; i < initials.length; i++) {
+                hash = initials.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        // Appliquer la couleur à l'avatar au chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            const avatar = document.getElementById('profileAvatar');
+            const initials = avatar.textContent.trim();
+            
+            if (initials && initials !== '??') {
+                const colorClass = generateAvatarColor(initials);
+                avatar.classList.add(colorClass);
+            }
+        });
+
+        // Fonction pour afficher les notifications (gardée pour compatibilité)
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                border-radius: 10px;
+                color: white;
+                font-weight: 600;
+                z-index: 10001;
+                animation: slideIn 0.3s ease-out;
+                max-width: 300px;
+                background: ${type === 'success' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 
+                             type === 'error' ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 
+                             'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'};
+                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Supprimer après 4 secondes
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in forwards';
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
+        }
+
+        // Ajouter les animations CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);

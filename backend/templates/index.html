@@ -6,82 +6,6 @@
     <title>DriveGo - Accueil</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/index.css') }}">
     <link rel="preload" href="{{ url_for('static', filename='images/fond_ecran.jpg') }}" as="image">
-    <style>
-        /* Styles pour l'avatar avec overlay photo */
-        .mobile-profile-avatar {
-            position: relative;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-            overflow: hidden;
-            border-radius: 50%;
-        }
-        
-        .mobile-profile-avatar .initials-display {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .mobile-profile-avatar:hover {
-            transform: scale(1.05);
-        }
-        
-        .mobile-profile-avatar:hover .avatar-overlay {
-            opacity: 1;
-            background: rgba(0,0,0,0.7);
-        }
-        
-        .avatar-overlay {
-            position: absolute;
-            top: 0; 
-            left: 0; 
-            right: 0; 
-            bottom: 0;
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            border-radius: 50%;
-            cursor: pointer;
-            color: white;
-            font-size: 16px;
-        }
-        
-        .camera-icon {
-            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
-        }
-        
-        /* Animation de chargement pour l'upload */
-        .avatar-uploading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-        
-        .avatar-uploading::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 20px;
-            height: 20px;
-            margin: -10px 0 0 -10px;
-            border: 2px solid #ffffff;
-            border-top: 2px solid transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
 </head>
 <body>  
     <!-- Splash Screen -->
@@ -106,25 +30,25 @@
                <a href="{{ url_for('index') }}" class="logo">
         <img src="../static/images/logo perce-neige.PNG"
              alt="Logo Fondation Perce-Neige" class="logo-image">DriveGo</a>
-                <ul class="nav-links">
-                    {% if user_logged_in %}
-                        <!-- Liens pour utilisateurs connectés -->
+                
+                {% if user_logged_in %}
+                    <!-- Navigation complète pour utilisateurs connectés -->
+                    <ul class="nav-links">
                         <li><a href="{{ url_for('gestion_vehicules') }}">🚀 Départ missions</a></li>
                         <li><a href="{{ url_for('reservation') }}">📅 Demande de réservation</a></li>
                         <li><a href="{{ url_for('vehicles_page') }}">ℹ️ Fiches véhicules</a></li>
                         <li><a href="{{ url_for('profil') }}">👤 Profil</a></li>
                         <li><a href="{{ url_for('support') }}">🧑‍💻 Support</a></li>
                         <li><a href="{{ url_for('logout') }}" class="logout-btn">Se déconnecter</a></li>
-                    {% else %}
-                        <!-- Liens pour utilisateurs non connectés -->
-                    {% endif %}
-                </ul>
+                    </ul>
 
-                <div class="burger-menu" id="burgerMenu">
-                    <div class="burger-line"></div>
-                    <div class="burger-line"></div>
-                    <div class="burger-line"></div>
-                </div>
+                    <!-- Menu burger seulement pour utilisateurs connectés -->
+                    <div class="burger-menu" id="burgerMenu">
+                        <div class="burger-line"></div>
+                        <div class="burger-line"></div>
+                        <div class="burger-line"></div>
+                    </div>
+                {% endif %}
             </div>
         </header>
 
@@ -248,9 +172,12 @@
                     {% if user_logged_in %}
                         <a href="{{ url_for('reservation') }}" class="btn btn-primary">⚡ Réserver maintenant</a>
                     {% else %}
+                        <!-- Actions primaires (conversion) -->
                         <a href="{{ url_for('connexion') }}" class="btn btn-primary">⚡ Se connecter</a>
                         <a href="{{ url_for('inscription') }}" class="btn btn-primary">📝 S'inscrire</a>
-                        <a href="{{ url_for('aide') }}" class="btn btn-primary"> ℹ️ Aide</a>
+                        
+                        <!-- Actions secondaires (information) -->
+                        <a href="{{ url_for('aide') }}" class="btn btn-secondary">ℹ️ Aide</a>
                     {% endif %}
                     <a href="https://www.perce-neige.org/" class="btn btn-secondary">💙 En savoir plus sur Perce-Neige</a>
                 </div>
@@ -281,126 +208,17 @@
         <!-- Footer -->
         <footer>
             <div class="footer-container">
+                <div class="footer-links">
+                    <a href="{{ url_for('aide') }}">Aide & Support</a>
+                    <a href="https://www.perce-neige.org/">À propos de Perce-Neige</a>
+                    <a href="#">Mentions légales</a>
+                    <a href="#">Politique de confidentialité</a>
+                </div>
                 <p>&copy; 2024 DriveGo - Fondation Perce-Neige. | Mobilité solidaire au service de l'accompagnement</p>
             </div>
         </footer>
     </div>
 
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
-    <script>
-        // Fonction pour l'upload rapide de photo de profil
-        function quickPhotoUpload() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    uploadProfilePicture(file);
-                }
-            };
-            input.click();
-        }
-
-        // Fonction pour gérer l'upload de la photo
-        async function uploadProfilePicture(file) {
-            const avatar = document.getElementById('mobileProfileAvatar');
-            
-            // Validation du fichier
-            if (!file.type.startsWith('image/')) {
-                alert('Veuillez sélectionner un fichier image valide.');
-                return;
-            }
-            
-            if (file.size > 5 * 1024 * 1024) { // 5MB max
-                alert('La taille du fichier ne doit pas dépasser 5MB.');
-                return;
-            }
-
-            try {
-                // Afficher l'état de chargement
-                avatar.classList.add('avatar-uploading');
-                
-                // Créer FormData pour l'envoi
-                const formData = new FormData();
-                formData.append('profile_picture', file);
-                
-                // Envoyer la requête (remplacez par votre endpoint)
-                const response = await fetch('/upload-profile-picture', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    
-                    // Mettre à jour l'avatar avec la nouvelle image
-                    if (result.success && result.image_url) {
-                        // Remplacer complètement le contenu de l'avatar
-                        avatar.innerHTML = `
-                            <img src="${result.image_url}" alt="Photo de profil" 
-                                 style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-                            <div class="avatar-overlay">
-                                <span class="camera-icon">📷</span>
-                            </div>
-                        `;
-                        
-                        // Notification de succès
-                        showNotification('Photo de profil mise à jour avec succès !', 'success');
-                    }
-                } else {
-                    throw new Error('Erreur lors de l\'upload');
-                }
-                
-            } catch (error) {
-                console.error('Erreur upload:', error);
-                showNotification('Erreur lors de la mise à jour de la photo', 'error');
-            } finally {
-                // Retirer l'état de chargement
-                avatar.classList.remove('avatar-uploading');
-            }
-        }
-
-        // Fonction pour afficher les notifications
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `notification notification-${type}`;
-            notification.textContent = message;
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 12px 20px;
-                border-radius: 8px;
-                color: white;
-                font-weight: 500;
-                z-index: 10000;
-                animation: slideIn 0.3s ease-out;
-                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Supprimer après 3 secondes
-            setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease-in forwards';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
-        }
-
-        // Ajouter les animations CSS
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
-    </script>
 </body>
 </html>
