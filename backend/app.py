@@ -46,6 +46,15 @@ def init_db():
         )
     ''')
     
+    
+    # Vérifier si la colonne profile_picture existe déjà (pour migration)
+    cursor.execute("PRAGMA table_info(users)")
+    columns = [column[1] for column in cursor.fetchall()]
+    if 'profile_picture' not in columns:
+        cursor.execute('ALTER TABLE users ADD COLUMN profile_picture TEXT DEFAULT ""')
+    
+    
+    
     # Table pour gérer les tokens d'invitation
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS invitation_tokens (
@@ -196,14 +205,91 @@ def index():
         else:
             user_role = fonction_base  # Garde l'original pour autres rôles
     
+    # Récupération de la photo de profil
+    user_profile_picture = session.get('profile_picture_url', '') if user_logged_in else ''
+    
     print("SESSION:", dict(session))  # DEBUG
     print(f"RÔLE: {user_role}")  # DEBUG
+    print(f"PHOTO PROFIL: {user_profile_picture}")  # DEBUG
 
     return render_template('index.html', 
         user_logged_in=user_logged_in, 
         user_name=user_name.strip(),
-        user_role=user_role
+        user_role=user_role,
+        user_profile_picture=user_profile_picture  # ← Ajout de la photo de profil
     )
+
+# Route pour l'upload de photo de profil (à ajouter dans votre app.py)
+@app.route('/upload-profile-picture', methods=['POST'])
+def upload_profile_picture():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'Non connecté'}), 401
+    
+    if 'profile_picture' not in request.files:
+        return jsonify({'success': False, 'error': 'Aucun fichier sélectionné'}), 400
+    
+    file = request.files['profile_picture']
+    
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'Aucun fichier sélectionné'}), 400
+    
+    # Vérification du type de fichier
+    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    if not ('.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in allowed_extensions):
+        return jsonify({'success': False, 'error': 'Type de fichier non autorisé'}), 400
+    
+    try:
+        # Créer le dossier uploads s'il n'existe pas
+        import os
+        upload_folder = 'static/uploads/profile_pictures'
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        # Générer un nom de fichier unique
+        import uuid
+        from werkzeug.utils import secure_filename
+        
+        file_extension = file.filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{session['user_id']}_{uuid.uuid4().hex[:8]}.{file_extension}"
+        file_path = os.path.join(upload_folder, unique_filename)
+        
+        # Sauvegarder le fichier
+        file.save(file_path)
+        
+        # URL relative pour l'affichage
+        image_url = f"/static/uploads/profile_pictures/{unique_filename}"
+        
+        # Mettre à jour la session
+        session['profile_picture_url'] = image_url
+        
+        # 📸 SAUVEGARDE EN BASE DE DONNÉES
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET profile_picture = ? WHERE id = ?", 
+                       (image_url, session['user_id']))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True, 
+            'image_url': image_url,
+            'message': 'Photo de profil mise à jour avec succès'
+        })
+        
+    except Exception as e:
+        print(f"Erreur upload: {e}")
+        return jsonify({'success': False, 'error': 'Erreur lors de la sauvegarde'}), 500
+
+
+# Fonction pour récupérer la photo de profil lors de la connexion
+def get_user_profile_picture(user_id):
+    """Récupère la photo de profil d'un utilisateur depuis la base de données"""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT profile_picture FROM users WHERE id = ?", (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result and result[0] else ''
+
 
 @app.route('/mot_de_passe_oublie', methods=['GET', 'POST'])
 def mot_de_passe_oublie():
@@ -351,11 +437,11 @@ def api_login():
         email = data['email'].lower().strip()
         password = data['password']
 
-        # Recherche de l'utilisateur
+        # Recherche de l'utilisateur - AJOUT de profile_picture
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT id, email, password_hash, nom, prenom, role 
+            SELECT id, email, password_hash, nom, prenom, role, profile_picture 
             FROM users WHERE email = ?
         ''', (email,))
         user = cursor.fetchone()
@@ -373,6 +459,8 @@ def api_login():
         session['nom'] = user[3]
         session['prenom'] = user[4]
         session['role'] = user[5]
+        # 📸 AJOUT de la photo de profil dans la session
+        session['profile_picture_url'] = user[6] if user[6] else ''
 
         # Redirection selon le rôle
         if user[5] == 'admin':
@@ -386,16 +474,20 @@ def api_login():
             'user': {
                 'nom': user[3],
                 'prenom': user[4],
-                'role': user[5]
+                'role': user[5],
+                'profile_picture': user[6] if user[6] else ''  # 📸 AJOUT dans la réponse
             },
             'redirect': redirect_url
         }), 200
 
     except Exception as e:
+        print(f"Erreur connexion: {e}")  # Debug
         return jsonify({
             'success': False,
             'message': 'Erreur lors de la connexion'
         }), 500
+
+
 
 @app.route('/api/register', methods=['POST'])
 def api_register():
