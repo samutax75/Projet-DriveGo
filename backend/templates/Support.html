@@ -4,20 +4,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta charset="UTF-8">
   <title>DriveGo - Support & Assistance</title>
-    <link rel="stylesheet" href="/static/CSS/support.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/support.css') }}">
   
 </head>
 <body>
   <header>
-    <a href="/" class="logo">
-    <img src="/static/images/logo perce-neige.PNG"
+    <a href="{{ url_for('index') }}" class="logo">
+    <img src="../static/images/logo perce-neige.PNG"
          alt="Logo Fondation Perce-Neige" class="logo-image"></a>
          
     <nav>
-      <a href="/">Accueil</a>
-      <a href="/reservation">Demande de réservation</a>
-      <a href="/support" class="active">Support</a>
-      <a href="/vehicles">Fiches véhicules</a>
+      <a href="{{ url_for('index') }}">Accueil</a>
+      <a href="{{ url_for('reservation') }}">Demande de réservation</a>
+      <a href="{{ url_for('support') }}" class="active">Support</a>
+      <a href="{{ url_for('vehicles_page') }}">Fiches véhicules</a>
     </nav>
   </header>
 
@@ -273,7 +273,7 @@
 
   </main>
 
-    <script src="/static/js/support.js"></script>
+    <script src="{{ url_for('static', filename='js/support.js') }}"></script>
   
 </body>
 </html>

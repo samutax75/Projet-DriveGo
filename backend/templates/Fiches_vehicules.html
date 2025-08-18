@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion du Parc Automobile</title>
-    <link rel="stylesheet" href="../static/CSS/fiches_vehicules.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/fiches_vehicules.css') }}">
+    
 
 
 </head>
@@ -49,6 +50,7 @@
             </div>
         </div>
     </div>
-    <script src="../static/js/fiches_vehicules.js"></script>
+    <script src="{{ url_for('static', filename='js/fiches_vehicules.js') }}"></script>
+    
 </body>
 </html>
