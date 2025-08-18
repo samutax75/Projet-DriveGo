@@ -1539,6 +1539,19 @@ def api_recent_activities():
 # LANCEMENT DE L'APPLICATION
 # ============================================================================
 
+# if __name__ == '__main__':
+#     port = int(os.environ.get('PORT', 5000))
+#     app.run(host='0.0.0.0', port=port, debug=False)
+    
+    
 if __name__ == '__main__':
+    with app.app_context():
+        print("=" * 50)
+        print("ROUTES DISPONIBLES:")
+        print("=" * 50)
+        for rule in app.url_map.iter_rules():
+            print(f"  {rule.endpoint}: {rule.rule}")
+        print("=" * 50)
+    
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False)    
