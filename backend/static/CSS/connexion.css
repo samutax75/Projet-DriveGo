@@ -9,12 +9,15 @@ body {
     line-height: 1.6;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* Header */
 header {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     padding: 1rem 0;
     position: fixed;
     width: 100%;
@@ -383,8 +386,8 @@ footer {
     background: rgba(102, 126, 234, 0.1);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* Responsive - Version optimisée pour Render.com */
+@media screen and (max-width: 768px) {
     .nav-links {
         display: none;
     }
@@ -392,6 +395,7 @@ footer {
     .login-container {
         margin: 0 1rem;
         padding: 2rem;
+        max-width: calc(100vw - 2rem);
     }
 
     .login-header h1 {
@@ -403,26 +407,47 @@ footer {
     }
 
     .form-options {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 0.5rem;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        gap: 0.5rem !important;
+        width: 100% !important;
     }
 
     .remember-me {
-        order: 1;
-        align-self: flex-start;
+        flex: 0 0 auto !important;
+        order: 1 !important;
+        white-space: nowrap !important;
+    }
+
+    .remember-me label {
+        font-size: 0.85rem !important;
     }
 
     .forgot-password {
-        order: 2;
-        align-self: flex-end;
-        text-align: right;
+        flex: 0 0 auto !important;
+        order: 2 !important;
+        text-align: right !important;
+        font-size: 0.85rem !important;
+        white-space: nowrap !important;
     }
 
     .social-login {
         flex-direction: column;
+    }
+}
+
+/* Media query supplémentaire pour très petits écrans */
+@media screen and (max-width: 480px) {
+    .form-options {
+        gap: 0.25rem !important;
+    }
+    
+    .remember-me label,
+    .forgot-password {
+        font-size: 0.8rem !important;
     }
 }
 
