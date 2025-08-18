@@ -414,23 +414,41 @@ footer {
         flex-wrap: nowrap !important;
         gap: 0.5rem !important;
         width: 100% !important;
+        overflow: hidden !important;
     }
 
     .remember-me {
-        flex: 0 0 auto !important;
+        flex: 1 1 auto !important;
         order: 1 !important;
-        white-space: nowrap !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
     }
 
     .remember-me label {
-        font-size: 0.85rem !important;
+        font-size: 0.8rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
 
     .forgot-password {
         flex: 0 0 auto !important;
         order: 2 !important;
         text-align: right !important;
-        font-size: 0.85rem !important;
+        font-size: 0.8rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 45% !important;
+    }
+
+    .signup-link {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+    }
+
+    .signup-link a {
+        display: inline !important;
         white-space: nowrap !important;
     }
 
@@ -445,9 +463,30 @@ footer {
         gap: 0.25rem !important;
     }
     
-    .remember-me label,
+    .remember-me label {
+        font-size: 0.75rem !important;
+    }
+
     .forgot-password {
-        font-size: 0.8rem !important;
+        font-size: 0.75rem !important;
+        max-width: 40% !important;
+    }
+
+    .signup-link {
+        font-size: 0.9rem !important;
+        line-height: 1.4 !important;
+    }
+}
+
+/* Media query pour écrans très étroits */
+@media screen and (max-width: 360px) {
+    .forgot-password {
+        max-width: 35% !important;
+        font-size: 0.7rem !important;
+    }
+    
+    .remember-me label {
+        font-size: 0.7rem !important;
     }
 }
 
