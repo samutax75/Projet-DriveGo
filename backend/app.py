@@ -307,20 +307,59 @@ def change_password():
         new_password = request.form.get("new_password")
         confirm_password = request.form.get("confirm_password")
 
+        # Validation : correspondance des mots de passe
         if new_password != confirm_password:
             flash("Les mots de passe ne correspondent pas", "error")
             return render_template("change_password.html")
 
+        # Validation : longueur minimale
         if len(new_password) < 8:
             flash("Le mot de passe doit contenir au moins 8 caractères", "error")
             return render_template("change_password.html")
 
-        # Ici : enregistrer le mot de passe hashé dans la DB
-        flash("Mot de passe changé avec succès ✅", "success")
-        return redirect(url_for("mot_de_passe_oublie"))
+        # Validation : complexité du mot de passe
+        password_errors = []
+        
+        if not re.search(r'[A-Z]', new_password):
+            password_errors.append("au moins une lettre majuscule")
+        
+        if not re.search(r'[a-z]', new_password):
+            password_errors.append("au moins une lettre minuscule")
+        
+        if not re.search(r'\d', new_password):
+            password_errors.append("au moins un chiffre")
+        
+        if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:"\\|,.<>\?]', new_password):
+            password_errors.append("au moins un caractère spécial")
+
+        if password_errors:
+            error_msg = f"Le mot de passe doit contenir : {', '.join(password_errors)}"
+            flash(error_msg, "error")
+            return render_template("change_password.html")
+
+        try:
+            # Hash du nouveau mot de passe
+            hashed_password = generate_password_hash(new_password)
+            
+            # TODO: Mettre à jour en base de données
+            # user_id = session.get('user_id')
+            # cursor.execute("UPDATE users SET password = ? WHERE id = ?", (hashed_password, user_id))
+            # db.commit()
+            
+            # Log de sécurité (optionnel)
+            print(f"Password changed for user: {session.get('user_id', 'Unknown')}")
+            
+            flash("Mot de passe changé avec succès ✅", "success")
+            
+            # Redirection vers tableau de bord ou page de connexion
+            return redirect(url_for("index"))  # ou "dashboard" selon votre structure
+            
+        except Exception as e:
+            print(f"Erreur lors du changement de mot de passe: {e}")
+            flash("Erreur lors de la mise à jour. Veuillez réessayer.", "error")
+            return render_template("change_password.html")
 
     return render_template("change_password.html")
-
 
 @app.route('/aide')
 def aide():
