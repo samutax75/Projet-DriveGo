@@ -8,7 +8,9 @@
 </head>
 <body>
     <!-- Bouton de retour -->
-    <div class="close-button" onclick="goToHomePage()">×</div>
+    <div class="close-button">
+    <a href="{{ url_for('index') }}" style="text-decoration: none; color: inherit;">×</a>
+</div>
     
     <div class="container">
         <header class="header">

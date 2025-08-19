@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/profil.css') }}">
 </head>
 <body>
+    <!-- Bouton de retour -->
+     <button class="close-btn" onclick="goBack()" title="Retour">
+                ✕
+            </button>
+    
     <header>
         <div class="nav-container">
             <a href="{{ url_for('index') }}" class="logo-button">

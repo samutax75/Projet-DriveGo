@@ -435,4 +435,9 @@ window.addEventListener('beforeunload', function(event) {
                 to { transform: translateX(100%); opacity: 0; }
             }
         `;
+
+
+        function goBack() {
+    window.history.back();
+}
         document.head.appendChild(style);
