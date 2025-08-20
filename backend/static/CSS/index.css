@@ -2258,3 +2258,31 @@ a:hover {
         min-width: auto;
     }
 }
+
+
+/* animation voiture de sport  */
+.car-animation {
+    position: fixed;
+    top: 70%; /* hauteur sur l'écran */
+    right: -100px; /* démarre en dehors de l'écran à droite */
+    font-size: 2.5rem; /* taille de l'emoji */
+    animation: driveAcross 4s linear forwards;
+    z-index: 9999;
+}
+
+/* Animation */
+@keyframes driveAcross {
+    0% {
+        right: -100px;
+        opacity: 1;
+    }
+    80% {
+        right: 100vw; /* traverse tout l'écran */
+        opacity: 1;
+    }
+    100% {
+        right: 100vw;
+        opacity: 0; /* disparaît à la fin */
+    }
+}
+

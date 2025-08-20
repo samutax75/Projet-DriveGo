@@ -590,6 +590,12 @@ window.DriveGo = {
         `;
         document.head.appendChild(style);
 
+// annimatio voiture de course
+
+        window.addEventListener("load", () => {
+    const car = document.querySelector(".car-animation");
+    car.style.display = "block";
+});
 
 
 console.log('✅ DriveGo JavaScript chargé - Version Flask/Jinja2');
