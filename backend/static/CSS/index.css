@@ -2263,26 +2263,27 @@ a:hover {
 /* animation voiture de sport  */
 .car-animation {
     position: fixed;
-    top: 70%; /* hauteur sur l'écran */
-    right: -100px; /* démarre en dehors de l'écran à droite */
-    font-size: 2.5rem; /* taille de l'emoji */
-    animation: driveAcross 4s linear forwards;
+    top: 70%;
+    right: -100px;
+    font-size: 2.5rem;
     z-index: 9999;
+    will-change: transform, opacity;
+    pointer-events: none;
+    opacity: 0;
 }
 
-/* Animation */
-@keyframes driveAcross {
-    0% {
-        right: -100px;
-        opacity: 1;
-    }
-    80% {
-        right: 100vw; /* traverse tout l'écran */
-        opacity: 1;
-    }
-    100% {
-        right: 100vw;
-        opacity: 0; /* disparaît à la fin */
-    }
+.car-animation.animate {
+    animation: driveAcross 4s linear forwards;
+    opacity: 1;
 }
+
+@keyframes driveAcross {
+    0% { right: -100px; opacity: 1; }
+    80% { right: 100vw; opacity: 1; }
+    100% { right: 100vw; opacity: 0; }
+}
+
+
+
+
 

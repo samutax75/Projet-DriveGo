@@ -592,10 +592,26 @@ window.DriveGo = {
 
 // annimatio voiture de course
 
-        window.addEventListener("load", () => {
+
+
+document.addEventListener("DOMContentLoaded", () => {
     const car = document.querySelector(".car-animation");
-    car.style.display = "block";
+
+    // Vérifie si l'animation a déjà été jouée cette session
+    if (car && !sessionStorage.getItem("carAnimationPlayed")) {
+        setTimeout(() => {
+            car.classList.add("animate");
+        }, 100);
+
+        // Marque que l'animation a été jouée
+        sessionStorage.setItem("carAnimationPlayed", "true");
+    }
 });
+
+
+
+
+
 
 
 console.log('✅ DriveGo JavaScript chargé - Version Flask/Jinja2');

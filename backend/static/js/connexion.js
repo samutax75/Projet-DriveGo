@@ -261,6 +261,8 @@ function testConnexionAdmin() {
     }
 }
 
+
+
 // Pour le debug - accessible depuis la console
 window.testConnexionAdmin = testConnexionAdmin;
 
