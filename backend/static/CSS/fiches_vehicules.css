@@ -345,7 +345,7 @@
             }
             
             .vehicle-item::after {
-                content: "👆 Tap pour détails";
+                content: "";
                 position: absolute;
                 right: 15px;
                 bottom: 10px;

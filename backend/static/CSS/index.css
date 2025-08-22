@@ -2261,27 +2261,19 @@ a:hover {
 
 
 /* animation voiture de sport  */
+/* index.css */
+/* index.css */
+/* index.css */
 .car-animation {
-    position: fixed;
-    top: 70%;
-    right: -100px;
-    font-size: clamp(3rem, 5vw, 6rem); /* taille responsive */
-    z-index: 9999;
-    will-change: transform, opacity;
-    pointer-events: none;
-    opacity: 0;
+  position: fixed;       /* toujours visible */
+  top: 50%;
+  right: -50px;          /* départ hors écran à droite */
+  font-size: 3rem;
+  transition: right 2s linear;
+  z-index: 9999;         /* au-dessus de tout */
 }
 
-.car-animation.animate {
-    animation: driveAcross 4s linear forwards;
-    opacity: 1;
-}
 
-@keyframes driveAcross {
-    0% { right: -100px; opacity: 1; }
-    80% { right: 100vw; opacity: 1; }
-    100% { right: 100vw; opacity: 0; }
-}
 
 
 

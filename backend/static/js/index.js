@@ -594,18 +594,33 @@ window.DriveGo = {
 
 
 
-document.addEventListener("DOMContentLoaded", () => {
-    const car = document.querySelector(".car-animation");
+// index.js
+document.addEventListener('DOMContentLoaded', () => {
+  const car = document.querySelector('.car-animation');
+  if (!car) return;
 
-    // Vérifie si l'animation a déjà été jouée cette session
-    if (car && !sessionStorage.getItem("carAnimationPlayed")) {
-        setTimeout(() => {
-            car.classList.add("animate");
-        }, 100);
+  // Vérifier si l'animation a déjà été jouée cette session
+  if (!sessionStorage.getItem('carAnimationPlayed')) {
+    // Départ hors écran à droite
+    car.style.right = '-50px';
+    car.style.display = 'block';
 
-        // Marque que l'animation a été jouée
-        sessionStorage.setItem("carAnimationPlayed", "true");
-    }
+    // Déclenche l'animation vers la gauche
+    setTimeout(() => {
+      car.style.right = '100vw'; // traverse l'écran
+    }, 100);
+
+    // Masquer après l'animation
+    car.addEventListener('transitionend', () => {
+      car.style.display = 'none';
+    });
+
+    // Marquer comme jouée
+    sessionStorage.setItem('carAnimationPlayed', 'true');
+  } else {
+    // Si déjà jouée, masquer directement
+    car.style.display = 'none';
+  }
 });
 
 

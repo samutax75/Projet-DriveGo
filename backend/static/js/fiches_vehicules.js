@@ -88,7 +88,7 @@
                 vehicleItem.onclick = () => selectVehicle(vehicle);
                 
                 vehicleItem.innerHTML = `
-                    <div class="mobile-indicator">Tap pour détails</div>
+                    <div class="mobile-indicator">➡️ Détails</div>
                     <div class="vehicle-header">
                         <div>
                             <div class="vehicle-name">${vehicle.nom}</div>
