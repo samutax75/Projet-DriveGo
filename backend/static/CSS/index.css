@@ -2261,17 +2261,19 @@ a:hover {
 
 
 /* animation voiture de sport  */
-/* index.css */
-/* index.css */
-/* index.css */
+
 .car-animation {
-  position: fixed;       /* toujours visible */
-  top: 50%;
-  right: -50px;          /* départ hors écran à droite */
+  position: fixed;
+  bottom: 75px;            /* traverse à 20px du bas de l'écran */
+  left: 100%;              /* départ hors écran à droite */
   font-size: 3rem;
-  transition: right 2s linear;
-  z-index: 9999;         /* au-dessus de tout */
+  transform: translateX(0);
+  transition: transform 3s linear, opacity 0.5s ease;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
 }
+
 
 
 
