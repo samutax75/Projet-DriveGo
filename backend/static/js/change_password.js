@@ -6,6 +6,7 @@ class DriveGoPasswordManager {
         this.confirmPasswordInput = document.getElementById('confirm_password');
         this.submitBtn = document.getElementById('submitBtn');
         this.messageDiv = document.getElementById('message');
+        this.currentPasswordGroup = document.getElementById('currentPasswordGroup');
         
         this.init();
     }
@@ -59,7 +60,6 @@ class DriveGoPasswordManager {
             }
         });
 
-        // Calculer la force
         const metRequirements = Object.values(requirements).filter(Boolean).length;
         let strength = 'weak';
         let strengthText = 'Faible';
@@ -107,11 +107,14 @@ class DriveGoPasswordManager {
         
         const isPasswordStrong = this.checkPasswordStrength();
         const passwordsMatch = this.validatePasswordMatch();
-        const hasCurrentPassword = currentPassword.length > 0;
 
-        // Vérifier que le nouveau mot de passe est différent de l'ancien
+        // Vérifier si le champ mot de passe actuel est visible
+        const isCurrentPasswordRequired = this.currentPasswordGroup.offsetParent !== null; // vrai si visible
+        const hasCurrentPassword = isCurrentPasswordRequired ? currentPassword.length > 0 : true;
+
+        // Vérifier que le nouveau mot de passe est différent de l'ancien si nécessaire
         let isDifferent = true;
-        if (currentPassword && newPassword && currentPassword === newPassword) {
+        if (isCurrentPasswordRequired && currentPassword && newPassword && currentPassword === newPassword) {
             const errorElement = document.getElementById('newPasswordError');
             errorElement.textContent = 'Le nouveau mot de passe doit être différent de l\'ancien';
             errorElement.classList.add('show');
@@ -121,11 +124,11 @@ class DriveGoPasswordManager {
         }
 
         const isValid = hasCurrentPassword && 
-                       newPassword.length > 0 && 
-                       confirmPassword.length > 0 &&
-                       isPasswordStrong && 
-                       passwordsMatch &&
-                       isDifferent;
+                        newPassword.length > 0 && 
+                        confirmPassword.length > 0 &&
+                        isPasswordStrong && 
+                        passwordsMatch &&
+                        isDifferent;
 
         this.submitBtn.disabled = !isValid;
     }
@@ -157,18 +160,26 @@ class DriveGoPasswordManager {
                 document.getElementById('strengthMeter').classList.remove('show');
                 document.getElementById('strengthText').classList.remove('show');
                 
-                // Redirection après 2 secondes
                 setTimeout(() => {
                     window.location.href = '/dashboard';
                 }, 2000);
             } else {
                 this.showMessage(result.message || 'Une erreur est survenue', 'error');
                 
-                // Afficher les erreurs spécifiques
                 if (result.errors) {
                     if (result.errors.current_password) {
                         const errorEl = document.getElementById('currentPasswordError');
                         errorEl.textContent = result.errors.current_password;
+                        errorEl.classList.add('show');
+                    }
+                    if (result.errors.confirm_password) {
+                        const errorEl = document.getElementById('confirmPasswordError');
+                        errorEl.textContent = result.errors.confirm_password;
+                        errorEl.classList.add('show');
+                    }
+                    if (result.errors.new_password) {
+                        const errorEl = document.getElementById('newPasswordError');
+                        errorEl.textContent = result.errors.new_password;
                         errorEl.classList.add('show');
                     }
                 }
@@ -192,7 +203,7 @@ class DriveGoPasswordManager {
     }
 }
 
-// Fonction pour basculer la visibilité du mot de passe
+// Fonctions auxiliaires
 function togglePassword(inputId) {
     const input = document.getElementById(inputId);
     const toggle = input.nextElementSibling;
@@ -206,7 +217,6 @@ function togglePassword(inputId) {
     }
 }
 
-// Fonction pour revenir en arrière
 function goBack() {
     if (window.history.length > 1) {
         window.history.back();
@@ -215,19 +225,14 @@ function goBack() {
     }
 }
 
-// Gestion des touches clavier
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        goBack();
-    }
+    if (e.key === 'Escape') goBack();
 });
 
-// Initialisation
 document.addEventListener('DOMContentLoaded', () => {
     new DriveGoPasswordManager();
 });
 
-// Gestion des erreurs globales
 window.addEventListener('error', (e) => {
     console.error('Erreur JavaScript:', e.error);
 });

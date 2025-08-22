@@ -271,24 +271,8 @@ def mot_de_passe_oublie():
         return redirect(url_for('change_password'))
 
     return render_template("mot_de_passe_oublie.html")
-# Ajoutez cette route temporaire pour déboguer
-@app.route("/debug_session")
-def debug_session():
-    """Route de debug pour vérifier la session"""
-    if 'user_id' not in session:
-        return jsonify({
-            'logged_in': False,
-            'session_keys': list(session.keys()),
-            'message': 'Pas de user_id dans la session'
-        })
-    
-    return jsonify({
-        'logged_in': True,
-        'user_id': session.get('user_id'),
-        'email': session.get('email'),
-        'session_keys': list(session.keys()),
-        'message': 'Session active'
-    })
+
+
 @app.route("/change_password", methods=["GET", "POST"])
 def change_password():
     """Page pour changer le mot de passe"""
