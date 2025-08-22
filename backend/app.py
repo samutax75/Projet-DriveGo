@@ -257,33 +257,109 @@ def support():
     """Page de support"""
     return render_template('support.html')
 
-@app.route('/mot_de_passe_oublie', methods=['GET', 'POST'])
+@app.route("/mot_de_passe_oublie", methods=["GET", "POST"])
 def mot_de_passe_oublie():
-    """Page pour saisir email - mot de passe oublié"""
-    if request.method == 'POST':
-        email = request.form['email']
-        flash(f"Email {email} reçu. Vous pouvez maintenant changer votre mot de passe.", "info")
-        return redirect(url_for('change_password'))
-    return render_template('mot_de_passe_oublie.html')
+    if request.method == "POST":
+        email = request.form.get("email")
 
+        # Vérifications éventuelles ici (ex: si l'email existe en base)
+
+        # On sauvegarde l’email dans la session
+        session['password_reset_email'] = email.lower().strip()
+
+        # Puis on redirige vers la page pour changer le mot de passe
+        return redirect(url_for('change_password'))
+
+    return render_template("mot_de_passe_oublie.html")
+# Ajoutez cette route temporaire pour déboguer
+@app.route("/debug_session")
+def debug_session():
+    """Route de debug pour vérifier la session"""
+    if 'user_id' not in session:
+        return jsonify({
+            'logged_in': False,
+            'session_keys': list(session.keys()),
+            'message': 'Pas de user_id dans la session'
+        })
+    
+    return jsonify({
+        'logged_in': True,
+        'user_id': session.get('user_id'),
+        'email': session.get('email'),
+        'session_keys': list(session.keys()),
+        'message': 'Session active'
+    })
 @app.route("/change_password", methods=["GET", "POST"])
 def change_password():
     """Page pour changer le mot de passe"""
     if request.method == "POST":
+        # Vérifier si c'est une requête AJAX
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
+        current_password = request.form.get("current_password")
         new_password = request.form.get("new_password")
         confirm_password = request.form.get("confirm_password")
+        
+        # Vérifier si c'est une réinitialisation (depuis mot de passe oublié)
+        # Dans ce cas, on devrait avoir un token ou un email dans la session
+        is_reset = session.get('password_reset_email') is not None
+        reset_email = session.get('password_reset_email')
 
-        # Validation : correspondance des mots de passe
+        # Dictionnaire pour stocker les erreurs
+        errors = {}
+
+        # Validation différente selon le contexte
+        if is_reset:
+            # Cas : Réinitialisation de mot de passe (pas besoin de l'ancien mot de passe)
+            print(f"DEBUG - Password reset for email: {reset_email}")
+            
+            if not reset_email:
+                if is_ajax:
+                    return jsonify({
+                        'success': False,
+                        'message': 'Session de réinitialisation expirée'
+                    }), 400
+                else:
+                    flash("Session de réinitialisation expirée", "error")
+                    return redirect(url_for('mot_de_passe_oublie'))
+        else:
+            # Cas : Changement de mot de passe normal (utilisateur connecté)
+            user_id = session.get('user_id')
+            if not user_id:
+                if is_ajax:
+                    return jsonify({
+                        'success': False,
+                        'message': 'Vous devez être connecté'
+                    }), 401
+                else:
+                    return redirect(url_for('connexion'))
+            
+            # Validation du mot de passe actuel
+            if not current_password:
+                errors['current_password'] = "Le mot de passe actuel est requis"
+            else:
+                conn = sqlite3.connect('drivego.db')
+                cursor = conn.cursor()
+                cursor.execute("SELECT password_hash FROM users WHERE id = ?", (user_id,))
+                user_data = cursor.fetchone()
+                conn.close()
+                
+                if not user_data or not check_password_hash(user_data[0], current_password):
+                    errors['current_password'] = "Mot de passe actuel incorrect"
+
+        # Validation commune : correspondance des mots de passe
         if new_password != confirm_password:
-            flash("Les mots de passe ne correspondent pas", "error")
-            return render_template("change_password.html")
+            errors['confirm_password'] = "Les mots de passe ne correspondent pas"
 
-        # Validation : longueur minimale
+        # Validation commune : longueur minimale
         if len(new_password) < 8:
-            flash("Le mot de passe doit contenir au moins 8 caractères", "error")
-            return render_template("change_password.html")
+            errors['new_password'] = "Le mot de passe doit contenir au moins 8 caractères"
 
-        # Validation : complexité du mot de passe
+        # Validation commune : le nouveau mot de passe doit être différent de l'ancien
+        if not is_reset and current_password and new_password and current_password == new_password:
+            errors['new_password'] = "Le nouveau mot de passe doit être différent de l'ancien"
+
+        # Validation commune : complexité du mot de passe
         password_errors = []
         
         if not re.search(r'[A-Z]', new_password):
@@ -300,30 +376,78 @@ def change_password():
 
         if password_errors:
             error_msg = f"Le mot de passe doit contenir : {', '.join(password_errors)}"
-            flash(error_msg, "error")
-            return render_template("change_password.html")
+            errors['new_password'] = error_msg
 
+        # S'il y a des erreurs
+        if errors:
+            if is_ajax:
+                return jsonify({
+                    'success': False,
+                    'message': 'Erreurs de validation',
+                    'errors': errors
+                }), 400
+            else:
+                # Pour les requêtes non-AJAX (fallback)
+                for field, error in errors.items():
+                    flash(error, "error")
+                return render_template("change_password.html")
+
+        # Si pas d'erreurs, procéder au changement
         try:
             # Hash du nouveau mot de passe
             hashed_password = generate_password_hash(new_password)
             
-            # TODO: Mettre à jour en base de données
-            # user_id = session.get('user_id')
-            # cursor.execute("UPDATE users SET password = ? WHERE id = ?", (hashed_password, user_id))
-            # db.commit()
+            conn = sqlite3.connect('drivego.db')
+            cursor = conn.cursor()
             
-            # Log de sécurité (optionnel)
-            print(f"Password changed for user: {session.get('user_id', 'Unknown')}")
+            if is_reset:
+                # Mise à jour par email (réinitialisation)
+                cursor.execute("UPDATE users SET password_hash = ? WHERE email = ?", (hashed_password, reset_email))
+                user_affected = cursor.rowcount
+                print(f"DEBUG - Password reset completed for {reset_email}, rows affected: {user_affected}")
+                
+                # Nettoyer la session de réinitialisation
+                session.pop('password_reset_email', None)
+                
+            else:
+                # Mise à jour par user_id (changement normal)
+                user_id = session.get('user_id')
+                cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hashed_password, user_id))
+                user_affected = cursor.rowcount
+                print(f"DEBUG - Password changed for user ID: {user_id}, rows affected: {user_affected}")
             
-            flash("Mot de passe changé avec succès ✅", "success")
-            return redirect(url_for("index"))
+            conn.commit()
+            conn.close()
+            
+            if user_affected > 0:
+                if is_ajax:
+                    return jsonify({
+                        'success': True,
+                        'message': 'Mot de passe modifié avec succès !'
+                    }), 200
+                else:
+                    flash("Mot de passe changé avec succès ✅", "success")
+                    return redirect(url_for("connexion"))  # Redirection vers connexion après reset
+            else:
+                raise Exception("Aucune ligne mise à jour")
             
         except Exception as e:
             print(f"Erreur lors du changement de mot de passe: {e}")
-            flash("Erreur lors de la mise à jour. Veuillez réessayer.", "error")
-            return render_template("change_password.html")
+            
+            if is_ajax:
+                return jsonify({
+                    'success': False,
+                    'message': 'Erreur lors de la mise à jour. Veuillez réessayer.'
+                }), 500
+            else:
+                flash("Erreur lors de la mise à jour. Veuillez réessayer.", "error")
+                return render_template("change_password.html")
 
-    return render_template("change_password.html")
+    # GET request
+    # Vérifier si c'est une réinitialisation ou un changement normal
+    is_reset = session.get('password_reset_email') is not None
+    return render_template("change_password.html", is_reset=is_reset)
+
 
 @app.route('/profil', methods=['GET', 'POST'])
 @login_required
