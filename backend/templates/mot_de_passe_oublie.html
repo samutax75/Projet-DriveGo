@@ -16,6 +16,16 @@
     </div>
 
     <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="flash-message {{ category }}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
          <a href="{{ url_for('index') }}" class="logo">
     <img src="../static/images/logo perce-neige.PNG" 
          alt="Logo Fondation Perce-Neige" class="logo-image">

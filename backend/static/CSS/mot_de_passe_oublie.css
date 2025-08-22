@@ -285,3 +285,23 @@
         height: 40px;
     }
 }
+
+
+
+.flash-message {
+    margin: 15px 0;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.flash-message.success {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.flash-message.danger {
+    background-color: #f44336;
+    color: white;
+}
