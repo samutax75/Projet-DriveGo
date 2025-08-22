@@ -2265,7 +2265,7 @@ a:hover {
     position: fixed;
     top: 70%;
     right: -100px;
-    font-size: 2.5rem;
+    font-size: 4rem;
     z-index: 9999;
     will-change: transform, opacity;
     pointer-events: none;
