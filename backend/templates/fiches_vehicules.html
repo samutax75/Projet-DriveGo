@@ -5,15 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion du Parc Automobile</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/fiches_vehicules.css') }}">
+
     
-
-
 </head>
-<!-- Bouton de retour (croix)  --> 
-<div class="close-button">
+<body>
+    <!-- Bouton de retour -->
+    <div class="close-button">
     <a href="{{ url_for('index') }}" style="text-decoration: none; color: inherit;">×</a>
 </div>
-<body>
     
     <div class="container">
         <header class="header">
@@ -33,7 +32,7 @@
                 </div>
             </div>
 
-            <!-- Détails du véhicule -->
+            <!-- Détails du véhicule (Desktop seulement) -->
             <div class="card details-section">
                 <h2 class="card-title">
                     🔍 Info Véhicule
@@ -52,6 +51,20 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Mobile -->
+    <div class="mobile-modal" id="mobileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Détails du véhicule</h2>
+                <button class="modal-close" onclick="closeMobileModal()">×</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Contenu du modal -->
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/fiches_vehicules.js') }}"></script>
     
 </body>

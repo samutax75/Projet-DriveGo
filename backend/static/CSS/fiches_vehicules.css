@@ -1,4 +1,4 @@
- * {
+* {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -33,17 +33,12 @@
             opacity: 0.9;
         }
 
+        /* Desktop Layout */
         .main-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 30px;
             margin-top: 20px;
-        }
-
-        @media (max-width: 1024px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
         }
 
         .card {
@@ -68,12 +63,6 @@
             gap: 10px;
         }
 
-        .icon {
-            width: 24px;
-            height: 24px;
-            fill: currentColor;
-        }
-
         .vehicle-list {
             display: flex;
             flex-direction: column;
@@ -87,6 +76,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             background: white;
+            position: relative;
         }
 
         .vehicle-item:hover {
@@ -132,6 +122,56 @@
         .status.good { color: #16a34a; }
         .status.unknown { color: #6b7280; }
 
+        /* Mobile Modal */
+        .mobile-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: white;
+            height: 100%;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .modal-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
         .details-section {
             min-height: 500px;
         }
@@ -155,10 +195,6 @@
 
         .vehicle-details {
             display: none;
-        }
-
-        .vehicle-details.active {
-            display: block;
         }
 
         .vehicle-header-detail {
@@ -236,56 +272,87 @@
             letter-spacing: 2px;
         }
 
-        .status-indicator {
-            background: #eff6ff;
-            border: 1px solid #dbeafe;
-            border-left: 4px solid #3b82f6;
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 25px;
-        }
-
-        .status-indicator h4 {
-            color: #1e40af;
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
-
-        .progress-container {
+        /* Close Button */
+        .close-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background: white;
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            gap: 15px;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: none;
+            text-decoration: none;
         }
 
-        .progress-label {
-            color: #1e40af;
+        .close-button:hover {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* Mobile View Indicator */
+        .mobile-indicator {
+            display: none;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #3b82f6;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.7rem;
             font-weight: 500;
-            min-width: 120px;
         }
 
-        .progress-bar {
-            flex: 1;
-            height: 8px;
-            background: #dbeafe;
-            border-radius: 4px;
-            overflow: hidden;
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
-        .progress-fill {
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.3s ease;
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
         }
 
-        .progress-fill.good { background: #16a34a; }
-        .progress-fill.caution { background: #eab308; }
-        .progress-fill.warning { background: #f59e0b; }
-        .progress-fill.expired { background: #dc2626; }
-
-        .progress-status {
-            font-weight: 500;
-            min-width: 20px;
-            text-align: center;
+        /* Mobile Responsive */
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            /* Hide details section on mobile, use modal instead */
+            .details-section {
+                display: none;
+            }
+            
+            .mobile-indicator {
+                display: block;
+            }
+            
+            .vehicle-item {
+                position: relative;
+            }
+            
+            .vehicle-item::after {
+                content: "👆 Tap pour détails";
+                position: absolute;
+                right: 15px;
+                bottom: 10px;
+                font-size: 0.7rem;
+                color: #6b7280;
+                opacity: 0.8;
+            }
         }
 
         @media (max-width: 768px) {
@@ -306,38 +373,8 @@
                 align-items: flex-start;
                 gap: 10px;
             }
+            
+            .modal-header h2 {
+                font-size: 1.2rem;
+            }
         }
-
-
-
-
-
-/* Bouton de retour (croix) - Style cohérent avec le menu burger */
-.close-button {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    width: 50px;
-    height: 50px;
-    background: white;
-    color: #333;
-    font-size: 24px;
-    font-weight: bold;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 1000;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    border: none;
-    text-decoration: none;
-}
-
-.close-button:hover {
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    transform: translateY(-1px);
-    background: white;
-}
-

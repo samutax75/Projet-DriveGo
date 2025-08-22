@@ -1,4 +1,4 @@
-// Données des véhicules
+ // Données des véhicules
         const vehicles = [
             {
                 id: 1,
@@ -53,6 +53,7 @@
         ];
 
         let selectedVehicle = null;
+        const isMobile = window.innerWidth <= 1024;
 
         // Fonctions utilitaires
         function parseDate(dateStr) {
@@ -75,16 +76,6 @@
             return { class: 'good', text: `${diffDays} jours restants` };
         }
 
-        function getProgressWidth(dateStr) {
-            if (!dateStr) return 20;
-            const status = getStatusInfo(dateStr);
-            if (status.class === 'good') return 100;
-            if (status.class === 'caution') return 75;
-            if (status.class === 'warning') return 50;
-            return 25;
-        }
-
-        // Génération de la liste des véhicules
         function generateVehicleList() {
             const vehicleList = document.getElementById('vehicleList');
             vehicleList.innerHTML = '';
@@ -97,6 +88,7 @@
                 vehicleItem.onclick = () => selectVehicle(vehicle);
                 
                 vehicleItem.innerHTML = `
+                    <div class="mobile-indicator">Tap pour détails</div>
                     <div class="vehicle-header">
                         <div>
                             <div class="vehicle-name">${vehicle.nom}</div>
@@ -112,7 +104,6 @@
             });
         }
 
-        // Sélection d'un véhicule
         function selectVehicle(vehicle) {
             selectedVehicle = vehicle;
             
@@ -126,19 +117,38 @@
                 }
             });
 
-            // Affichage des détails
-            showVehicleDetails(vehicle);
+            // Sur mobile, ouvrir la modal
+            if (window.innerWidth <= 1024) {
+                openMobileModal(vehicle);
+            } else {
+                // Sur desktop, afficher dans le panneau de droite
+                showVehicleDetails(vehicle);
+            }
         }
 
-        // Affichage des détails du véhicule
-        function showVehicleDetails(vehicle) {
-            document.getElementById('noSelection').style.display = 'none';
-            document.getElementById('vehicleDetails').style.display = 'block';
+        function openMobileModal(vehicle) {
+            const modal = document.getElementById('mobileModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            
+            modalTitle.textContent = vehicle.nom;
+            modalBody.innerHTML = generateVehicleDetailsHTML(vehicle);
+            
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
 
+        function closeMobileModal() {
+            const modal = document.getElementById('mobileModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function generateVehicleDetailsHTML(vehicle) {
             const controleStatus = getStatusInfo(vehicle.controle);
             const validiteStatus = getStatusInfo(vehicle.finValidite);
 
-            document.getElementById('vehicleDetails').innerHTML = `
+            return `
                 <div class="vehicle-header-detail">
                     <h3>${vehicle.nom}</h3>
                     <p>${vehicle.immatriculation}</p>
@@ -180,32 +190,38 @@
                     <h4>💳 Numéro de Carte</h4>
                     <div class="card-number-value">${vehicle.numeroCarte}</div>
                 </div>
-
-                <div class="status-indicator">
-                    <h4>📊 Statut Global</h4>
-                    <div class="progress-container">
-                        <div class="progress-label">Contrôle Technique</div>
-                        <div class="progress-bar">
-                            <div class="progress-fill ${controleStatus.class}" 
-                                 style="width: ${getProgressWidth(vehicle.controle)}%"></div>
-                        </div>
-                        <div class="progress-status status ${controleStatus.class}">
-                            ${vehicle.controle ? '✓' : '⚠'}
-                        </div>
-                    </div>
-                </div>
             `;
         }
+
+        function showVehicleDetails(vehicle) {
+            document.getElementById('noSelection').style.display = 'none';
+            document.getElementById('vehicleDetails').style.display = 'block';
+            document.getElementById('vehicleDetails').innerHTML = generateVehicleDetailsHTML(vehicle);
+        }
+
+        function goToHomePage() {
+            // Remplacez par votre URL d'accueil
+            window.location.href = "index.html";
+        }
+
+        // Gestion du redimensionnement
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 1024) {
+                closeMobileModal();
+                if (selectedVehicle) {
+                    showVehicleDetails(selectedVehicle);
+                }
+            }
+        });
+
+        // Fermeture du modal en cliquant à l'extérieur
+        document.getElementById('mobileModal').addEventListener('click', (e) => {
+            if (e.target.id === 'mobileModal') {
+                closeMobileModal();
+            }
+        });
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
             generateVehicleList();
         });
-
-
-
-
-// Bouton de retour (croix) 
-function goToHomePage() {
-  window.location.href = "index.html";
-}
