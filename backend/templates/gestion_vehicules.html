@@ -3,116 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀Go Mission - Gestion des Véhicules</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/gestion_vehicules.css') }}">
-    
+    <title>DriveGo - Gestion du Parc Automobile</title>
+    <link rel="stylesheet" href="../static/CSS/gestion_vehicules.css">
 </head>
 <body>
-    <div class="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 relative overflow-hidden">
-        <!-- Particules d'arrière-plan animées -->
-        <div class="absolute inset-0" id="particles"></div>
+    <!-- Bouton de retour -->
+    <div class="close-button">
+    <a href="{{ url_for('index') }}" style="text-decoration: none; color: inherit;">×</a>
+</div>
+    
+    <div class="container">
+        <header class="header">
+            <h1>🚀Go mission</h1>
+            <p>Sélectionnez un véhicule pour consulter et gérer ses missions</p>
+        </header>
 
-        <!-- Bouton de fermeture -->
-        <button onclick="window.close()" class="fixed top-5 right-5 w-12 h-12 bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center text-white text-2xl hover:bg-white/30 transition-all duration-300 hover:rotate-90 z-40 border border-white/30 shadow-lg">
-            ×
-        </button>
-
-        <!-- Notification -->
-        <div id="notification" class="fixed top-20 right-5 px-6 py-4 rounded-xl text-white font-medium shadow-lg z-50 transition-all duration-500 transform translate-x-full"></div>
-
-        <div class="container mx-auto px-5 py-8 max-w-7xl relative z-10">
-            <!-- Header -->
-            <header class="text-center mb-10 text-white">
-                <h1 class="text-4xl md:text-5xl font-bold mb-4 drop-shadow-lg animate-fadeIn">
-                    🚀Go Mission
-                </h1>
-                <p class="text-lg md:text-xl opacity-90 animate-fadeIn delay-200">
-                    Sélectionnez un véhicule pour consulter et gérer ses missions
-                </p>
-            </header>
-
-            <!-- Statistiques -->
-            <div id="statistics" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"></div>
-
-            <!-- Actions rapides -->
-            <div class="bg-white/95 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-white/20">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800">⚡ Actions rapides</h3>
-                <div class="flex flex-wrap gap-3">
-                    <button onclick="quickReservation()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all duration-300 hover:transform hover:scale-105 flex items-center gap-2">
-                        📅 Réservation rapide
-                    </button>
-                    <button onclick="showMissionStatus()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg transition-all duration-300 hover:transform hover:scale-105 flex items-center gap-2">
-                        📊 Statut missions
-                    </button>
-                    <button onclick="showTotalDistance()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-all duration-300 hover:transform hover:scale-105 flex items-center gap-2">
-                        🛣️ Distances
-                    </button>
+        <div class="main-grid">
+            <!-- Liste des véhicules -->
+            <div class="card">
+                <h2 class="card-title">
+                    🚙 Flotte Véhicules
+                </h2>
+                <div class="vehicle-list" id="vehicleList">
+                    <!-- Les véhicules seront générés par JavaScript -->
                 </div>
             </div>
 
-            <!-- Layout principal -->
-            <div id="mainLayout" class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                <!-- Liste des véhicules -->
-                <div class="bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 animate-slideUp">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-3">
-                        🚙 Flotte Véhicules
-                        <span id="vehicleCount" class="text-sm bg-indigo-100 text-indigo-600 px-2 py-1 rounded-full">5</span>
-                    </h2>
-                    <div id="vehiclesList" class="space-y-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-hide"></div>
+            <!-- Contrôle des missions -->
+            <div class="card details-section">
+                <h2 class="card-title">
+                    🎯 Centre de Contrôle
+                </h2>
+                
+                <div class="no-selection" id="noSelection">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
+                    </svg>
+                    <p>Sélectionnez un véhicule<br>pour commencer une mission</p>
                 </div>
 
-                <!-- Centre de contrôle - Desktop uniquement -->
-                <div id="controlCenter" class="hidden lg:block bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 animate-slideUp delay-200">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-3">
-                        🎯 Centre de Contrôle
-                    </h2>
-                    <div id="vehicleDetails"></div>
-                </div>
-
-                <!-- Journal des missions -->
-                <div class="bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 animate-slideUp delay-300">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-3">
-                            📊 Journal des Missions
-                            <span id="missionCount" class="text-sm bg-green-100 text-green-600 px-2 py-1 rounded-full">0</span>
-                        </h2>
-                        <button id="showMissionsModalBtn" class="lg:hidden bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition-colors transform hover:scale-110" title="Voir toutes les missions">
-                            👁️
-                        </button>
-                    </div>
-                    <div id="missionsList" class="space-y-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-hide"></div>
+                <div class="vehicle-details" id="vehicleDetails">
+                    <!-- Les détails seront affichés ici -->
                 </div>
             </div>
-        </div>
 
-        <!-- Modal véhicule - Mobile -->
-        <div id="vehicleModal" class="modal fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100">
-                <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
-                    <h2 id="vehicleModalTitle" class="text-xl font-bold">Détails véhicule</h2>
-                    <button onclick="closeVehicleModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
-                        ✕
-                    </button>
+            <!-- Historique des missions -->
+            <div class="card">
+                <h2 class="card-title">
+                    📊 Journal des Missions
+                </h2>
+                <div class="missions-list" id="missionsList">
+                    <p style="text-align: center; color: #6b7280; padding: 40px;">
+                        🔍 Aucune mission enregistrée
+                    </p>
                 </div>
-                <div class="p-6 overflow-y-auto max-h-[calc(90vh-8rem)]" id="vehicleModalContent"></div>
-            </div>
-        </div>
-
-        <!-- Modal missions - Mobile -->
-        <div id="missionsModal" class="modal fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100">
-                <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
-                    <h2 class="text-xl font-bold">📊 Toutes les missions</h2>
-                    <button onclick="closeMissionsModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
-                        ✕
-                    </button>
-                </div>
-                <div class="p-6 overflow-y-auto max-h-[calc(90vh-8rem)]" id="missionsModalContent"></div>
             </div>
         </div>
     </div>
-    <script src="{{ url_for('static', filename='js/gestion_vehicules.js') }}"></script>
 
+<script src="../static/js/gestion_vehicules.js"></script>
 </body>
 </html>
