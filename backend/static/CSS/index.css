@@ -2276,6 +2276,147 @@ a:hover {
 
 
 
+/* ======== BOUTON GO MISSION ======== */
+.go-mission-btn {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    box-shadow: 
+        0 6px 20px rgba(66, 133, 244, 0.4),
+        0 3px 12px rgba(66, 133, 244, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    animation: waterDrop 4s ease-in-out infinite;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    margin: 10px auto;
+}
+
+.go-mission-btn::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    animation: ripple 4s ease-in-out infinite;
+}
+
+.go-mission-text {
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    z-index: 2;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.go-mission-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 
+        0 8px 25px rgba(66, 133, 244, 0.5),
+        0 4px 15px rgba(66, 133, 244, 0.3);
+    animation: none;
+}
+
+.go-mission-btn:hover::before {
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: scale(1.1);
+}
+
+.go-mission-btn:active {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 
+        0 4px 15px rgba(66, 133, 244, 0.4),
+        0 2px 8px rgba(66, 133, 244, 0.2);
+}
+
+/* Animations */
+@keyframes waterDrop {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4), 0 3px 12px rgba(66, 133, 244, 0.2);
+    }
+    15% { opacity: 0.7; transform: scale(0.98); }
+    30% {
+        opacity: 1;
+        transform: scale(1.02);
+        box-shadow: 0 8px 25px rgba(66, 133, 244, 0.6), 0 4px 15px rgba(66, 133, 244, 0.3), inset 0 0 12px rgba(255, 255, 255, 0.2);
+    }
+    45% { opacity: 0.85; transform: scale(1); }
+    60% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 7px 22px rgba(66, 133, 244, 0.5), 0 4px 14px rgba(66, 133, 244, 0.3);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4), 0 3px 12px rgba(66, 133, 244, 0.2);
+    }
+}
+
+@keyframes ripple {
+    0% { border-color: rgba(255, 255, 255, 0.3); transform: scale(1); }
+    30% { border-color: rgba(255, 255, 255, 0.6); transform: scale(1.05); }
+    100% { border-color: rgba(255, 255, 255, 0.3); transform: scale(1); }
+}
+
+/* Intégration avec vos CTA buttons existants */
+.cta-buttons {
+    align-items: center; /* Pour aligner le bouton Go Mission avec les autres */
+}
+
+.cta-buttons .go-mission-btn {
+    margin: 10px;
+}
+
+/* Media queries mobile */
+@media (max-width: 480px) {
+    .go-mission-btn {
+        width: 80px;
+        height: 80px;
+        margin: 8px auto;
+    }
+    
+    .go-mission-text {
+        font-size: 10px;
+        letter-spacing: 0.3px;
+    }
+    
+    .go-mission-btn::before {
+        top: 5px;
+        left: 5px;
+        right: 5px;
+        bottom: 5px;
+        border-width: 1.5px;
+    }
+}
+
+@media (max-width: 320px) {
+    .go-mission-btn {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .go-mission-text {
+        font-size: 9px;
+        letter-spacing: 0.2px;
+    }
+}
 
 
 

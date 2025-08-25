@@ -617,6 +617,33 @@ window.addEventListener("load", () => {
 
 
 
+// ========================================
+// GO MISSION BUTTON MOBILE OPTIMIZATION
+// ========================================
+document.addEventListener('DOMContentLoaded', function() {
+    const goMissionBtn = document.querySelector('.go-mission-btn');
+    
+    if (goMissionBtn) {
+        // Optimisation tactile pour mobile
+        goMissionBtn.addEventListener('touchstart', function(e) {
+            this.style.transform = 'translateY(-1px) scale(0.98)';
+        });
+
+        goMissionBtn.addEventListener('touchend', function(e) {
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 100);
+        });
+
+        // Effet de clic pour desktop
+        goMissionBtn.addEventListener('click', function(e) {
+            this.style.transform = 'translateY(-1px) scale(0.98)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 100);
+        });
+    }
+});
 
 
 console.log('✅ DriveGo JavaScript chargé - Version Flask/Jinja2');

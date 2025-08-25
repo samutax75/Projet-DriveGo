@@ -173,7 +173,9 @@
                 </p>
                 <div class="cta-buttons">
                     {% if user_logged_in %}
-                        <a href="{{ url_for('reservation') }}" class="btn btn-primary">⚡ Réserver maintenant</a>
+                        <a href="{{ url_for('gestion_vehicules') }}" class="go-mission-btn">
+            <span class="go-mission-text">GO MISSION</span>
+                </a>
                     {% else %}
                         <!-- Actions primaires (conversion) -->
                         <a href="{{ url_for('connexion') }}" class="btn btn-primary">⚡ Se connecter</a>

@@ -4,32 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriveGo - Gestion du Parc Automobile</title>
-    <link rel="stylesheet" href="../static/CSS/gestion_vehicules.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/gestion_vehicules.css') }}">
+    
 </head>
 <body>
     <!-- Bouton de retour -->
-    <div class="close-button">
-    <a href="{{ url_for('index') }}" style="text-decoration: none; color: inherit;">×</a>
-</div>
+    <a href="{{ url_for('index') }}" class="close-button">×</a>
+
+    
+    <!-- Informations utilisateur -->
+    <div class="user-info" id="userInfo">
+        👤 Chargement...
+    </div>
     
     <div class="container">
         <header class="header">
             <h1>🚀Go mission</h1>
-            <p>Sélectionnez un véhicule pour consulter et gérer ses missions</p>
+            <p>Gérez vos missions et consultez vos véhicules disponibles</p>
         </header>
 
         <div class="main-grid">
             <!-- Liste des véhicules -->
             <div class="card">
                 <h2 class="card-title">
-                    🚙 Flotte Véhicules
+                    🚙 Mes Véhicules
                 </h2>
                 <div class="vehicle-list" id="vehicleList">
                     <!-- Les véhicules seront générés par JavaScript -->
                 </div>
             </div>
 
-            <!-- Contrôle des missions -->
+            <!-- Contrôle des missions (Desktop seulement) -->
             <div class="card details-section">
                 <h2 class="card-title">
                     🎯 Centre de Contrôle
@@ -39,7 +44,7 @@
                     <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
                     </svg>
-                    <p>Sélectionnez un véhicule<br>pour commencer une mission</p>
+                    <p>Sélectionnez un véhicule<br>pour gérer vos missions</p>
                 </div>
 
                 <div class="vehicle-details" id="vehicleDetails">
@@ -47,10 +52,10 @@
                 </div>
             </div>
 
-            <!-- Historique des missions -->
-            <div class="card">
+            <!-- Historique des missions (Desktop seulement) -->
+            <div class="card missions-section">
                 <h2 class="card-title">
-                    📊 Journal des Missions
+                    📊 Mes Missions
                 </h2>
                 <div class="missions-list" id="missionsList">
                     <p style="text-align: center; color: #6b7280; padding: 40px;">
@@ -61,6 +66,35 @@
         </div>
     </div>
 
-<script src="../static/js/gestion_vehicules.js"></script>
+    <!-- Modal Mobile -->
+    <div class="mobile-modal" id="mobileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">🎯 Centre de Contrôle</h2>
+                <button class="modal-close" onclick="closeMobileModal()">×</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Contenu du modal -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Missions (Mobile) -->
+    <div class="mobile-modal" id="missionsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📊 Mes Missions</h2>
+                <button class="modal-close" onclick="closeMissionsModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="missions-list" id="modalMissionsList">
+                    <!-- Missions list will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/gestion_vehicules.js') }}"></script>
+    
 </body>
 </html>

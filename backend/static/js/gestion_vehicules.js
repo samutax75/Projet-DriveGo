@@ -1,109 +1,241 @@
- // Données des véhicules avec statuts de mission
-        const vehicles = [
-            {
-                id: 1,
-                nom: "TRAFIC BLANC",
-                immatriculation: "FV-088-JJ",
-                dateImmatriculation: "26/11/2020",
-                controle: "29/10/2024",
-                prochainControle: "28/10/2026",
-                finValidite: "30/09/2026",
-                numeroCarte: "4985080",
-                status: "disponible"
-            },
-            {
-                id: 2,
-                nom: "TRAFIC PMR",
-                immatriculation: "GT-176-AF",
-                dateImmatriculation: "14/12/2023",
-                controle: "",
-                prochainControle: "14/12/2027",
-                finValidite: "30/06/2029",
-                numeroCarte: "8954319",
-                status: "disponible"
-            },
-            {
-                id: 3,
-                nom: "TRAFIC VERT",
-                immatriculation: "EJ-374-TT",
-                dateImmatriculation: "02/02/2017",
-                controle: "12/03/2025",
-                prochainControle: "11/03/2027",
-                finValidite: "30/09/2026",
-                numeroCarte: "4985081",
-                status: "disponible"
-            },
-            {
-                id: 4,
-                nom: "TRAFIC ROUGE",
-                immatriculation: "CW-819-FR",
-                dateImmatriculation: "26/06/2013",
-                controle: "27/01/2025",
-                prochainControle: "26/01/2027",
-                finValidite: "30/09/2026",
-                numeroCarte: "4985082",
-                status: "disponible"
-            },
-            {
-                id: 5,
-                nom: "KANGOO",
-                immatriculation: "DS-429-PF",
-                dateImmatriculation: "22/06/2015",
-                controle: "29/01/2025",
-                prochainControle: "28/01/2027",
-                finValidite: "30/09/2026",
-                numeroCarte: "4985084",
-                status: "disponible"
-            }
-        ];
+ // Base de données simulée
+        const DATABASE = {
+            users: [
+                { id: 1, nom: "Jean Dupont", email: "jean.dupont@drivego.fr", role: "chauffeur" },
+                { id: 2, nom: "Marie Martin", email: "marie.martin@drivego.fr", role: "chauffeur" },
+                { id: 3, nom: "Pierre Dubois", email: "pierre.dubois@drivego.fr", role: "chauffeur" },
+                { id: 4, nom: "Sophie Leroy", email: "sophie.leroy@drivego.fr", role: "chauffeur" },
+                { id: 5, nom: "Thomas Bernard", email: "thomas.bernard@drivego.fr", role: "chauffeur" }
+            ],
+            
+            vehicles: [
+                {
+                    id: 1,
+                    nom: "TRAFIC BLANC",
+                    immatriculation: "FV-088-JJ",
+                    dateImmatriculation: "26/11/2020",
+                    controle: "29/10/2024",
+                    prochainControle: "28/10/2026",
+                    finValidite: "30/09/2026",
+                    numeroCarte: "4985080"
+                },
+                {
+                    id: 2,
+                    nom: "TRAFIC PMR",
+                    immatriculation: "GT-176-AF",
+                    dateImmatriculation: "14/12/2023",
+                    controle: "",
+                    prochainControle: "14/12/2027",
+                    finValidite: "30/06/2029",
+                    numeroCarte: "8954319"
+                },
+                {
+                    id: 3,
+                    nom: "TRAFIC VERT",
+                    immatriculation: "EJ-374-TT",
+                    dateImmatriculation: "02/02/2017",
+                    controle: "12/03/2025",
+                    prochainControle: "11/03/2027",
+                    finValidite: "30/09/2026",
+                    numeroCarte: "4985081"
+                },
+                {
+                    id: 4,
+                    nom: "TRAFIC ROUGE",
+                    immatriculation: "CW-819-FR",
+                    dateImmatriculation: "26/06/2013",
+                    controle: "27/01/2025",
+                    prochainControle: "26/01/2027",
+                    finValidite: "30/09/2026",
+                    numeroCarte: "4985082"
+                },
+                {
+                    id: 5,
+                    nom: "KANGOO",
+                    immatriculation: "DS-429-PF",
+                    dateImmatriculation: "22/06/2015",
+                    controle: "29/01/2025",
+                    prochainControle: "28/01/2027",
+                    finValidite: "30/09/2026",
+                    numeroCarte: "4985084"
+                }
+            ],
 
+            reservations: [
+                {
+                    id: 1,
+                    vehicleId: 2,
+                    userId: 1, // Jean Dupont
+                    date: "2025-08-25",
+                    timeSlot: "14:30-16:00",
+                    purpose: "Formation conduite",
+                    status: "active"
+                },
+                {
+                    id: 2,
+                    vehicleId: 3,
+                    userId: 3, // Pierre Dubois  
+                    date: "2025-08-26",
+                    timeSlot: "09:00-12:00",
+                    purpose: "Mission transport",
+                    status: "active"
+                }
+            ],
+
+            missions: [
+                {
+                    id: 1,
+                    vehicleId: 1,
+                    userId: 1, // Jean Dupont
+                    nom: "Jean Dupont",
+                    vehicleName: "TRAFIC BLANC",
+                    missionDate: "2025-08-24",
+                    departureTime: "10:30",
+                    arrivalTime: "12:15",
+                    missionNature: "Transport de personnel",
+                    destination: "Aéroport Nice",
+                    passengers: 4,
+                    kmDepart: 45230,
+                    kmArrivee: 45285,
+                    distanceParcourue: 55,
+                    status: "completed",
+                    startTime: new Date('2025-08-24T10:30:00'),
+                    endTime: new Date('2025-08-24T12:15:00'),
+                    notes: "Mission réussie, passagers à l'heure"
+                }
+            ],
+
+            activeMissions: [
+                // Exemple: Jean Dupont a une mission active sur le véhicule 4
+                {
+                    vehicleId: 4,
+                    userId: 1, // Jean Dupont
+                    id: Date.now(),
+                    vehicleName: "TRAFIC ROUGE",
+                    nom: "Jean Dupont",
+                    missionDate: "2025-08-24",
+                    departureTime: "14:30",
+                    missionNature: "Livraison urgente",
+                    destination: "Centre Commercial Polygone",
+                    passengers: 1,
+                    kmDepart: 45100,
+                    status: "active",
+                    startTime: new Date()
+                }
+            ]
+        };
+
+        // Utilisateur connecté (simulé)
+        let currentUser = DATABASE.users[0]; // Jean Dupont par défaut
         let selectedVehicle = null;
-        let missions = [];
-        let activeMissions = {};
-        let reservations = {};
 
         // Fonctions utilitaires
-        function parseDate(dateStr) {
-            if (!dateStr) return null;
-            const parts = dateStr.split('/');
-            return new Date(parts[2], parts[1] - 1, parts[0]);
+        function getUserById(userId) {
+            return DATABASE.users.find(u => u.id === userId);
         }
 
-        function getStatusInfo(dateStr) {
-            if (!dateStr) return { class: 'unknown', text: 'Non renseigné' };
-
-            const today = new Date();
-            const checkDate = parseDate(dateStr);
-            const diffTime = checkDate - today;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays < 0) return { class: 'expired', text: `Expiré depuis ${Math.abs(diffDays)} jours` };
-            if (diffDays < 30) return { class: 'warning', text: `Expire dans ${diffDays} jours` };
-            if (diffDays < 90) return { class: 'caution', text: `Expire dans ${diffDays} jours` };
-            return { class: 'good', text: `${diffDays} jours restants` };
+        function getVehicleById(vehicleId) {
+            return DATABASE.vehicles.find(v => v.id === vehicleId);
         }
 
-        function formatTime(seconds) {
-            const hours = Math.floor(seconds / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            const secs = seconds % 60;
-            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        function hasActiveUserMission() {
+            return DATABASE.activeMissions.some(mission => mission.userId === currentUser.id);
         }
 
-        // Fonction pour gérer la sélection "Autre" dans nature de mission
-        function checkAutre(selectElement) {
-            const autreText = document.getElementById("autreText");
-            if (autreText) {
-                if (selectElement.value === "autre") {
-                    autreText.disabled = false;
-                    autreText.required = true;
-                    autreText.focus();
-                } else {
-                    autreText.disabled = true;
-                    autreText.required = false;
-                    autreText.value = "";
-                }
+        function getUserActiveMission() {
+            return DATABASE.activeMissions.find(mission => mission.userId === currentUser.id);
+        }
+
+        function canUserAccessVehicle(vehicle) {
+            // L'utilisateur peut accéder au véhicule si:
+            // 1. Il a une mission active dessus
+            const userActiveMission = DATABASE.activeMissions.find(m => m.userId === currentUser.id && m.vehicleId === vehicle.id);
+            if (userActiveMission) return { canAccess: true, reason: 'my-mission' };
+
+            // 2. Il a une réservation dessus
+            const userReservation = DATABASE.reservations.find(r => r.userId === currentUser.id && r.vehicleId === vehicle.id && r.status === 'active');
+            if (userReservation) return { canAccess: true, reason: 'my-reservation' };
+
+            // 3. Le véhicule est libre ET l'utilisateur n'a pas d'autre mission active
+            const vehicleOccupied = DATABASE.activeMissions.some(m => m.vehicleId === vehicle.id) || 
+                                  DATABASE.reservations.some(r => r.vehicleId === vehicle.id && r.status === 'active');
+            
+            if (!vehicleOccupied && !hasActiveUserMission()) {
+                return { canAccess: true, reason: 'available' };
             }
+
+            // 4. Sinon, accès refusé
+            return { canAccess: false, reason: 'occupied' };
+        }
+
+        function getVehicleStatus(vehicle) {
+            const access = canUserAccessVehicle(vehicle);
+            
+            if (access.reason === 'my-mission') {
+                const mission = DATABASE.activeMissions.find(m => m.userId === currentUser.id && m.vehicleId === vehicle.id);
+                return {
+                    status: 'my-mission',
+                    text: '🎯 Ma mission',
+                    user: currentUser.nom,
+                    canSelect: true
+                };
+            }
+            
+            if (access.reason === 'my-reservation') {
+                const reservation = DATABASE.reservations.find(r => r.userId === currentUser.id && r.vehicleId === vehicle.id);
+                return {
+                    status: 'my-reservation',
+                    text: '📅 Ma réservation',
+                    user: currentUser.nom,
+                    canSelect: true
+                };
+            }
+            
+            if (access.reason === 'available') {
+                return {
+                    status: 'available',
+                    text: '✅ Disponible',
+                    user: null,
+                    canSelect: true
+                };
+            }
+            
+            // Véhicule occupé par quelqu'un d'autre
+            const otherMission = DATABASE.activeMissions.find(m => m.vehicleId === vehicle.id);
+            const otherReservation = DATABASE.reservations.find(r => r.vehicleId === vehicle.id && r.status === 'active');
+            
+            if (otherMission) {
+                const otherUser = getUserById(otherMission.userId);
+                return {
+                    status: 'occupied',
+                    text: '🚗 En mission',
+                    user: otherUser ? otherUser.nom : 'Utilisateur inconnu',
+                    canSelect: false
+                };
+            }
+            
+            if (otherReservation) {
+                const otherUser = getUserById(otherReservation.userId);
+                return {
+                    status: 'occupied',
+                    text: '📅 Réservé',
+                    user: otherUser ? otherUser.nom : 'Utilisateur inconnu',
+                    canSelect: false
+                };
+            }
+            
+            return {
+                status: 'occupied',
+                text: '❌ Indisponible',
+                user: null,
+                canSelect: false
+            };
+        }
+
+        // Mise à jour des informations utilisateur
+        function updateUserInfo() {
+            const userInfo = document.getElementById('userInfo');
+            userInfo.textContent = `👤 ${currentUser.nom}`;
         }
 
         // Génération de la liste des véhicules
@@ -111,42 +243,28 @@
             const vehicleList = document.getElementById('vehicleList');
             vehicleList.innerHTML = '';
 
-            vehicles.forEach(vehicle => {
-                const isInMission = activeMissions[vehicle.id];
-                const isReserved = reservations[vehicle.id];
-
-                // Récupération du nom du conducteur en mission
-                let driverName = '';
-                if (isInMission && activeMissions[vehicle.id].nom) {
-                    driverName = activeMissions[vehicle.id].nom;
-                }
-
+            DATABASE.vehicles.forEach(vehicle => {
+                const vehicleStatus = getVehicleStatus(vehicle);
+                
                 const vehicleItem = document.createElement('div');
-
-                // Définir les classes CSS selon le statut
-                let vehicleClass = 'vehicle-item';
-                let statusText = '✅ Disponible';
-                let statusClass = 'available';
-
-                if (isInMission) {
-                    vehicleClass += ' in-mission';
-                    statusText = '🚗 En mission';
-                    statusClass = 'mission';
-                } else if (isReserved) {
-                    vehicleClass += ' reserved';
-                    statusText = '📅 Réservé';
-                    statusClass = 'reserved';
+                let vehicleClass = `vehicle-item ${vehicleStatus.status}`;
+                
+                if (!vehicleStatus.canSelect) {
+                    vehicleClass += ' disabled';
                 }
 
                 vehicleItem.className = vehicleClass;
-                vehicleItem.onclick = () => selectVehicle(vehicle);
+                
+                if (vehicleStatus.canSelect) {
+                    vehicleItem.onclick = () => selectVehicle(vehicle);
+                }
 
-                // Affichage du nom du conducteur ou de la personne qui a réservé
-                let personInfo = '';
-                if (isInMission && driverName) {
-                    personInfo = `<div class="driver-name">👤 ${driverName}</div>`;
-                } else if (isReserved) {
-                    personInfo = `<div class="reserved-name">👤 ${reservations[vehicle.id].reservedBy}</div>`;
+                let userInfo = '';
+                if (vehicleStatus.user && vehicleStatus.status !== 'available') {
+                    const isCurrentUser = vehicleStatus.user === currentUser.nom;
+                    userInfo = `<div class="user-badge">
+                        ${isCurrentUser ? '👤 Vous' : `👤 ${vehicleStatus.user}`}
+                    </div>`;
                 }
 
                 vehicleItem.innerHTML = `
@@ -154,14 +272,12 @@
                         <div>
                             <div class="vehicle-name">${vehicle.nom}</div>
                             <div class="vehicle-plate">${vehicle.immatriculation}</div>
-                            ${personInfo}
+                            ${userInfo}
                         </div>
-                        <div class="status ${statusClass}">
-                            ${statusText}
+                        <div class="status ${vehicleStatus.status}">
+                            ${vehicleStatus.text}
                         </div>
                     </div>
-                    ${isInMission ? '<div class="mission-badge">🎯</div>' : ''}
-                    ${isReserved ? '<div class="reservation-badge">📅</div>' : ''}
                 `;
 
                 vehicleList.appendChild(vehicleItem);
@@ -170,66 +286,127 @@
 
         // Sélection d'un véhicule
         function selectVehicle(vehicle) {
+            const access = canUserAccessVehicle(vehicle);
+            if (!access.canAccess) {
+                showNotification('❌ Vous ne pouvez pas accéder à ce véhicule', 'error');
+                return;
+            }
+
             selectedVehicle = vehicle;
 
-            // Mise à jour de l'affichage de la liste
-            const vehicleItems = document.querySelectorAll('.vehicle-item');
-            vehicleItems.forEach((item, index) => {
-                if (index === vehicle.id - 1) {
-                    item.classList.add('selected');
-                } else {
-                    item.classList.remove('selected');
-                }
-            });
+            const vehicleItems = document.querySelectorAll('.vehicle-item:not(.disabled)');
+            vehicleItems.forEach(item => item.classList.remove('selected'));
 
-            // Affichage des détails
-            showVehicleDetails(vehicle);
+            const currentIndex = DATABASE.vehicles.findIndex(v => v.id === vehicle.id);
+            const currentItem = document.querySelectorAll('.vehicle-item')[currentIndex];
+            if (currentItem && !currentItem.classList.contains('disabled')) {
+                currentItem.classList.add('selected');
+            }
+
+            // Sur mobile, ouvrir la modal
+            if (window.innerWidth <= 1200) {
+                openMobileModal(vehicle);
+            } else {
+                // Sur desktop, afficher dans le panneau
+                showVehicleDetails(vehicle);
+            }
         }
 
-        // Affichage des détails du véhicule
-        function showVehicleDetails(vehicle) {
-            document.getElementById('noSelection').style.display = 'none';
-            document.getElementById('vehicleDetails').style.display = 'block';
+        function openMobileModal(vehicle) {
+            const modal = document.getElementById('mobileModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            
+            modalTitle.textContent = `🎯 ${vehicle.nom}`;
+            modalBody.innerHTML = generateVehicleDetailsHTML(vehicle);
+            
+            // Ajouter le bouton pour voir les missions sur mobile
+            modalBody.innerHTML += `
+                <div style="margin-top: 30px; text-align: center;">
+                    <button onclick="openMissionsModal()" class="btn btn-primary">
+                        📊 Voir mes missions
+                    </button>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
 
-            const isInMission = activeMissions[vehicle.id];
-            const isReserved = reservations[vehicle.id];
+        function closeMobileModal() {
+            const modal = document.getElementById('mobileModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function openMissionsModal() {
+            const modal = document.getElementById('missionsModal');
+            const missionsList = document.getElementById('modalMissionsList');
+            
+            // Synchroniser avec la liste des missions de l'utilisateur
+            missionsList.innerHTML = generateUserMissionsList();
+            
+            modal.style.display = 'block';
+        }
+
+        function closeMissionsModal() {
+            const modal = document.getElementById('missionsModal');
+            modal.style.display = 'none';
+        }
+
+        function generateVehicleDetailsHTML(vehicle) {
+            const access = canUserAccessVehicle(vehicle);
+            
+            if (!access.canAccess) {
+                return `
+                    <div class="access-denied">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                        <h4>🚫 Accès non autorisé</h4>
+                        <p>Ce véhicule est utilisé par un autre utilisateur ou vous avez déjà une mission active.</p>
+                    </div>
+                `;
+            }
+
+            const userActiveMission = DATABASE.activeMissions.find(m => m.userId === currentUser.id && m.vehicleId === vehicle.id);
+            const userReservation = DATABASE.reservations.find(r => r.userId === currentUser.id && r.vehicleId === vehicle.id && r.status === 'active');
 
             let missionControlHTML = '';
 
-            if (isInMission) {
-                const mission = activeMissions[vehicle.id];
-
+            if (userActiveMission) {
+                // Utilisateur a une mission active sur ce véhicule
                 missionControlHTML = `
                     <div class="mission-active">
                         <h4>🎯 Mission en cours</h4>
                         <div class="mission-info">
                             <div class="mission-info-item">
                                 <div class="mission-info-label">Conducteur</div>
-                                <div class="mission-info-value">👤 ${mission.nom}</div>
+                                <div class="mission-info-value">👤 ${userActiveMission.nom}</div>
                             </div>
                             <div class="mission-info-item">
                                 <div class="mission-info-label">Date</div>
-                                <div class="mission-info-value">${mission.missionDate}</div>
+                                <div class="mission-info-value">${new Date(userActiveMission.missionDate).toLocaleDateString('fr-FR')}</div>
                             </div>
                             <div class="mission-info-item">
                                 <div class="mission-info-label">Heure de départ</div>
-                                <div class="mission-info-value">${mission.departureTime}</div>
+                                <div class="mission-info-value">${userActiveMission.departureTime}</div>
                             </div>
                             <div class="mission-info-item">
                                 <div class="mission-info-label">Nature</div>
-                                <div class="mission-info-value">${mission.missionNature}</div>
+                                <div class="mission-info-value">${userActiveMission.missionNature}</div>
                             </div>
                             <div class="mission-info-item">
                                 <div class="mission-info-label">Destination</div>
-                                <div class="mission-info-value">${mission.destination}</div>
+                                <div class="mission-info-value">${userActiveMission.destination}</div>
                             </div>
                             <div class="mission-info-item">
                                 <div class="mission-info-label">Passagers</div>
-                                <div class="mission-info-value">${mission.passengers}</div>
+                                <div class="mission-info-value">${userActiveMission.passengers}</div>
                             </div>
                             <div class="mission-info-item">
                                 <div class="mission-info-label">Km départ</div>
-                                <div class="mission-info-value">${mission.kmDepart} km</div>
+                                <div class="mission-info-value">${userActiveMission.kmDepart} km</div>
                             </div>
                         </div>
                         
@@ -245,7 +422,7 @@
                                     <div class="form-group">
                                         <label for="kmArrivee">🛣️ Kilométrage d'arrivée</label>
                                         <input type="number" id="kmArrivee" name="kmArrivee" 
-                                               placeholder="Ex: 45280" min="${mission.kmDepart}" required>
+                                               placeholder="Ex: 45280" min="${userActiveMission.kmDepart}" required>
                                     </div>
                                 </div>
                                 
@@ -262,33 +439,33 @@
                         </div>
                     </div>
                 `;
-            } else if (isReserved) {
-                const reservation = reservations[vehicle.id];
+            } else if (userReservation) {
+                // Utilisateur a une réservation sur ce véhicule
                 missionControlHTML = `
                     <div class="reservation-active">
-                        <h4>📅 Véhicule réservé</h4>
+                        <h4>📅 Ma réservation</h4>
                         <div class="reservation-info">
                             <div class="reservation-info-item">
                                 <div class="mission-info-label">Réservé par</div>
-                                <div class="mission-info-value">👤 ${reservation.reservedBy}</div>
+                                <div class="mission-info-value">👤 Vous</div>
                             </div>
                             <div class="reservation-info-item">
                                 <div class="mission-info-label">Date</div>
-                                <div class="mission-info-value">${reservation.reservationDate}</div>
+                                <div class="mission-info-value">${new Date(userReservation.date).toLocaleDateString('fr-FR')}</div>
                             </div>
                             <div class="reservation-info-item">
                                 <div class="mission-info-label">Horaire</div>
-                                <div class="mission-info-value">${reservation.reservationTime}</div>
+                                <div class="mission-info-value">${userReservation.timeSlot}</div>
                             </div>
                             <div class="reservation-info-item">
-                                <div class="mission-info-label">ID Réservation</div>
-                                <div class="mission-info-value">${reservation.reservationId}</div>
+                                <div class="mission-info-label">Objectif</div>
+                                <div class="mission-info-value">${userReservation.purpose}</div>
                             </div>
                         </div>
                         
                         <div class="reservation-actions">
-                            <button onclick="cancelReservation(${vehicle.id})" class="btn btn-warning">
-                                ❌ Annuler la réservation
+                            <button onclick="cancelMyReservation(${vehicle.id})" class="btn btn-warning">
+                                ❌ Annuler ma réservation
                             </button>
                             <button onclick="startMissionFromReservation(${vehicle.id})" class="btn btn-success">
                                 🚀 Commencer la mission
@@ -297,6 +474,7 @@
                     </div>
                 `;
             } else {
+                // Véhicule disponible pour une nouvelle mission
                 missionControlHTML = `
                     <div class="mission-control">
                         <h4>🚀 Nouvelle Mission</h4>
@@ -304,7 +482,8 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="nom">👤 Nom du conducteur</label>
-                                    <input type="text" id="nom" name="nom" required placeholder="Entrez votre nom complet">
+                                    <input type="text" id="nom" name="nom" value="${currentUser.nom}" readonly 
+                                           style="background-color: #f3f4f6; opacity: 0.8;">
                                 </div>
                                 
                                 <div class="form-group">
@@ -320,8 +499,6 @@
                                     <input type="time" id="departureTime" name="departureTime" 
                                            value="${new Date().toTimeString().slice(0, 5)}" required>
                                 </div>
-
-                                
                                 
                                 <div class="form-group">
                                     <label for="passengers">👥 Nombre de passagers</label>
@@ -343,9 +520,9 @@
                                 </select>
                             </div>
                             
-                            <div class="form-group">
-                                <label for="autreText">✏️ Si autre, précisez</label>
-                                <input type="text" id="autreText" name="autreText" placeholder="Décrivez la mission" disabled>
+                            <div class="form-group hidden" id="autreGroup">
+                                <label for="autreText">✏️ Précisez la mission</label>
+                                <input type="text" id="autreText" name="autreText" placeholder="Décrivez la mission">
                             </div>
                             
                             <div class="form-row">
@@ -370,7 +547,7 @@
                 `;
             }
 
-            document.getElementById('vehicleDetails').innerHTML = `
+            return `
                 <div class="vehicle-header-detail">
                     <h3>${vehicle.nom}</h3>
                     <p>${vehicle.immatriculation}</p>
@@ -380,17 +557,45 @@
             `;
         }
 
-        // Annuler une réservation
-        function cancelReservation(vehicleId) {
-            const reservation = reservations[vehicleId];
-            if (reservation) {
-                if (confirm(`Êtes-vous sûr de vouloir annuler la réservation ${reservation.reservationId} de ${reservation.reservedBy}?`)) {
-                    delete reservations[vehicleId];
+        // Fonction pour gérer la sélection "Autre" dans nature de mission
+        function checkAutre(selectElement) {
+            const autreGroup = document.getElementById("autreGroup");
+            const autreText = document.getElementById("autreText");
+            
+            if (autreGroup && autreText) {
+                if (selectElement.value === "autre") {
+                    autreGroup.classList.remove('hidden');
+                    autreText.required = true;
+                    autreText.focus();
+                } else {
+                    autreGroup.classList.add('hidden');
+                    autreText.required = false;
+                    autreText.value = "";
+                }
+            }
+        }
 
-                    // Mettre à jour l'affichage
+        // Affichage des détails du véhicule
+        function showVehicleDetails(vehicle) {
+            document.getElementById('noSelection').style.display = 'none';
+            document.getElementById('vehicleDetails').style.display = 'block';
+            document.getElementById('vehicleDetails').innerHTML = generateVehicleDetailsHTML(vehicle);
+        }
+
+        // Annuler ma réservation
+        function cancelMyReservation(vehicleId) {
+            const reservation = DATABASE.reservations.find(r => r.userId === currentUser.id && r.vehicleId === vehicleId && r.status === 'active');
+            if (reservation) {
+                if (confirm('Êtes-vous sûr de vouloir annuler votre réservation ?')) {
+                    reservation.status = 'cancelled';
+
                     generateVehicleList();
                     if (selectedVehicle && selectedVehicle.id === vehicleId) {
-                        showVehicleDetails(selectedVehicle);
+                        if (window.innerWidth <= 1200) {
+                            openMobileModal(selectedVehicle);
+                        } else {
+                            showVehicleDetails(selectedVehicle);
+                        }
                     }
 
                     showNotification('✅ Réservation annulée avec succès', 'success');
@@ -400,20 +605,19 @@
 
         // Commencer une mission depuis une réservation
         function startMissionFromReservation(vehicleId) {
-            const reservation = reservations[vehicleId];
+            const reservation = DATABASE.reservations.find(r => r.userId === currentUser.id && r.vehicleId === vehicleId && r.status === 'active');
             if (reservation) {
-                // Supprimer la réservation
-                delete reservations[vehicleId];
+                reservation.status = 'completed';
 
-                // Créer la mission automatiquement
                 const mission = {
                     id: Date.now(),
                     vehicleId: vehicleId,
-                    vehicleName: vehicles.find(v => v.id === vehicleId).nom,
-                    nom: reservation.reservedBy,
-                    missionDate: reservation.reservationDate.split('/').reverse().join('-'),
-                    departureTime: reservation.reservationTime.split('-')[0],
-                    missionNature: 'Mission planifiée',
+                    userId: currentUser.id,
+                    vehicleName: getVehicleById(vehicleId).nom,
+                    nom: currentUser.nom,
+                    missionDate: reservation.date,
+                    departureTime: new Date().toTimeString().slice(0, 5),
+                    missionNature: reservation.purpose,
                     destination: 'À définir',
                     passengers: 1,
                     kmDepart: 0,
@@ -421,16 +625,18 @@
                     startTime: new Date()
                 };
 
-                // Ajouter à la liste des missions actives
-                activeMissions[vehicleId] = mission;
-                missions.push(mission);
+                DATABASE.activeMissions.push(mission);
+                DATABASE.missions.push(mission);
 
-                // Mettre à jour l'affichage
                 generateVehicleList();
-                showVehicleDetails(selectedVehicle);
+                if (window.innerWidth <= 1200) {
+                    openMobileModal(selectedVehicle);
+                } else {
+                    showVehicleDetails(selectedVehicle);
+                }
                 updateMissionsList();
 
-                showNotification('🚀 Mission démarrée depuis la réservation', 'success');
+                showNotification('🚀 Mission démarrée depuis votre réservation', 'success');
             }
         }
 
@@ -438,8 +644,14 @@
         function startMission(event, vehicleId) {
             event.preventDefault();
 
+            // Vérifier si l'utilisateur a déjà une mission active
+            if (hasActiveUserMission()) {
+                showNotification('❌ Vous avez déjà une mission active', 'error');
+                return;
+            }
+
             const formData = new FormData(event.target);
-            const nom = formData.get('nom');
+            const nom = currentUser.nom; // Toujours l'utilisateur connecté
             const missionDate = formData.get('missionDate');
             const departureTime = formData.get('departureTime');
             let missionNature = formData.get('missionNature');
@@ -448,7 +660,6 @@
             const passengers = parseInt(formData.get('passengers'));
             const kmDepart = parseInt(formData.get('kmDepart'));
 
-            // Si "autre" est sélectionné, utiliser le texte saisi
             if (missionNature === 'autre' && autreText) {
                 missionNature = autreText;
             }
@@ -456,7 +667,8 @@
             const mission = {
                 id: Date.now(),
                 vehicleId: vehicleId,
-                vehicleName: vehicles.find(v => v.id === vehicleId).nom,
+                userId: currentUser.id,
+                vehicleName: getVehicleById(vehicleId).nom,
                 nom: nom,
                 missionDate: missionDate,
                 departureTime: departureTime,
@@ -468,13 +680,15 @@
                 startTime: new Date()
             };
 
-            // Ajouter à la liste des missions actives
-            activeMissions[vehicleId] = mission;
-            missions.push(mission);
+            DATABASE.activeMissions.push(mission);
+            DATABASE.missions.push(mission);
 
-            // Mettre à jour l'affichage
             generateVehicleList();
-            showVehicleDetails(selectedVehicle);
+            if (window.innerWidth <= 1200) {
+                openMobileModal(selectedVehicle);
+            } else {
+                showVehicleDetails(selectedVehicle);
+            }
             updateMissionsList();
 
             showNotification('🚀 Mission démarrée avec succès', 'success');
@@ -489,51 +703,54 @@
             const kmArrivee = parseInt(formData.get('kmArrivee'));
             const notes = formData.get('notes');
 
-            if (activeMissions[vehicleId]) {
-                const mission = activeMissions[vehicleId];
-
-                // Calculer la distance parcourue
+            const missionIndex = DATABASE.activeMissions.findIndex(m => m.userId === currentUser.id && m.vehicleId === vehicleId);
+            if (missionIndex !== -1) {
+                const mission = DATABASE.activeMissions[missionIndex];
                 const distanceParcourue = kmArrivee - mission.kmDepart;
 
-                // Mettre à jour la mission
-                mission.status = 'completed';
-                mission.arrivalTime = arrivalTime;
-                mission.kmArrivee = kmArrivee;
-                mission.distanceParcourue = distanceParcourue;
-                mission.notes = notes;
-                mission.endTime = new Date();
+                // Mettre à jour la mission dans la base de données
+                const dbMissionIndex = DATABASE.missions.findIndex(m => m.id === mission.id);
+                if (dbMissionIndex !== -1) {
+                    DATABASE.missions[dbMissionIndex].status = 'completed';
+                    DATABASE.missions[dbMissionIndex].arrivalTime = arrivalTime;
+                    DATABASE.missions[dbMissionIndex].kmArrivee = kmArrivee;
+                    DATABASE.missions[dbMissionIndex].distanceParcourue = distanceParcourue;
+                    DATABASE.missions[dbMissionIndex].notes = notes;
+                    DATABASE.missions[dbMissionIndex].endTime = new Date();
+                }
 
                 // Retirer de la liste des missions actives
-                delete activeMissions[vehicleId];
+                DATABASE.activeMissions.splice(missionIndex, 1);
 
-                // Mettre à jour l'affichage
                 generateVehicleList();
                 if (selectedVehicle && selectedVehicle.id === vehicleId) {
-                    showVehicleDetails(selectedVehicle);
+                    if (window.innerWidth <= 1200) {
+                        openMobileModal(selectedVehicle);
+                    } else {
+                        showVehicleDetails(selectedVehicle);
+                    }
                 }
                 updateMissionsList();
 
-                // Afficher confirmation
                 showNotification(`🏁 Mission terminée ! Distance: ${distanceParcourue} km`, 'success');
             }
         }
 
-        // Mettre à jour la liste des missions
-        function updateMissionsList() {
-            const missionsList = document.getElementById('missionsList');
+        // Générer la liste des missions de l'utilisateur
+        function generateUserMissionsList() {
+            const userMissions = DATABASE.missions.filter(m => m.userId === currentUser.id);
 
-            if (missions.length === 0) {
-                missionsList.innerHTML = `
+            if (userMissions.length === 0) {
+                return `
                     <p style="text-align: center; color: #6b7280; padding: 40px;">
                         🔍 Aucune mission enregistrée
                     </p>
                 `;
-                return;
             }
 
-            const sortedMissions = [...missions].sort((a, b) => b.startTime - a.startTime);
+            const sortedMissions = [...userMissions].sort((a, b) => b.startTime - a.startTime);
 
-            missionsList.innerHTML = sortedMissions.map(mission => `
+            return sortedMissions.map(mission => `
                 <div class="mission-item ${mission.status}">
                     <div class="mission-header">
                         <div class="mission-destination">📍 ${mission.destination}</div>
@@ -557,34 +774,24 @@
             `).join('');
         }
 
+        // Mettre à jour la liste des missions
+        function updateMissionsList() {
+            const missionsList = document.getElementById('missionsList');
+            missionsList.innerHTML = generateUserMissionsList();
+        }
+
         // Système de notifications
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
-                color: white;
-                padding: 15px 20px;
-                border-radius: 10px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-                z-index: 1001;
-                font-weight: 500;
-                transform: translateX(100%);
-                transition: transform 0.3s ease;
-            `;
             notification.textContent = message;
             
             document.body.appendChild(notification);
             
-            // Animation d'entrée
             setTimeout(() => {
                 notification.style.transform = 'translateX(0)';
             }, 100);
             
-            // Auto-suppression
             setTimeout(() => {
                 notification.style.transform = 'translateX(100%)';
                 setTimeout(() => {
@@ -595,60 +802,123 @@
             }, 3000);
         }
 
+        // Bouton retour
+        function goToHomePage() {
+            if (confirm('Êtes-vous sûr de vouloir quitter la gestion des véhicules ?')) {
+                window.location.href = "index.html"; 
+            }
+        }
 
+        // Simulation de changement d'utilisateur (pour tests)
+        function switchUser(userId) {
+            const user = getUserById(userId);
+            if (user) {
+                currentUser = user;
+                updateUserInfo();
+                generateVehicleList();
+                updateMissionsList();
+                
+                // Réinitialiser la sélection
+                selectedVehicle = null;
+                document.getElementById('noSelection').style.display = 'block';
+                document.getElementById('vehicleDetails').style.display = 'none';
+                
+                showNotification(`👤 Connecté en tant que ${user.nom}`, 'info');
+            }
+        }
 
-        // Bouton retour X
-       function goToHomePage() {
-    if (confirm('Êtes-vous sûr de vouloir quitter la gestion des véhicules ?')) {
-        window.location.href = "index.html"; 
-    }
-}
+        // Gestion du redimensionnement
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 1200) {
+                closeMobileModal();
+                closeMissionsModal();
+                if (selectedVehicle) {
+                    showVehicleDetails(selectedVehicle);
+                }
+            }
+        });
+
+        // Fermeture des modals en cliquant à l'extérieur
+        document.getElementById('mobileModal').addEventListener('click', (e) => {
+            if (e.target.id === 'mobileModal') {
+                closeMobileModal();
+            }
+        });
+
+        document.getElementById('missionsModal').addEventListener('click', (e) => {
+            if (e.target.id === 'missionsModal') {
+                closeMissionsModal();
+            }
+        });
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function () {
-            // Données de test pour les réservations
-            reservations[2] = {
-                reservedBy: "Marie Dubois",
-                reservationDate: "25/07/2025",
-                reservationTime: "14:30-16:00",
-                reservationId: "RES-2025-001"
-            };
-
+            updateUserInfo();
             generateVehicleList();
             updateMissionsList();
 
-            // Masquer la section "noSelection" au démarrage
             const noSelection = document.getElementById('noSelection');
             if (noSelection) noSelection.style.display = 'block';
 
             const details = document.getElementById('vehicleDetails');
             if (details) details.style.display = 'none';
 
-            console.log('🚗 DriveGo - Système de gestion véhicules initialisé');
+            console.log('🚗 DriveGo - Système de gestion dynamique initialisé');
+            console.log(`👤 Utilisateur connecté: ${currentUser.nom}`);
+            console.log(`🎯 Missions actives utilisateur: ${hasActiveUserMission() ? 'Oui' : 'Non'}`);
+
+            // Boutons de test pour changer d'utilisateur (à supprimer en production)
+            if (window.location.search.includes('debug=true')) {
+                const debugPanel = document.createElement('div');
+                debugPanel.style.cssText = `
+                    position: fixed; 
+                    bottom: 20px; 
+                    left: 20px; 
+                    background: rgba(0,0,0,0.8); 
+                    color: white; 
+                    padding: 15px; 
+                    border-radius: 10px; 
+                    font-size: 0.8rem;
+                    z-index: 1000;
+                `;
+                debugPanel.innerHTML = `
+                    <div style="margin-bottom: 10px; font-weight: bold;">🔧 Panel Debug</div>
+                    <button onclick="switchUser(1)" style="margin: 2px; padding: 5px 10px; font-size: 0.7rem;">Jean Dupont</button>
+                    <button onclick="switchUser(2)" style="margin: 2px; padding: 5px 10px; font-size: 0.7rem;">Marie Martin</button>
+                    <button onclick="switchUser(3)" style="margin: 2px; padding: 5px 10px; font-size: 0.7rem;">Pierre Dubois</button>
+                    <button onclick="switchUser(4)" style="margin: 2px; padding: 5px 10px; font-size: 0.7rem;">Sophie Leroy</button>
+                `;
+                document.body.appendChild(debugPanel);
+            }
         });
-        
+
+        // Fonction utilitaire pour obtenir le nom de l'option de mission
+        function getMissionNatureName(value) {
+            const options = {
+                'transport-personnel': '🚌 Transport de personnel',
+                'livraison': '📦 Livraison',
+                'maintenance': '🔧 Maintenance',
+                'urgence': '🚨 Mission d\'urgence',
+                'formation': '🎓 Formation/Conduite'
+            };
+            return options[value] || value;
+        }
+
+        // Exposer les fonctions globalement pour les événements
+        window.selectVehicle = selectVehicle;
+        window.checkAutre = checkAutre;
+        window.startMission = startMission;
+        window.endMissionWithDetails = endMissionWithDetails;
+        window.cancelMyReservation = cancelMyReservation;
+        window.startMissionFromReservation = startMissionFromReservation;
+        window.openMobileModal = openMobileModal;
+        window.closeMobileModal = closeMobileModal;
+        window.openMissionsModal = openMissionsModal;
+        window.closeMissionsModal = closeMissionsModal;
+        window.goToHomePage = goToHomePage;
+        window.switchUser = switchUser;
 
 
-        // Fonction de synchronisation avec les réservations
-function syncVehicleData() {
-    if (window.DriveGoData) {
-        vehicles = window.DriveGoData.getVehicles();
-        // Actualiser l'affichage des véhicules
-        displayVehicles(); // Remplacez par le nom de votre fonction d'affichage
-        console.log('🔄 Données véhicules synchronisées depuis les réservations');
-    }
-}
-
-// Au chargement de la page
-document.addEventListener('DOMContentLoaded', function() {
-    // Votre code existant...
-    
-    // Ajouter la synchronisation
-    syncVehicleData();
-    
-    // Écouter les changements de réservations
-    window.addEventListener('drivegoDataUpdate', syncVehicleData);
-});
-
-// Le système filtre automatiquement les véhicules disponibles
-const availableVehicles = vehicles.filter(v => v.status === 'available');
+        function goToHomePage() {
+    window.location.href = "{{ url_for('index') }}";
+  }
