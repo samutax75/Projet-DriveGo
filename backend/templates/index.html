@@ -168,6 +168,8 @@
                     {% if user_logged_in %}
                         <a href="{{ url_for('gestion_vehicules') }}" class="go-mission-btn">
             <span class="go-mission-text">GO</span>
+                        <a href="{{ url_for('reservation') }}" class="btn btn-primary">⚡Réserver mainteant</a>
+
                 </a>
                     {% else %}
                         <!-- Actions primaires (conversion) -->
@@ -175,9 +177,10 @@
                         <a href="{{ url_for('inscription') }}" class="btn btn-primary">📝 S'inscrire</a>
                         
                         <!-- Actions secondaires (information) -->
-                        <a href="{{ url_for('aide') }}" class="btn btn-secondary">ℹ️ Aide</a>
+                        <!-- <a href="{{ url_for('aide') }}" class="btn btn-secondary">ℹ️ Aide</a> -->
                     {% endif %}
-                    <a href="https://www.perce-neige.org/" class="btn btn-secondary">💙 En savoir plus sur Perce-Neige</a>
+                    <!-- <a href="https://www.perce-neige.org/" class="btn btn-secondary">💙 En savoir plus sur Perce-Neige</a> -->
+
                 </div>
             </div>
         </section>

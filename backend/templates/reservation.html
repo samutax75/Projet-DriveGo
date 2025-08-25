@@ -5,105 +5,156 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Réserver un véhicule - DriveGo</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/reservation.css') }}">
-    
+
 </head>
 
 <body>
     <div class="container">
         <!-- Header -->
         <header class="header">
-             <a href="{{ url_for('index') }}" class="logo">
-    <img src="../static/images/logo perce-neige.PNG"
-         alt="Logo Fondation Perce-Neige" class="logo-image"> Accueil</a>
-            <nav>
-                <ul class="nav-links">
-                    <li><a href="{{ url_for('reservation') }}">📋 Demande de réservation</a></li>
-                    
-
+            <div class="header-content">
+                <a href="#" class="logo" onclick="goToHomePage()">
+                    <div class="logo-image" style="background: linear-gradient(45deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">P</div>
+                    Accueil
+                </a>
+                <nav>
+                    <ul class="nav-links">
+                        <li><a href="#" class="active">📋 Réservations</a></li>
+                        <li><a href="#" onclick="exportToMissions()">📤 Export</a></li>
                     </ul>
-            </nav>
-            
-            </header>
-
-        <!-- État des véhicules -->
-        <div class="card vehicles-status">
-            <h3>🏎️ Tableau de Bord</h3>
-            <div class="vehicles-grid" id="vehicles-status">
-                <!-- Généré par JavaScript -->
+                </nav>
             </div>
-        </div>
+        </header>
 
         <!-- Main Content -->
         <div class="main-content">
-            <!-- Formulaire de réservation -->
-            <div class="card">
-                <h3>📝 Nouvelle Réservation</h3>
-                <form id="form-reservation">
-                    <div class="form-group">
-                        <label for="nom">👤 Nom du conducteur</label>
-                        <input type="text" id="nom" required placeholder="Entrez votre nom complet">
+            <div class="content-grid">
+                <!-- État des véhicules -->
+                <div class="card vehicles-status">
+                    <h3>🏎️ Tableau de Bord</h3>
+                    <div class="vehicles-grid" id="vehicles-status">
+                        <!-- Généré par JavaScript -->
                     </div>
-
-                    <div class="form-group">
-                        <label for="date">📅 Date de sortie</label>
-                        <input type="date" id="date" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="heure-depart">🕐 Heure de départ</label>
-                        <input type="time" id="heure-depart" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="heure-arrivee">🕑 Heure d'arrivée (Approximatif)</label>
-                        <input type="time" id="heure-arrivee" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="vehicule">🚐 Choisir un véhicule</label>
-                        <select id="vehicule" required>
-                            <option value="">-- Sélectionner un véhicule --</option>
-                            <!-- Généré par JavaScript -->
-                        </select>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">
-                        ✅ Confirmer la réservation
-                    </button>
-                </form>
-            </div>
-
-            <!-- Gestion des réservations existantes -->
-            <div class="card">
-                <h3>🔧 Gérer une Réservation</h3>
-                <div class="form-group">
-                    <label for="reservation-id">🔍 Identifiant de réservation</label>
-                    <input type="text" id="reservation-id" placeholder="ex : RES-2025-001" maxlength="15">
                 </div>
 
-                <div class="actions">
-                    <button class="btn btn-secondary" onclick="modifierReservation()">
-                        ✏️ Modifier
-                    </button>
-                    <button class="btn btn-danger" onclick="annulerReservation()">
-                        ❌ Annuler
-                    </button>
+                <!-- Formulaire de réservation (Desktop) -->
+                <div class="card reservation-form">
+                    <h3>📝 Nouvelle Réservation</h3>
+                    <form id="form-reservation">
+                        <div class="form-group">
+                            <label for="nom">👤 Nom du conducteur</label>
+                            <input type="text" id="nom" required placeholder="Entrez votre nom complet">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="date">📅 Date de sortie</label>
+                            <input type="date" id="date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="heure-depart">🕐 Heure de départ</label>
+                            <input type="time" id="heure-depart" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="heure-arrivee">🕑 Heure d'arrivée</label>
+                            <input type="time" id="heure-arrivee" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="vehicule">🚐 Choisir un véhicule</label>
+                            <select id="vehicule" required>
+                                <option value="">-- Sélectionner un véhicule --</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <span class="btn-text">✅ Confirmer la réservation</span>
+                            <div class="loading" style="display: none;"></div>
+                        </button>
+                    </form>
                 </div>
 
-                <div class="form-group" style="margin-top: 2rem;">
-                    <label for="search-reservation">🔍 Recherche rapide</label>
-                    <input type="search" id="search-reservation" placeholder="Rechercher par nom ou véhicule...">
-                </div>
+                <!-- Gestion des réservations -->
+                <div class="card management-section">
+                    <h3>🔧 Gérer une Réservation</h3>
+                    <div class="form-group">
+                        <label for="reservation-id">🔍 ID de réservation</label>
+                        <input type="text" id="reservation-id" placeholder="ex : RES-2025-001" maxlength="15">
+                    </div>
 
-                <button class="btn btn-secondary" onclick="rechercherReservation()">
-                    🔍 Rechercher
-                </button>
+                    <div class="actions">
+                        <button class="btn btn-secondary" onclick="modifierReservation()">
+                            ✏️ Modifier
+                        </button>
+                        <button class="btn btn-danger" onclick="annulerReservation()">
+                            ❌ Annuler
+                        </button>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 2rem;">
+                        <label for="search-reservation">🔍 Recherche rapide</label>
+                        <input type="search" id="search-reservation" placeholder="Rechercher par nom...">
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="rechercherReservation()" style="width: 100%;">
+                        🔍 Rechercher
+                    </button>
+                </div>
             </div>
         </div>
 
+        <!-- Messages -->
         <div id="confirmation"></div>
-    </div>
-    <script src="{{ url_for('static', filename='js/reservation.js') }}"></script>
 
+        <!-- Mobile FAB -->
+        <button class="fab" onclick="openMobileModal()">➕</button>
+
+        <!-- Mobile Modal -->
+        <div class="modal-backdrop" id="modal-backdrop" onclick="closeMobileModal()"></div>
+        <div class="mobile-modal" id="mobile-modal">
+            <div class="modal-header">
+                <h3>📝 Nouvelle Réservation</h3>
+                <button class="modal-close" onclick="closeMobileModal()">×</button>
+            </div>
+            
+            <form id="form-reservation-mobile">
+                <div class="form-group">
+                    <label for="nom-mobile">👤 Nom du conducteur</label>
+                    <input type="text" id="nom-mobile" required placeholder="Entrez votre nom complet">
+                </div>
+
+                <div class="form-group">
+                    <label for="date-mobile">📅 Date de sortie</label>
+                    <input type="date" id="date-mobile" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="heure-depart-mobile">🕐 Heure de départ</label>
+                    <input type="time" id="heure-depart-mobile" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="heure-arrivee-mobile">🕑 Heure d'arrivée</label>
+                    <input type="time" id="heure-arrivee-mobile" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicule-mobile">🚐 Choisir un véhicule</label>
+                    <select id="vehicule-mobile" required>
+                        <option value="">-- Sélectionner un véhicule --</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <span class="btn-text">✅ Confirmer la réservation</span>
+                    <div class="loading" style="display: none;"></div>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/reservation.js') }}"></script>
+    
 </body>
 </html>
