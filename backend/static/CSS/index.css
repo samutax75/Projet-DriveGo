@@ -2279,8 +2279,8 @@ a:hover {
 /* ======== BOUTON GO MISSION ======== */
 .go-mission-btn {
     position: relative;
-    width: 90px;
-    height: 90px;
+    width: 120px;
+    height: 120px;
     background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
     border-radius: 50%;
     border: none;
@@ -2298,6 +2298,7 @@ a:hover {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     margin: 10px auto;
+    line-height: 1;
 }
 
 .go-mission-btn::before {
@@ -2311,11 +2312,13 @@ a:hover {
     border-radius: 50%;
     transition: all 0.3s ease;
     animation: ripple 4s ease-in-out infinite;
+    box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 .go-mission-text {
     color: white;
-    font-size: 11px;
+    font-size: 14px;
     font-weight: bold;
     letter-spacing: 0.5px;
     z-index: 2;
