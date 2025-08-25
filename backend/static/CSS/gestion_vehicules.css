@@ -628,7 +628,7 @@
             }
             
             .vehicle-item::after {
-                content: "👆 Tap pour mission";
+                content: "";
                 position: absolute;
                 right: 15px;
                 bottom: 10px;
