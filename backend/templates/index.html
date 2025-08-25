@@ -127,13 +127,6 @@
                         </div>
                     </a>
                     
-                    <a href="#" class="profile-dropdown-item profile-dropdown-contact" id="contactBtn">
-                        <span class="profile-dropdown-icon">📞</span>
-                        <div class="profile-dropdown-text">
-                            <div class="profile-dropdown-title">Nous contacter</div>
-                        </div>
-                    </a>
-                    
                     <div class="profile-dropdown-separator"></div>
                     <a href="{{ url_for('logout') }}" class="profile-dropdown-item profile-dropdown-logout">
                         <span class="profile-dropdown-icon">🚪</span>
@@ -147,7 +140,7 @@
 
             <ul>
                 {% if user_logged_in %}
-                    <li><a href="{{ url_for('gestion_vehicules') }}">🚀 Départ missions</a></li>
+                    <li><a href="{{ url_for('gestion_vehicules') }}">🚀 Go mission</a></li>
                     <li><a href="{{ url_for('reservation') }}">📅 Demande de réservation</a></li>
                     <li><a href="{{ url_for('vehicles_page') }}"> ℹ️ Fiches véhicules</a></li>
                     <!-- <li><a href="{{ url_for('support') }}">🧑‍💻 Support</a></li> -->
