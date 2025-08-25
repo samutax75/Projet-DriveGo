@@ -2279,8 +2279,8 @@ a:hover {
 /* ======== BOUTON GO MISSION ======== */
 .go-mission-btn {
     position: relative;
-    width: 120px;
-    height: 120px;
+    width: 160px;
+    height: 160px;
     background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
     border-radius: 50%;
     border: none;
@@ -2318,7 +2318,7 @@ a:hover {
 
 .go-mission-text {
     color: white;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: bold;
     letter-spacing: 0.5px;
     z-index: 2;
