@@ -2304,21 +2304,44 @@ a:hover {
 .go-mission-btn::before {
     content: '';
     position: absolute;
-    top: 6px;
-    left: 6px;
-    right: 6px;
-    bottom: 6px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    top: 18px;
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
     border-radius: 50%;
-    transition: all 0.3s ease;
-    animation: ripple 4s ease-in-out infinite;
     box-sizing: border-box;
-    box-sizing: border-box;
+    animation: pulseCircle 2.5s ease-in-out infinite; /* animation */
 }
+
+@keyframes pulseCircle {
+    0% {
+        top: 22px;
+        left: 22px;
+        right: 22px;
+        bottom: 22px;
+        opacity: 0.7;
+    }
+    50% {
+        top: 3px;
+        left: 3px;
+        right: 3px;
+        bottom: 3px;
+        opacity: 1;
+    }
+    100% {
+        top: 22px;
+        left: 22px;
+        right: 22px;
+        bottom: 22px;
+        opacity: 0.7;
+    }
+}
+
 
 .go-mission-text {
     color: white;
-    font-size: 13px;
+    font-size: 20px;
     font-weight: bold;
     letter-spacing: 0.5px;
     z-index: 2;
@@ -2390,13 +2413,13 @@ a:hover {
 /* Media queries mobile */
 @media (max-width: 480px) {
     .go-mission-btn {
-        width: 80px;
-        height: 80px;
+        width: 100px;
+        height: 100px;
         margin: 8px auto;
     }
     
     .go-mission-text {
-        font-size: 10px;
+        font-size: 13px;
         letter-spacing: 0.3px;
     }
     
@@ -2416,7 +2439,7 @@ a:hover {
     }
     
     .go-mission-text {
-        font-size: 9px;
+        font-size: 10px;
         letter-spacing: 0.2px;
     }
 }
