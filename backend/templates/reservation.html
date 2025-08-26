@@ -9,22 +9,21 @@
 </head>
 
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <a href="#" class="logo" onclick="goToHomePage()">
-                    <div class="logo-image" style="background: linear-gradient(45deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">P</div>
-                    Accueil
-                </a>
-                <nav>
-                    <ul class="nav-links">
-                        <li><a href="#" class="active">📋 Réservations</a></li>
-                        <li><a href="#" onclick="exportToMissions()">📤 Export</a></li>
-                    </ul>
-                </nav>
+   <div class="header">
+    <nav>
+        <ul class="nav-links">
+            <!-- Bouton retour placé à gauche dans la nav -->
+            <li>
+                <button class="close-btn" onclick="goBack()" title="Retour">✕</button>
+            </li>
+            <li><a href="#" class="active">📋 Réservations</a></li>
+            <li><a href="#" onclick="exportToMissions()">📤 Export</a></li>
+        </ul>
+    </nav>
+</div>
+
+
             </div>
-        </header>
 
         <!-- Main Content -->
         <div class="main-content">
@@ -108,7 +107,7 @@
         <div id="confirmation"></div>
 
         <!-- Mobile FAB -->
-        <button class="fab" onclick="openMobileModal()">➕</button>
+        <!-- <button class="fab" onclick="openMobileModal()">➕</button> -->
 
         <!-- Mobile Modal -->
         <div class="modal-backdrop" id="modal-backdrop" onclick="closeMobileModal()"></div>
