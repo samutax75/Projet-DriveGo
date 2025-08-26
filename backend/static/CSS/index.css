@@ -2277,8 +2277,8 @@ a:hover {
 /* ======== BOUTON GO MISSION ======== */
 .go-mission-btn {
     position: relative;
-    width: 140px;
-    height: 140px;
+    width: 120px;
+    height: 120px;
     background: linear-gradient(135deg, #2064d1 0%, #1a73e8 100%);
     border-radius: 50%;
     border: none;
@@ -2306,7 +2306,7 @@ a:hover {
     left: 18px;
     right: 18px;
     bottom: 18px;
-    border: 2px solid rgba(255, 255, 255, 0.5);
+    border: 5px solid rgba(255, 255, 255, 0.5);
     border-radius: 50%;
     box-sizing: border-box;
     animation: pulseCircle 2.5s ease-in-out infinite; /* animation */
@@ -2426,7 +2426,7 @@ a:hover {
         left: 5px;
         right: 5px;
         bottom: 5px;
-        border-width: 3px;
+        border-width: 5px;
     }
 }
 

@@ -906,3 +906,4 @@ window.openMissionsModal = openMissionsModal;
 window.closeMissionsModal = closeMissionsModal;
 window.goToHomePage = goToHomePage;
 window.loadAllData = loadAllData;
+
