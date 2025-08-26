@@ -1409,6 +1409,12 @@ def api_create_reservation():
     """Créer une réservation"""
     try:
         data = request.get_json()
+        
+        # DEBUG - Ajouter ces lignes
+        print("=== DONNÉES REÇUES ===")
+        print("Données complètes:", data)
+        print("Clés présentes:", list(data.keys()) if data else "Aucune donnée")
+        print("====================")
 
         # Validation des données
         required_fields = ['vehicule_id', 'date_debut', 'date_fin']
