@@ -167,8 +167,9 @@
                 <div class="cta-buttons">
                     {% if user_logged_in %}
                         <a href="{{ url_for('gestion_vehicules') }}" class="go-mission-btn">
-            <span class="go-mission-text">Go</span>
-                        <a href="{{ url_for('reservation') }}" class="btn btn-primary">⚡Réserver maintenant</a>
+            <span class="go-mission-text">GO<br>Mission</span>
+
+                        <a href="{{ url_for('reservation') }}" class="reserve-btn">⚡Réserver maintenant</a>
 
                 </a>
                     {% else %}

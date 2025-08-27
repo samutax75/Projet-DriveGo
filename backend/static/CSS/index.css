@@ -2339,7 +2339,7 @@ a:hover {
 
 .go-mission-text {
     color: white;
-    font-size: 20px;
+    font-size: 15px;
     font-weight: bold;
     letter-spacing: 0.5px;
     z-index: 2;
@@ -2417,7 +2417,7 @@ a:hover {
     }
     
     .go-mission-text {
-        font-size: 20px;
+        font-size: 13px;
         letter-spacing: 0.3px;
     }
     
@@ -2441,6 +2441,49 @@ a:hover {
         letter-spacing: 0.2px;
     }
 }
+
+
+
+
+
+
+
+.reserve-btn {
+    display: inline-block;
+    padding: 12px 28px;
+    margin-top: 20px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a73e8;                 /* bleu en texte */
+    background: transparent;        /* transparent */
+    border: 2px solid #1a73e8;      /* contour bleu */
+    border-radius: 30px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    text-decoration: none;          /* enlève le souligné */
+}
+
+.reserve-btn:hover {
+    background: #1a73e8;            /* fond bleu au hover */
+    color: white;
+    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+}
+
+.reserve-btn:active {
+    transform: scale(0.97);
+}
+
+
+@media (max-width: 480px) {
+    .reserve-btn {
+        font-size: 14px;
+        padding: 10px 20px;
+    }
+}
+
+
 
 
 
