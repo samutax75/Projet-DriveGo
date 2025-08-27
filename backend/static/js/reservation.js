@@ -1,422 +1,550 @@
-// === CODE CORRIGÉ POUR LA PAGE RÉSERVATION ===
-// Remplacez ENTIÈREMENT votre fichier reservation.js par ce code
+// Utilisateur connecté
+        const currentUser = {
+            id: 1,
+            name: "Martin Dubois",
+            email: "martin.dubois@company.com",
+            department: "Direction",
+            initials: "MD"
+        };
 
-let dataManager = null;
-let vehicles = [];
-
-// === INITIALISATION ===
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('DriveGo Réservation - Initialisation...');
-    
-    try {
-        // Initialiser le système unifié
-        dataManager = await initDriveGoSystem();
-        
-        // Écouter les changements de données
-        dataManager.addListener((event, data) => {
-            if (event === 'dataChanged') {
-                vehicles = data.vehicles;
-                displayVehiclesStatus();
-                populateVehicleSelect();
-                console.log('Données mises à jour - Véhicules:', vehicles.length);
+        // Données des véhicules (issues de votre base de données)
+        let vehicles = [
+            {
+                id: 1,
+                name: "TRAFIC BLANC",
+                type: "🚐",
+                immatriculation: "FV-088-JJ",
+                dateImmatriculation: "26/11/2020",
+                status: "available"
+            },
+            {
+                id: 2,
+                name: "TRAFIC PMR",
+                type: "🚐",
+                immatriculation: "GT-176-AF",
+                dateImmatriculation: "14/12/2023",
+                status: "available"
+            },
+            {
+                id: 3,
+                name: "TRAFIC VERT",
+                type: "🚐",
+                immatriculation: "EJ-374-TT",
+                dateImmatriculation: "02/02/2017",
+                status: "reserved",
+                reservedBy: "Sophie Martin",
+                reservationDate: "08/07/2025",
+                reservationTime: "09:00-17:00"
+            },
+            {
+                id: 4,
+                name: "TRAFIC ROUGE",
+                type: "🚐",
+                immatriculation: "CW-819-FR",
+                dateImmatriculation: "26/06/2013",
+                status: "maintenance"
+            },
+            {
+                id: 5,
+                name: "KANGOO",
+                type: "🚗",
+                immatriculation: "DS-429-PF",
+                dateImmatriculation: "22/06/2015",
+                status: "available"
             }
-        });
-        
-        // Récupérer les données initiales
-        vehicles = dataManager.getVehicles();
-        
-        // Initialiser l'affichage
-        displayVehiclesStatus();
-        populateVehicleSelect();
-        setMinDate();
-        
-        // Pré-remplir les champs utilisateur après un délai
-        setTimeout(fillUserDataInForms, 500);
-        
-        // Event listeners
-        const form = document.getElementById('form-reservation');
-        const formMobile = document.getElementById('form-reservation-mobile');
-        
-        if (form) form.addEventListener('submit', (e) => confirmReservation(e, false));
-        if (formMobile) formMobile.addEventListener('submit', (e) => confirmReservation(e, true));
-        
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeMobileModal();
-        });
-        
-        console.log('DriveGo Réservation initialisé avec', vehicles.length, 'véhicules');
-        
-    } catch (error) {
-        console.error('Erreur initialisation:', error);
-        showMessage('Erreur de connexion - Mode dégradé', 'error');
-    }
-});
+        ];
 
-// === AFFICHAGE DES VÉHICULES ===
-function displayVehiclesStatus() {
-    const container = document.getElementById('vehicles-status');
-    if (!container) return;
-    
-    if (!vehicles || vehicles.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 40px;">Chargement...</div>';
-        return;
-    }
-    
-    container.innerHTML = vehicles.map(vehicle => {
-        const statusClass = `status-${vehicle.status}`;
-        let statusText = getStatusText(vehicle.status);
-        
-        let additionalInfo = '';
-        if (vehicle.status === 'reserved' && vehicle.reservedBy) {
-            additionalInfo = `
-                <div class="reserved-by">
-                    <strong>Réservé par:</strong> ${vehicle.reservedBy}<br>
-                    <strong>Date:</strong> ${vehicle.reservationDate}<br>
-                    <strong>Horaire:</strong> ${vehicle.reservationTime}<br>
-                    <strong>ID:</strong> ${vehicle.reservationId}
-                </div>
-            `;
-        } else if (vehicle.status === 'mission' && vehicle.missionBy) {
-            additionalInfo = `
-                <div class="mission-info">
-                    <strong>Mission par:</strong> ${vehicle.missionBy}<br>
-                    <strong>Destination:</strong> ${vehicle.missionInfo?.destination || 'N/A'}<br>
-                    <strong>Départ:</strong> ${vehicle.missionInfo?.departureTime || 'N/A'}
-                </div>
-            `;
+        // Réservations de l'utilisateur connecté
+        let userReservations = [
+            {
+                id: "RES-2025-001",
+                vehicleId: 1,
+                userId: 1,
+                date: "2025-08-30",
+                startTime: "09:00",
+                endTime: "17:00",
+                destination: "Préfecture de Paris",
+                purpose: "mission",
+                notes: "Réunion importante avec les services préfectoraux",
+                status: "confirmed",
+                createdAt: "2025-08-27T10:30:00"
+            },
+            {
+                id: "RES-2025-005",
+                vehicleId: 2,
+                userId: 1,
+                date: "2025-09-02",
+                startTime: "14:00",
+                endTime: "18:00",
+                destination: "Centre de formation",
+                purpose: "formation",
+                notes: "Formation sécurité routière",
+                status: "confirmed",
+                createdAt: "2025-08-26T15:45:00"
+            }
+        ];
+
+        // Fonctions utilitaires
+        function getStatusText(status) {
+            switch(status) {
+                case 'available': return 'Disponible';
+                case 'reserved': return 'Réservé';
+                case 'maintenance': return 'Maintenance';
+                default: return status;
+            }
         }
-        
-        return `
-            <div class="vehicle-item" onclick="selectVehicleOnMobile(${vehicle.id})">
-                <div class="vehicle-header">
-                    <div class="vehicle-name">${vehicle.type} ${vehicle.name}</div>
-                    <div class="status-badge ${statusClass}">${statusText}</div>
-                </div>
-                <div class="vehicle-info">
-                    <strong>Immatriculation:</strong> ${vehicle.immatriculation}
-                </div>
-                ${additionalInfo}
-            </div>
-        `;
-    }).join('');
-}
 
-function populateVehicleSelect() {
-    const selects = ['vehicule', 'vehicule-mobile'];
-    const availableVehicles = vehicles.filter(v => v.status === 'available');
-    
-    selects.forEach(selectId => {
-        const select = document.getElementById(selectId);
-        if (!select) return;
-        
-        select.innerHTML = '<option value="">-- Sélectionner un véhicule --</option>';
-        
-        if (availableVehicles.length === 0) {
-            const option = document.createElement('option');
-            option.textContent = 'Aucun véhicule disponible';
-            option.disabled = true;
-            select.appendChild(option);
-        } else {
-            availableVehicles.forEach(vehicle => {
-                const option = document.createElement('option');
-                option.value = vehicle.id;
-                option.textContent = `${vehicle.type} ${vehicle.name} - ${vehicle.immatriculation}`;
-                select.appendChild(option);
+        function getPurposeText(purpose) {
+            switch(purpose) {
+                case 'mission': return 'Mission professionnelle';
+                case 'formation': return 'Formation';
+                case 'reunion': return 'Réunion externe';
+                case 'transport': return 'Transport de matériel';
+                case 'autre': return 'Autre';
+                default: return purpose;
+            }
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('fr-FR');
+        }
+
+        function showMessage(message, type) {
+            let messageContainer = document.getElementById('global-message');
+            if (!messageContainer) {
+                messageContainer = document.createElement('div');
+                messageContainer.id = 'global-message';
+                messageContainer.style.cssText = `
+                    position: fixed;
+                    top: 80px;
+                    right: 20px;
+                    z-index: 3000;
+                    max-width: 400px;
+                `;
+                document.body.appendChild(messageContainer);
+            }
+            
+            messageContainer.innerHTML = `<div class="${type}" style="margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">${message}</div>`;
+            
+            setTimeout(() => {
+                messageContainer.innerHTML = '';
+            }, 4000);
+        }
+
+        function showModalMessage(message, type) {
+            const messageDiv = document.getElementById('modal-message');
+            messageDiv.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        function showEditModalMessage(message, type) {
+            const messageDiv = document.getElementById('edit-modal-message');
+            messageDiv.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        // Gestion des onglets
+        function initTabs() {
+            const tabs = document.querySelectorAll('.tab');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabPanes.forEach(p => p.classList.remove('active'));
+
+                    tab.classList.add('active');
+                    const targetTab = tab.getAttribute('data-tab');
+                    document.getElementById(targetTab + '-tab').classList.add('active');
+
+                    if (targetTab === 'reservations') {
+                        displayUserReservations();
+                    }
+                });
             });
         }
-    });
-}
 
-function getStatusText(status) {
-    switch(status) {
-        case 'available': return 'Disponible';
-        case 'reserved': return 'Réservé';
-        case 'mission': return 'En mission';
-        case 'maintenance': return 'Maintenance';
-        default: return status;
-    }
-}
-
-// === GESTION DES RÉSERVATIONS ===
-async function confirmReservation(event, isMobile = false) {
-    event.preventDefault();
-    
-    const prefix = isMobile ? '-mobile' : '';
-    const formId = isMobile ? 'form-reservation-mobile' : 'form-reservation';
-    
-    showLoadingState(formId, true);
-    
-    const nom = document.getElementById(`nom${prefix}`)?.value.trim();
-    const date = document.getElementById(`date${prefix}`)?.value;
-    const heureDepart = document.getElementById(`heure-depart${prefix}`)?.value;
-    const heureArrivee = document.getElementById(`heure-arrivee${prefix}`)?.value;
-    const vehiculeId = parseInt(document.getElementById(`vehicule${prefix}`)?.value);
-    
-    // Validation
-    if (!nom || !date || !heureDepart || !heureArrivee || !vehiculeId) {
-        showLoadingState(formId, false);
-        showMessage('Veuillez remplir tous les champs', 'error');
-        return;
-    }
-    
-    if (heureDepart >= heureArrivee) {
-        showLoadingState(formId, false);
-        showMessage('L\'heure d\'arrivée doit être postérieure à l\'heure de départ', 'error');
-        return;
-    }
-    
-    const vehicle = vehicles.find(v => v.id === vehiculeId);
-    if (!vehicle || vehicle.status !== 'available') {
-        showLoadingState(formId, false);
-        showMessage('Ce véhicule n\'est plus disponible', 'error');
-        return;
-    }
-    
-    try {
-        // Format correct pour le serveur Flask
-        const reservationData = {
-            vehicule_id: vehiculeId,
-            date_debut: `${date} ${heureDepart}:00`,
-            date_fin: `${date} ${heureArrivee}:00`,
-            notes: `Conducteur: ${nom}`
-        };
-        
-        console.log('Création réservation:', reservationData);
-        
-        // Appel direct à l'API au lieu d'utiliser dataManager
-        const response = await fetch('/api/reservations', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(reservationData)
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok && result.success) {
-            const reservationId = `RES-${Date.now()}`;
+        // Affichage des véhicules
+        function displayVehicles() {
+            const container = document.getElementById('vehicles-grid');
             
-            showMessage(`
-                <strong>Réservation confirmée!</strong><br><br>
+            container.innerHTML = vehicles.map(vehicle => {
+                const statusClass = `status-${vehicle.status}`;
+                const statusText = getStatusText(vehicle.status);
+                
+                let actionButton = '';
+                if (vehicle.status === 'available') {
+                    actionButton = `<button class="btn btn-success" onclick="openReservationModal(${vehicle.id})">📝 Réserver</button>`;
+                } else if (vehicle.status === 'reserved') {
+                    actionButton = `<button class="btn" disabled>Indisponible</button>`;
+                } else {
+                    actionButton = `<button class="btn" disabled>Maintenance</button>`;
+                }
+
+                return `
+                    <div class="vehicle-card ${vehicle.status}">
+                        <div class="vehicle-header">
+                            <div class="vehicle-name">${vehicle.type} ${vehicle.name}</div>
+                            <div class="status-badge ${statusClass}">${statusText}</div>
+                        </div>
+                        <div class="vehicle-info">
+                            <div><strong>🔢 Immatriculation:</strong> ${vehicle.immatriculation}</div>
+                            <div><strong>📅 Mise en service:</strong> ${vehicle.dateImmatriculation}</div>
+                            ${vehicle.reservedBy ? `<div style="margin-top: 10px; color: #856404;"><strong>👤 Réservé par:</strong> ${vehicle.reservedBy}</div>` : ''}
+                        </div>
+                        ${actionButton}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Affichage des réservations utilisateur
+        function displayUserReservations() {
+            const container = document.getElementById('reservations-list');
+            
+            if (userReservations.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📋</div>
+                        <h3>Aucune réservation</h3>
+                        <p>Vous n'avez pas encore de réservations en cours.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = userReservations.map(reservation => {
+                const vehicle = vehicles.find(v => v.id === reservation.vehicleId);
+                const purposeText = getPurposeText(reservation.purpose);
+                
+                return `
+                    <div class="reservation-item">
+                        <div class="reservation-header">
+                            <div class="reservation-main">
+                                <div class="reservation-id">🎫 ${reservation.id}</div>
+                                <div class="reservation-details">
+                                    <div><strong>🚗 Véhicule:</strong> ${vehicle?.type} ${vehicle?.name} (${vehicle?.immatriculation})</div>
+                                    <div><strong>📅 Date:</strong> ${formatDate(reservation.date)}</div>
+                                    <div><strong>🕐 Horaire:</strong> ${reservation.startTime} - ${reservation.endTime}</div>
+                                    <div><strong>📍 Destination:</strong> ${reservation.destination || 'Non spécifiée'}</div>
+                                    <div><strong>💼 Motif:</strong> ${purposeText}</div>
+                                    ${reservation.notes ? `<div><strong>📝 Notes:</strong> ${reservation.notes}</div>` : ''}
+                                </div>
+                            </div>
+                            <div class="reservation-actions">
+                                <button class="btn btn-warning" onclick="editReservation('${reservation.id}')" style="width: auto; padding: 8px 12px;">✏️</button>
+                                <button class="btn btn-danger" onclick="cancelReservation('${reservation.id}')" style="width: auto; padding: 8px 12px;">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Ouvrir modal de réservation
+        function openReservationModal(vehicleId) {
+            const vehicle = vehicles.find(v => v.id === vehicleId);
+            if (!vehicle || vehicle.status !== 'available') return;
+
+            document.getElementById('vehicle-id').value = vehicleId;
+            document.getElementById('vehicle-display').value = `${vehicle.type} ${vehicle.name} - ${vehicle.immatriculation}`;
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('reservation-date').min = today;
+            
+            document.getElementById('reservation-modal').classList.add('show');
+        }
+
+        // Fermer modals
+        function closeModal() {
+            document.getElementById('reservation-modal').classList.remove('show');
+            document.getElementById('reservation-form').reset();
+            document.getElementById('modal-message').innerHTML = '';
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('show');
+            document.getElementById('edit-form').reset();
+            document.getElementById('edit-modal-message').innerHTML = '';
+        }
+
+        // Confirmer une réservation
+        function submitReservation(event) {
+            event.preventDefault();
+            
+            const vehicleId = parseInt(document.getElementById('vehicle-id').value);
+            const date = document.getElementById('reservation-date').value;
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            const destination = document.getElementById('destination').value;
+            const purpose = document.getElementById('purpose').value;
+            const notes = document.getElementById('notes').value;
+            
+            if (!date || !startTime || !endTime || !purpose) {
+                showModalMessage('Veuillez remplir tous les champs obligatoires', 'error');
+                return;
+            }
+
+            if (startTime >= endTime) {
+                showModalMessage('L\'heure de fin doit être postérieure à l\'heure de début', 'error');
+                return;
+            }
+            
+            const reservationId = `RES-2025-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
+            const vehicle = vehicles.find(v => v.id === vehicleId);
+            
+            const newReservation = {
+                id: reservationId,
+                vehicleId: vehicleId,
+                userId: currentUser.id,
+                date: date,
+                startTime: startTime,
+                endTime: endTime,
+                destination: destination || 'Non spécifiée',
+                purpose: purpose,
+                notes: notes,
+                status: 'confirmed',
+                createdAt: new Date().toISOString()
+            };
+            
+            userReservations.unshift(newReservation);
+            
+            vehicle.status = 'reserved';
+            vehicle.reservedBy = currentUser.name;
+            vehicle.reservationDate = formatDate(date);
+            vehicle.reservationTime = `${startTime}-${endTime}`;
+            
+            showModalMessage(`
+                <strong>✅ Réservation confirmée!</strong><br>
                 <strong>ID:</strong> ${reservationId}<br>
                 <strong>Véhicule:</strong> ${vehicle.type} ${vehicle.name}<br>
-                <strong>Conducteur:</strong> ${nom}<br>
                 <strong>Date:</strong> ${formatDate(date)}<br>
-                <strong>Horaire:</strong> ${heureDepart}-${heureArrivee}
-            `, 'success');
+                <strong>Horaire:</strong> ${startTime} - ${endTime}
+            `, 'confirmation');
             
-            // Réinitialiser le formulaire
-            const form = document.getElementById(formId);
-            if (form) form.reset();
-            setMinDate();
-            setTimeout(fillUserDataInForms, 100);
+            displayVehicles();
             
-            // Recharger les données pour mettre à jour l'affichage
-            if (dataManager) {
-                setTimeout(() => dataManager.loadAllData(), 1000);
-            }
-            
-            if (isMobile) {
-                setTimeout(() => closeMobileModal(), 2000);
-            }
-        } else {
-            showMessage(result.message || 'Erreur lors de la création de la réservation', 'error');
+            setTimeout(() => {
+                closeModal();
+            }, 3000);
         }
-        
-    } catch (error) {
-        console.error('Erreur réservation:', error);
-        showMessage('Erreur lors de la réservation', 'error');
-    } finally {
-        showLoadingState(formId, false);
-    }
-}
 
-async function annulerReservation() {
-    const reservationId = document.getElementById('reservation-id')?.value.trim();
-    if (!reservationId) {
-        showMessage('Veuillez entrer un identifiant de réservation', 'error');
-        return;
-    }
-    
-    const vehicle = vehicles.find(v => v.reservationId === reservationId);
-    if (!vehicle) {
-        showMessage('Réservation non trouvée', 'error');
-        return;
-    }
-    
-    if (confirm(`Êtes-vous sûr de vouloir annuler la réservation ${reservationId} pour ${vehicle.reservedBy}?`)) {
-        try {
-            const success = await dataManager.cancelReservation(reservationId);
+        // Modifier une réservation
+        function editReservation(reservationId) {
+            const reservation = userReservations.find(r => r.id === reservationId);
+            if (!reservation) return;
             
-            if (success) {
-                showMessage(`Réservation ${reservationId} annulée avec succès`, 'success');
-                document.getElementById('reservation-id').value = '';
-            } else {
-                showMessage('Erreur lors de l\'annulation', 'error');
-            }
-        } catch (error) {
-            console.error('Erreur annulation:', error);
-            showMessage('Erreur lors de l\'annulation', 'error');
+            const vehicle = vehicles.find(v => v.id === reservation.vehicleId);
+            
+            document.getElementById('edit-reservation-id').value = reservationId;
+            document.getElementById('edit-vehicle-display').value = `${vehicle.type} ${vehicle.name} - ${vehicle.immatriculation}`;
+            document.getElementById('edit-date').value = reservation.date;
+            document.getElementById('edit-start-time').value = reservation.startTime;
+            document.getElementById('edit-end-time').value = reservation.endTime;
+            document.getElementById('edit-destination').value = reservation.destination;
+            document.getElementById('edit-purpose').value = reservation.purpose;
+            document.getElementById('edit-notes').value = reservation.notes;
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('edit-date').min = today;
+            
+            document.getElementById('edit-modal').classList.add('show');
         }
-    }
-}
 
-function rechercherReservation() {
-    const searchTerm = document.getElementById('search-reservation')?.value.toLowerCase().trim();
-    if (!searchTerm) {
-        showMessage('Veuillez entrer un terme de recherche', 'error');
-        return;
-    }
-    
-    const results = vehicles.filter(v => 
-        v.reservedBy && (
-            v.reservedBy.toLowerCase().includes(searchTerm) ||
-            v.name.toLowerCase().includes(searchTerm) ||
-            v.immatriculation.toLowerCase().includes(searchTerm) ||
-            (v.reservationId && v.reservationId.toLowerCase().includes(searchTerm))
-        )
-    );
-    
-    if (results.length === 0) {
-        showMessage('Aucune réservation trouvée', 'error');
-    } else {
-        const resultText = results.map(v => 
-            `<strong>${v.reservationId}:</strong> ${v.reservedBy} - ${v.type} ${v.name} (${v.reservationDate} • ${v.reservationTime})`
-        ).join('<br><br>');
-        showMessage(`<strong>Réservations trouvées:</strong><br><br>${resultText}`, 'success');
-    }
-}
+        // Sauvegarder modification
+        function submitEditReservation(event) {
+            event.preventDefault();
+            
+            const reservationId = document.getElementById('edit-reservation-id').value;
+            const date = document.getElementById('edit-date').value;
+            const startTime = document.getElementById('edit-start-time').value;
+            const endTime = document.getElementById('edit-end-time').value;
+            const destination = document.getElementById('edit-destination').value;
+            const purpose = document.getElementById('edit-purpose').value;
+            const notes = document.getElementById('edit-notes').value;
+            
+            if (!date || !startTime || !endTime || !purpose) {
+                showEditModalMessage('Veuillez remplir tous les champs obligatoires', 'error');
+                return;
+            }
 
-function modifierReservation() {
-    const reservationId = document.getElementById('reservation-id')?.value.trim();
-    if (!reservationId) {
-        showMessage('Veuillez entrer un identifiant de réservation', 'error');
-        return;
-    }
-    
-    showMessage('Fonction de modification en cours de développement', 'error');
-}
-
-function exportToMissions() {
-    showMessage('Fonction d\'export en cours de développement', 'error');
-}
-
-// === FONCTIONS UTILITAIRES ===
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR');
-}
-
-function showMessage(message, type) {
-    const confirmationDiv = document.getElementById('confirmation');
-    if (!confirmationDiv) return;
-    
-    const typeClass = type === 'success' ? 'confirmation' : type;
-    confirmationDiv.innerHTML = `<div class="${typeClass}">${message}</div>`;
-    
-    confirmationDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    
-    setTimeout(() => {
-        confirmationDiv.innerHTML = '';
-    }, 7000);
-}
-
-function setMinDate() {
-    const today = new Date().toISOString().split('T')[0];
-    const dateInputs = ['date', 'date-mobile'];
-    dateInputs.forEach(id => {
-        const input = document.getElementById(id);
-        if (input) {
-            input.min = today;
-            if (!input.value) {
-                input.value = today;
+            if (startTime >= endTime) {
+                showEditModalMessage('L\'heure de fin doit être postérieure à l\'heure de début', 'error');
+                return;
+            }
+            
+            const reservationIndex = userReservations.findIndex(r => r.id === reservationId);
+            if (reservationIndex !== -1) {
+                userReservations[reservationIndex] = {
+                    ...userReservations[reservationIndex],
+                    date: date,
+                    startTime: startTime,
+                    endTime: endTime,
+                    destination: destination || 'Non spécifiée',
+                    purpose: purpose,
+                    notes: notes
+                };
+                
+                const vehicle = vehicles.find(v => v.id === userReservations[reservationIndex].vehicleId);
+                if (vehicle && vehicle.status === 'reserved') {
+                    vehicle.reservationDate = formatDate(date);
+                    vehicle.reservationTime = `${startTime}-${endTime}`;
+                }
+                
+                showEditModalMessage('✅ Réservation modifiée avec succès!', 'confirmation');
+                
+                displayVehicles();
+                displayUserReservations();
+                
+                setTimeout(() => {
+                    closeEditModal();
+                }, 2000);
             }
         }
-    });
-}
 
-function showLoadingState(formId, loading = true) {
-    const form = document.getElementById(formId);
-    if (!form) return;
-    
-    const button = form.querySelector('button[type="submit"]');
-    const buttonText = button.querySelector('.btn-text');
-    const loadingSpinner = button.querySelector('.loading');
-    
-    if (loading) {
-        button.disabled = true;
-        if (buttonText) buttonText.style.display = 'none';
-        if (loadingSpinner) loadingSpinner.style.display = 'inline-block';
-    } else {
-        button.disabled = false;
-        if (buttonText) buttonText.style.display = 'inline-flex';
-        if (loadingSpinner) loadingSpinner.style.display = 'none';
-    }
-}
+        // Annuler une réservation
+        function cancelReservation(reservationId) {
+            if (!confirm('Êtes-vous sûr de vouloir annuler cette réservation?')) return;
+            
+            const reservationIndex = userReservations.findIndex(r => r.id === reservationId);
+            if (reservationIndex === -1) return;
+            
+            const reservation = userReservations[reservationIndex];
+            const vehicle = vehicles.find(v => v.id === reservation.vehicleId);
+            
+            userReservations.splice(reservationIndex, 1);
+            
+            if (vehicle) {
+                vehicle.status = 'available';
+                delete vehicle.reservedBy;
+                delete vehicle.reservationDate;
+                delete vehicle.reservationTime;
+            }
+            
+            displayVehicles();
+            displayUserReservations();
+            
+            showMessage('✅ Réservation annulée avec succès', 'confirmation');
+        }
 
-function fillUserDataInForms() {
-    if (dataManager && dataManager.data.currentUser) {
-        const userName = dataManager.data.currentUser.prenom + ' ' + dataManager.data.currentUser.nom;
-        
-        const nomInputs = ['nom', 'nom-mobile'];
-        nomInputs.forEach(id => {
-            const input = document.getElementById(id);
-            if (input && !input.value) {
-                input.value = userName;
+        // Export des réservations
+        function exportReservations(format) {
+            if (userReservations.length === 0) {
+                showMessage('Aucune réservation à exporter', 'error');
+                return;
+            }
+
+            const data = userReservations.map(reservation => {
+                const vehicle = vehicles.find(v => v.id === reservation.vehicleId);
+                return {
+                    'ID Réservation': reservation.id,
+                    'Véhicule': `${vehicle?.type} ${vehicle?.name}`,
+                    'Immatriculation': vehicle?.immatriculation,
+                    'Date': formatDate(reservation.date),
+                    'Heure début': reservation.startTime,
+                    'Heure fin': reservation.endTime,
+                    'Destination': reservation.destination,
+                    'Motif': getPurposeText(reservation.purpose),
+                    'Notes': reservation.notes || '',
+                    'Statut': 'Confirmée',
+                    'Créé le': new Date(reservation.createdAt).toLocaleDateString('fr-FR')
+                };
+            });
+
+            switch (format) {
+                case 'csv':
+                    exportToCSV(data, 'mes_reservations.csv');
+                    break;
+                case 'json':
+                    exportToJSON(data, 'mes_reservations.json');
+                    break;
+                case 'pdf':
+                    exportToPDF(data);
+                    break;
+            }
+        }
+
+        // Export CSV
+        function exportToCSV(data, filename) {
+            const headers = Object.keys(data[0]);
+            const csvContent = [
+                headers.join(';'),
+                ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(';'))
+            ].join('\n');
+            
+            downloadFile(csvContent, filename, 'text/csv;charset=utf-8;');
+            showMessage('✅ Export CSV téléchargé avec succès', 'confirmation');
+        }
+
+        // Export JSON
+        function exportToJSON(data, filename) {
+            const jsonContent = JSON.stringify({
+                exportDate: new Date().toISOString(),
+                user: currentUser.name,
+                reservations: data
+            }, null, 2);
+            downloadFile(jsonContent, filename, 'application/json');
+            showMessage('✅ Export JSON téléchargé avec succès', 'confirmation');
+        }
+
+        // Export PDF (simulation textuelle)
+        function exportToPDF(data) {
+            const content = `RAPPORT DE RÉSERVATIONS - ${currentUser.name}
+Date d'export: ${new Date().toLocaleDateString('fr-FR')}
+Département: ${currentUser.department}
+
+==================================================
+
+${data.map((item, index) => `
+${index + 1}. RÉSERVATION ${item['ID Réservation']}
+   Véhicule: ${item['Véhicule']} (${item['Immatriculation']})
+   Date: ${item['Date']} 
+   Horaires: ${item['Heure début']} - ${item['Heure fin']}
+   Destination: ${item['Destination']}
+   Motif: ${item['Motif']}
+   ${item['Notes'] ? 'Notes: ' + item['Notes'] : ''}
+   Créé le: ${item['Créé le']}
+   --------------------------------------------------
+`).join('')}
+
+RÉSUMÉ:
+Nombre total de réservations: ${data.length}
+Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`;
+            
+            downloadFile(content, 'mes_reservations.txt', 'text/plain');
+            showMessage('✅ Export PDF (format texte) téléchargé avec succès', 'confirmation');
+        }
+
+        // Fonction utilitaire de téléchargement
+        function downloadFile(content, filename, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        // Fermeture modal au clic extérieur
+        window.addEventListener('click', function(event) {
+            const reservationModal = document.getElementById('reservation-modal');
+            const editModal = document.getElementById('edit-modal');
+            
+            if (event.target === reservationModal) {
+                closeModal();
+            }
+            if (event.target === editModal) {
+                closeEditModal();
             }
         });
-    }
-}
 
-// === GESTION MOBILE ===
-function openMobileModal() {
-    const modal = document.getElementById('mobile-modal');
-    const backdrop = document.getElementById('modal-backdrop');
-    
-    populateVehicleSelect();
-    setMinDate();
-    
-    modal.classList.add('show');
-    backdrop.classList.add('show');
-    document.body.style.overflow = 'hidden';
-    
-    setTimeout(fillUserDataInForms, 100);
-}
-
-function closeMobileModal() {
-    const modal = document.getElementById('mobile-modal');
-    const backdrop = document.getElementById('modal-backdrop');
-    
-    modal.classList.remove('show');
-    backdrop.classList.remove('show');
-    document.body.style.overflow = '';
-    
-    const form = document.getElementById('form-reservation-mobile');
-    if (form) form.reset();
-    setMinDate();
-}
-
-function selectVehicleOnMobile(vehicleId) {
-    if (window.innerWidth <= 767) {
-        const vehicle = vehicles.find(v => v.id === vehicleId);
-        if (vehicle && vehicle.status === 'available') {
-            openMobileModal();
-            setTimeout(() => {
-                const select = document.getElementById('vehicule-mobile');
-                if (select) select.value = vehicleId;
-            }, 100);
-        }
-    }
-}
-
-function refreshData() {
-    console.log('Rafraîchissement des données...');
-    if (dataManager) {
-        dataManager.loadAllData();
-    }
-}
-
-function goBack() {
-    window.location.href = "/";
-}
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            initTabs();
+            displayVehicles();
+            displayUserReservations();
+            
+            document.getElementById('reservation-form').addEventListener('submit', submitReservation);
+            document.getElementById('edit-form').addEventListener('submit', submitEditReservation);
+        });

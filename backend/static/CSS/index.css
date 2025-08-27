@@ -2483,6 +2483,267 @@ a:hover {
     }
 }
 
+/* ======== LOGO AMÉLIORÉ - Plus visible et impactant ======== */
+.logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem; /* Légèrement plus grand */
+    font-weight: 700; /* Plus gras */
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Plus d'espace entre image et texte */
+    letter-spacing: -0.5px;
+    position: relative;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); /* Ombre pour plus de contraste */
+}
+
+/* Effet de brillance permanente sur le logo */
+.logo::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: var(--gradient-accent);
+    border-radius: 12px;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.logo::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 0;
+    height: 3px; /* Plus épais */
+    background: var(--gradient-accent);
+    transition: width 0.4s ease;
+    border-radius: 2px;
+    box-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
+}
+
+.logo:hover::before {
+    opacity: 0.1;
+}
+
+.logo:hover::after,
+.logo:active::after,
+.logo:focus::after {
+    width: 100%;
+}
+
+.logo:hover,
+.logo:active,
+.logo:focus {
+    transform: translateY(-2px) scale(1.02); /* Effet plus prononcé */
+    color: var(--color-accent-blue);
+    text-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+}
+
+.logo-image {
+    width: 50px; /* Plus grande */
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    transition: all 0.3s ease;
+    border: 2px solid var(--color-accent-blue); /* Bordure colorée par défaut */
+    filter: grayscale(30%); /* Moins de grayscale pour plus de couleur */
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2); /* Ombre colorée */
+}
+
+.logo:hover .logo-image,
+.logo:active .logo-image,
+.logo:focus .logo-image {
+    filter: grayscale(0%) brightness(1.1);
+    border-color: var(--color-accent-blue);
+    box-shadow: 0 0 25px rgba(74, 144, 226, 0.6);
+    transform: rotate(-5deg) scale(1.1);
+}
+
+/* ======== MENU BURGER AMÉLIORÉ - Subtil mais visible ======== */
+.burger-menu {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+    padding: 15px;
+    z-index: 1001;
+    background: rgba(15, 15, 15, 0.9); /* Fond sombre subtil */
+    border-radius: 10px;
+    width: 54px;
+    height: 54px;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.15); /* Bordure blanche très subtile */
+    transition: all 0.3s ease;
+    position: relative;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4); /* Ombre douce */
+    backdrop-filter: blur(10px);
+}
+
+.burger-menu::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    bottom: -12px;
+    left: -12px;
+    border-radius: 16px;
+    background: transparent;
+}
+
+.burger-menu:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(20, 20, 20, 0.95);
+    transform: translateY(-1px);
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(74, 144, 226, 0.2); /* Fine lueur bleue au hover seulement */
+}
+
+.burger-line {
+    width: 22px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.9); /* Blanc subtil */
+    margin: 2.5px 0;
+    transition: all 0.3s ease;
+    border-radius: 1px;
+}
+
+.burger-menu:hover .burger-line {
+    background: rgba(255, 255, 255, 1); /* Blanc pur au hover */
+    transform: scaleX(1.05);
+}
+
+/* Animation active plus subtile */
+.burger-menu.active {
+    background: rgba(25, 25, 25, 0.95);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(74, 144, 226, 0.3);
+}
+
+.burger-menu.active .burger-line {
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.burger-menu.active .burger-line:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.burger-menu.active .burger-line:nth-child(2) {
+    opacity: 0;
+    transform: scale(0);
+}
+
+.burger-menu.active .burger-line:nth-child(3) {
+    transform: rotate(-45deg) translate(6px, -6px);
+}
+
+/* Animation de pulsation pour attirer l'attention */
+@keyframes burgerPulse {
+    0%, 100% { 
+        box-shadow: 
+            0 4px 15px rgba(74, 144, 226, 0.2),
+            0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    50% { 
+        box-shadow: 
+            0 6px 20px rgba(74, 144, 226, 0.4),
+            0 3px 12px rgba(139, 92, 246, 0.3);
+    }
+}
+
+/* Ajouter la pulsation au chargement (optionnel) */
+.burger-menu.pulse-once {
+    animation: burgerPulse 2s ease-in-out;
+}
+
+/* ======== RESPONSIVE AMÉLIORÉ ======== */
+@media (max-width: 768px) {
+    .burger-menu {
+        display: flex;
+    }
+    
+    .logo {
+        font-size: 2rem;
+        gap: 12px;
+    }
+    
+    .logo-image {
+        width: 45px;
+        height: 45px;
+    }
+}
+
+@media (max-width: 480px) {
+    .burger-menu {
+        width: 52px;
+        height: 52px;
+        padding: 14px;
+    }
+    
+    .burger-line {
+        width: 22px;
+        height: 2px;
+    }
+    
+    .logo {
+        font-size: 1.8rem;
+        gap: 10px;
+    }
+    
+    .logo-image {
+        width: 42px;
+        height: 42px;
+    }
+}
+
+@media (max-width: 380px) {
+    .burger-menu {
+        width: 48px;
+        height: 48px;
+        padding: 12px;
+    }
+    
+    .burger-line {
+        width: 20px;
+    }
+    
+    .logo {
+        font-size: 1.6rem;
+    }
+    
+    .logo-image {
+        width: 38px;
+        height: 38px;
+    }
+}
+
+/* ======== EFFET D'INTERACTION TACTILE POUR MOBILE ======== */
+@media (max-width: 768px) {
+    .logo:active {
+        transform: translateY(-1px) scale(1.05);
+        color: var(--color-accent-blue);
+        transition: all 0.1s ease;
+    }
+    
+    .logo:active .logo-image {
+        transform: rotate(-3deg) scale(1.08);
+        transition: all 0.1s ease;
+    }
+    
+    .burger-menu:active {
+        transform: translateY(-1px) scale(1.08);
+        transition: all 0.1s ease;
+    }
+}
+
 
 
 
