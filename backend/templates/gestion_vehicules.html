@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriveGo - Gestion du Parc Automobile</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/gestion_vehicules.css') }}">
+
     
 </head>
 <body>
     <!-- Bouton de retour -->
-    <a href="{{ url_for('index') }}" class="close-button">×</a>
-
+    <div class="close-button" onclick="goToHomePage()">×</div>
     
     <!-- Informations utilisateur -->
     <div class="user-info" id="userInfo">
@@ -19,7 +19,7 @@
     
     <div class="container">
         <header class="header">
-            <h1> Go mission</h1>
+            <h1>🚀Go mission</h1>
             <p>Gérez vos missions et consultez vos véhicules disponibles</p>
         </header>
 
@@ -27,7 +27,7 @@
             <!-- Liste des véhicules -->
             <div class="card">
                 <h2 class="card-title">
-                    🚙 Véhicules
+                    🚙 Mes Véhicules
                 </h2>
                 <div class="vehicle-list" id="vehicleList">
                     <!-- Les véhicules seront générés par JavaScript -->
@@ -93,8 +93,7 @@
             </div>
         </div>
     </div>
-    <!-- Système unifié DriveGo -->
-    <script src="{{ url_for('static', filename='js/unified-data-manager.js') }}"></script>
+
     <script src="{{ url_for('static', filename='js/gestion_vehicules.js') }}"></script>
     
 </body>
