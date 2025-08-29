@@ -11,7 +11,6 @@
     <!-- Splash Screen -->
      <!-- Animation voiture -->
 
-
     <div class="splash-screen" id="splashScreen">
         <div class="splash-logo">
             <img src="../static/images/logo perce-neige.PNG" alt="Logo Perce-Neige">
@@ -85,7 +84,13 @@
                     </div>
                     <div class="mobile-profile-info">
                         <div class="mobile-profile-name" id="mobileProfileName">
-                            {{ user_name if user_name else "Utilisateur" }}
+                            <!-- Affichage du prénom uniquement -->
+                            {% if user_name %}
+                                {% set name_parts = user_name.split() %}
+                                {{ name_parts[0] if name_parts else "Utilisateur" }}
+                            {% else %}
+                                Utilisateur
+                            {% endif %}
                         </div>
                         <div class="mobile-profile-role" id="mobileProfileRole">
                             {{ user_role if user_role else "Éducateur/trice" }}
@@ -157,7 +162,9 @@
         <section class="hero">
             <div class="hero-container fade-in-up">
                 {% if user_logged_in and user_name %}
-                    <p class="user-greeting">👋 Bonjour {{ user_name }} !</p>
+                    <!-- Affichage du prénom uniquement dans le message d'accueil -->
+                    {% set name_parts = user_name.split() %}
+                    <p class="user-greeting">👋 Bonjour {{ name_parts[0] if name_parts else user_name }} !</p>
                 {% endif %}
                 <h1 class="floating">Bienvenue chez DriveGo</h1>
 
@@ -174,9 +181,11 @@
 
                 </a>
                     {% else %}
-                        <!-- Actions primaires (conversion) -->
-                        <a href="{{ url_for('connexion') }}" class="btn btn-primary">⚡ Se connecter</a>
-                        <a href="{{ url_for('inscription') }}" class="btn btn-primary">📝 S'inscrire</a>
+                        <!-- Actions primaires avec espacement amélioré -->
+                        <div class="auth-buttons">
+                            <a href="{{ url_for('connexion') }}" class="btn btn-primary">⚡ Se connecter</a>
+                            <a href="{{ url_for('inscription') }}" class="btn btn-primary">📝 S'inscrire</a>
+                        </div>
                         
                         <!-- Actions secondaires (information) -->
                         <!-- <a href="{{ url_for('aide') }}" class="btn btn-secondary">ℹ️ Aide</a> -->
@@ -223,6 +232,7 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+    
     
 </body>
 </html>

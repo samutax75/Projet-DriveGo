@@ -2744,7 +2744,26 @@ a:hover {
     }
 }
 
-
+ /* Espacement amélioré pour les boutons d'authentification */
+        .auth-buttons {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        @media (max-width: 768px) {
+            .auth-buttons {
+                gap: 15px;
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .auth-buttons .btn {
+                min-width: 200px;
+            }
+        }
 
 
 
