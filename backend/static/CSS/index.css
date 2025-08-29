@@ -128,10 +128,9 @@ body::before {
     z-index: -1;
 }
 
-
 /* ======== HEADER MINIMALISTE AVEC COULEUR ======== */
 header {
-    background: rgba(50, 50, 50, 0.95);
+    background: rgba(5, 5, 5, 0.95);
     border-bottom: 1px solid var(--border-light);
     position: fixed;
     width: 100%;
@@ -1064,158 +1063,183 @@ a:hover {
 }
 
 
+/* script chargement app */
 
+   /* Splash Screen Styles */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: splashFadeOut 0.8s ease-out 2.5s forwards;
+        }
 
+        .splash-logo {
+            width: 90px;
+            height: 90px;
+            background: white;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            animation: logoEntry 1.2s ease-out;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+            overflow: hidden;
+        }
 
+        .splash-logo img {
+            width: 45px;
+            height: auto;
+            opacity: 0;
+            animation: logoImageFade 0.8s ease-out 0.4s forwards;
+        }
 
-/* Splash Screen Styles */
-.splash-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    animation: splashFadeOut 0.8s ease-out 2.5s forwards;
-}
+        .splash-title {
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            opacity: 0;
+            animation: titleSlideUp 0.8s ease-out 0.8s forwards;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
 
-.splash-logo {
-    width: 100px;
-    height: 100px;
-    background: white;
-    border-radius: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 25px;
-    animation: logoGrow 1.8s ease-out forwards;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.25);
-    overflow: hidden;
-}
+        .splash-subtitle {
+            color: rgba(255,255,255,0.85);
+            font-size: 16px;
+            font-weight: 300;
+            text-align: center;
+            opacity: 0;
+            animation: subtitleFade 0.8s ease-out 1.2s forwards;
+            max-width: 280px;
+            line-height: 1.4;
+        }
 
-.splash-logo img {
-    width: 50px;
-    height: auto;
-    opacity: 0;
-    animation: logoImageFade 1s ease-out 0.4s forwards;
-}
+        .loading-indicator {
+            margin-top: 40px;
+            display: flex;
+            gap: 10px;
+        }
 
-.splash-title {
-    color: white;
-    font-size: 32px;
-    font-weight: 700;
-    margin-bottom: 8px;
-    opacity: 0;
-    animation: titleSlideUp 0.8s ease-out 0.8s forwards;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
+        .loading-dot {
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.4;
+            animation: dotPulse 1.8s ease-in-out infinite;
+        }
 
-.splash-subtitle {
-    color: rgba(255,255,255,0.85);
-    font-size: 16px;
-    font-weight: 300;
-    text-align: center;
-    opacity: 0;
-    animation: subtitleFade 0.8s ease-out 1.2s forwards;
-    max-width: 280px;
-    line-height: 1.4;
-}
+        .loading-dot:nth-child(2) { animation-delay: 0.3s; }
+        .loading-dot:nth-child(3) { animation-delay: 0.6s; }
 
-.loading-indicator {
-    margin-top: 40px;
-    display: flex;
-    gap: 10px;
-}
+        /* Main content hidden initially */
+        .main-content {
+            opacity: 0;
+            transform: scale(0.96);
+            animation: contentEntry 1s ease-out 3.3s forwards;
+        }
 
-.loading-dot {
-    width: 10px;
-    height: 10px;
-    background: white;
-    border-radius: 50%;
-    opacity: 0.4;
-    animation: dotPulse 1.8s ease-in-out infinite;
-}
+        /* Animations */
+        @keyframes logoEntry {
+            0% { 
+                transform: scale(0.3) rotate(-10deg); 
+                opacity: 0; 
+            }
+            60% { 
+                transform: scale(1.1) rotate(2deg); 
+            }
+            100% { 
+                transform: scale(1) rotate(0deg); 
+                opacity: 1; 
+            }
+        }
 
-.loading-dot:nth-child(2) { animation-delay: 0.3s; }
-.loading-dot:nth-child(3) { animation-delay: 0.6s; }
+        @keyframes logoImageFade {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
 
-/* Main content hidden initially */
-.main-content {
-    opacity: 0;
-    transform: scale(0.96);
-    animation: contentEntry 1s ease-out 3.3s forwards;
-}
+        @keyframes titleSlideUp {
+            0% { 
+                opacity: 0; 
+                transform: translateY(30px); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
 
-/* Animations */
-@keyframes logoGrow {
-    0% { transform: scale(0.3); opacity: 0; }
-    60% { transform: scale(1.3); opacity: 1; }
-    100% { transform: scale(1.1); opacity: 1; }
-}
+        @keyframes subtitleFade {
+            0% { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
 
-@keyframes logoImageFade {
-    0% { opacity: 0; transform: scale(0.8); }
-    100% { opacity: 1; transform: scale(1); }
-}
+        @keyframes dotPulse {
+            0%, 100% { 
+                opacity: 0.4; 
+                transform: scale(1); 
+            }
+            50% { 
+                opacity: 1; 
+                transform: scale(1.3); 
+            }
+        }
 
-@keyframes titleSlideUp {
-    0% { opacity: 0; transform: translateY(30px); }
-    100% { opacity: 1; transform: translateY(0); }
-}
+        @keyframes splashFadeOut {
+            0% { 
+                opacity: 1; 
+                visibility: visible; 
+            }
+            100% { 
+                opacity: 0; 
+                visibility: hidden; 
+                pointer-events: none; 
+            }
+        }
 
-@keyframes subtitleFade {
-    0% { opacity: 0; transform: translateY(20px); }
-    100% { opacity: 1; transform: translateY(0); }
-}
+        @keyframes contentEntry {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.96); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1); 
+            }
+        }
 
-@keyframes dotPulse {
-    0%, 100% { opacity: 0.4; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.3); }
-}
-
-@keyframes splashFadeOut {
-    0% { opacity: 1; visibility: visible; }
-    100% { opacity: 0; visibility: hidden; pointer-events: none; }
-}
-
-@keyframes contentEntry {
-    0% { opacity: 0; transform: scale(0.96); }
-    100% { opacity: 1; transform: scale(1); }
-}
-
-/* 📱 Responsive mobile */
-@media (max-width: 600px) {
-    .splash-logo {
-        width: 120px;
-        height: 120px;
-        animation: logoGrowMobile 1.8s ease-out forwards;
-    }
-
-    .splash-logo img {
-        width: 60px;
-    }
-
-    .splash-title {
-        font-size: 26px;
-    }
-
-    .splash-subtitle {
-        font-size: 14px;
-        max-width: 230px;
-    }
-}
-
-/* Animation spécifique mobile (plus "punchy") */
-@keyframes logoGrowMobile {
-    0% { transform: scale(0.2); opacity: 0; }
-    60% { transform: scale(1.4); opacity: 1; }
-    100% { transform: scale(1.15); opacity: 1; }
-}
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .splash-logo {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .splash-title {
+                font-size: 28px;
+            }
+            
+            .splash-subtitle {
+                font-size: 14px;
+                max-width: 250px;
+            }
+        }
 
 /* Vibration subtile au clic */
 .btn:active {
@@ -2067,6 +2091,173 @@ a:hover {
        
 
 
+/* ========== HIÉRARCHIE DES BOUTONS ========== */
+
+/* Boutons Header (Compacts, discrets) */
+.auth-buttons {
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+}
+
+.btn-login, .btn-register {
+    padding: 0.6rem 1rem;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.btn-login {
+    background: transparent;
+    border: 1.5px solid rgba(255,255,255,0.4);
+    color: rgba(255,255,255,0.9);
+}
+
+.btn-register {
+    background: rgba(255,255,255,0.1);
+    border: 1.5px solid rgba(255,255,255,0.3);
+    color: white;
+}
+
+/* Boutons Hero Section (Proéminents, call-to-action) */
+.cta-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.btn {
+    padding: 1rem 2rem;
+    text-decoration: none;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.4s ease;
+    font-size: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 180px;
+    justify-content: center;
+    text-align: center;
+}
+
+/* Boutons primaires (Actions de conversion) */
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-primary:hover::before {
+    left: 100%;
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+/* Boutons secondaires (Actions d'information) */
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Footer Links (Discrets, informatifs) */
+.footer-container {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 2rem;
+    margin-bottom: 1rem;
+}
+
+.footer-links a {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+/* ========== RESPONSIVE ========== */
+
+@media (max-width: 768px) {
+    .cta-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn {
+        width: 100%;
+        max-width: 300px;
+        padding: 0.9rem 1.5rem;
+        font-size: 1rem;
+    }
+    
+    .auth-buttons {
+        gap: 0.5rem;
+    }
+    
+    .btn-login, .btn-register {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.8rem;
+    }
+    
+    .footer-links {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .cta-buttons {
+        gap: 0.8rem;
+    }
+    
+    .btn {
+        padding: 0.8rem 1.2rem;
+        font-size: 0.95rem;
+        min-width: auto;
+    }
+}
 
 
 /* animation voiture de sport  */
