@@ -1082,8 +1082,8 @@ a:hover {
         }
 
         .splash-logo {
-            width: 90px;
-            height: 90px;
+            width: 120px;
+            height: 120px;
             background: white;
             border-radius: 22px;
             display: flex;
@@ -1096,7 +1096,7 @@ a:hover {
         }
 
         .splash-logo img {
-            width: 45px;
+            width: 55px;
             height: auto;
             opacity: 0;
             animation: logoImageFade 0.8s ease-out 0.4s forwards;
@@ -1227,12 +1227,12 @@ a:hover {
         /* Responsive adjustments */
         @media (max-width: 480px) {
             .splash-logo {
-                width: 80px;
-                height: 80px;
+                width: 100px;
+                height: 100px;
             }
             
             .splash-title {
-                font-size: 28px;
+                font-size: 35px;
             }
             
             .splash-subtitle {
