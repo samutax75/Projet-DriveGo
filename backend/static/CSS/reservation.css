@@ -519,3 +519,35 @@
             margin-bottom: 20px;
             opacity: 0.5;
         }
+
+
+
+        
+
+        /* Styles pour l'avatar utilisateur dynamique */
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    min-width: 40px;
+    transition: background-color 0.3s ease;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-info span {
+    font-weight: 500;
+    color: #333;
+    white-space: nowrap;
+}

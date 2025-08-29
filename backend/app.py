@@ -25,7 +25,10 @@ app = Flask(__name__)
 # Configuration pour la production
 app.secret_key = os.environ.get('SECRET_KEY', 'fallback-secret-key-change-in-production')
 
-# Configuration de la base de données
+# Configuration de la base de données avec migration
+import sqlite3
+from werkzeug.security import generate_password_hash
+
 DATABASE = 'drivego.db'
 
 def init_db():
@@ -43,15 +46,10 @@ def init_db():
             prenom TEXT NOT NULL,
             telephone TEXT,
             role TEXT DEFAULT 'client',
+            profile_picture TEXT DEFAULT "",
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    
-    # Vérifier si la colonne profile_picture existe déjà (pour migration)
-    cursor.execute("PRAGMA table_info(users)")
-    columns = [column[1] for column in cursor.fetchall()]
-    if 'profile_picture' not in columns:
-        cursor.execute('ALTER TABLE users ADD COLUMN profile_picture TEXT DEFAULT ""')
     
     # Table pour gérer les tokens d'invitation
     cursor.execute('''
@@ -84,7 +82,7 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-
+    
     # Table des réservations
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS reservations (
@@ -101,16 +99,19 @@ def init_db():
         )
     ''')
 
+    # Migration de la table missions
+    migrate_missions_table(cursor)
+
     # Créer un utilisateur admin par défaut si aucun n'existe
     cursor.execute('SELECT COUNT(*) FROM users WHERE role = "admin"')
     if cursor.fetchone()[0] == 0:
-        admin_password = generate_password_hash('admin123')  # Changez ce mot de passe !
+        admin_password = generate_password_hash('admin123')  # ⚠️ changez ce mot de passe
         cursor.execute('''
             INSERT INTO users (email, password_hash, nom, prenom, telephone, role)
             VALUES (?, ?, ?, ?, ?, ?)
         ''', ('admin@drivego.com', admin_password, 'Admin', 'DriveGo', '', 'admin'))
 
-    # Insérer les véhicules réels
+    # Insérer les véhicules réels si vide
     cursor.execute('SELECT COUNT(*) FROM vehicules')
     if cursor.fetchone()[0] == 0:
         vehicules_reels = [
@@ -129,7 +130,97 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Initialiser la base de données au démarrage
+
+def migrate_missions_table(cursor):
+    """Recrée la table missions avec les bonnes colonnes (migration sans perte de données)"""
+    
+    # Vérifier si la table missions existe
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='missions'")
+    table_exists = cursor.fetchone()
+
+    if not table_exists:
+        # Créer directement la table missions si elle n'existe pas
+        cursor.execute('''
+            CREATE TABLE missions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                vehicule_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                date_mission DATE NOT NULL,
+                heure_debut TEXT DEFAULT "",
+                heure_fin TEXT,
+                motif TEXT NOT NULL DEFAULT "",
+                destination TEXT NOT NULL DEFAULT "",
+                nb_passagers INTEGER DEFAULT 1,
+                km_depart INTEGER NOT NULL,
+                km_arrivee INTEGER,
+                notes TEXT,
+                statut TEXT DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (vehicule_id) REFERENCES vehicules (id),
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+    else:
+        # Vérifier les colonnes existantes dans missions
+        cursor.execute("PRAGMA table_info(missions)")
+        existing_columns = [col[1] for col in cursor.fetchall()]
+
+        if "heure_debut" not in existing_columns or "heure_fin" not in existing_columns or "motif" not in existing_columns:
+            print("⚠️ Migration : reconstruction de la table missions")
+
+            # Renommer l'ancienne table
+            cursor.execute("ALTER TABLE missions RENAME TO missions_old")
+
+            # Recréer missions avec la bonne structure
+            cursor.execute('''
+                CREATE TABLE missions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    vehicule_id INTEGER NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    date_mission DATE NOT NULL,
+                    heure_debut TEXT DEFAULT "",
+                    heure_fin TEXT,
+                    motif TEXT NOT NULL DEFAULT "",
+                    destination TEXT NOT NULL DEFAULT "",
+                    nb_passagers INTEGER DEFAULT 1,
+                    km_depart INTEGER NOT NULL,
+                    km_arrivee INTEGER,
+                    notes TEXT,
+                    statut TEXT DEFAULT 'active',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (vehicule_id) REFERENCES vehicules (id),
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                )
+            ''')
+
+            # Récupérer colonnes existantes dans missions_old
+            cursor.execute("PRAGMA table_info(missions_old)")
+            old_columns = [col[1] for col in cursor.fetchall()]
+
+            # Colonnes à conserver
+            common_columns = [c for c in [
+                "id", "vehicule_id", "user_id", "date_mission",
+                "motif", "destination", "nb_passagers",
+                "km_depart", "km_arrivee", "notes",
+                "statut", "created_at", "updated_at"
+            ] if c in old_columns]
+
+            # Construire dynamiquement la requête INSERT
+            col_list = ", ".join(common_columns)
+            select_list = ", ".join(common_columns)
+
+            cursor.execute(f'''
+                INSERT INTO missions ({col_list})
+                SELECT {select_list} FROM missions_old
+            ''')
+
+            # Supprimer l’ancienne table
+            cursor.execute("DROP TABLE missions_old")
+
+
+# Initialiser la base au lancement
 init_db()
 
 # ============================================================================
@@ -585,6 +676,38 @@ def logout():
 # ============================================================================
 
 # --- PAGES D'AUTHENTIFICATION ---
+
+@app.route('/api/user/current', methods=['GET'])
+@login_required
+def api_get_current_user():
+    """Récupère les informations de l'utilisateur connecté"""
+    try:
+        user_id = session.get('user_id')
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT id, email, nom, prenom, role FROM users WHERE id = ?', (user_id,))
+        user = cursor.fetchone()
+        
+        if not user:
+            return jsonify({'success': False, 'error': 'Utilisateur non trouvé'}), 404
+        
+        conn.close()
+        
+        return jsonify({
+            'success': True, 
+            'user': {
+                'id': user[0],
+                'email': user[1],
+                'nom': f"{user[2]} {user[3]}",
+                'role': user[4]
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
 @app.route('/connexion')
 def connexion():
     """Page de connexion"""
@@ -848,256 +971,659 @@ def validate_token():
             'message': 'Erreur lors de la validation du token'
         }), 500
 
+
+
+
+
+
+
+
+
+# ============================================================================
+# ROUTES MISSION
+# ============================================================================
+# Routes API supplémentaires pour la gestion des missions
+
+@app.route('/api/missions', methods=['POST'])
+def api_create_mission():
+    """Créer une nouvelle mission"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({
+                'success': False,
+                'error': 'Utilisateur non connecté'
+            }), 401
+        
+        data = request.get_json()
+        user_id = session['user_id']
+        
+        # Validation des données requises
+        required_fields = ['vehicule_id', 'date_mission', 'heure_debut', 'motif', 'destination', 'nb_passagers', 'km_depart']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'success': False,
+                    'message': f'Le champ {field} est requis'
+                }), 400
+        
+        # Vérifier que le véhicule est disponible
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT disponible, statut FROM vehicules WHERE id = ?
+        ''', (data['vehicule_id'],))
+        
+        vehicule = cursor.fetchone()
+        if not vehicule or not vehicule[0]:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Véhicule non disponible'
+            }), 400
+        
+        # Vérifier qu'il n'y a pas déjà une mission active pour ce véhicule
+        cursor.execute('''
+            SELECT COUNT(*) FROM missions 
+            WHERE vehicule_id = ? AND statut = 'active'
+        ''', (data['vehicule_id'],))
+        
+        if cursor.fetchone()[0] > 0:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Une mission est déjà active sur ce véhicule'
+            }), 400
+        
+        # Vérifier que l'utilisateur n'a pas déjà une mission active
+        cursor.execute('''
+            SELECT COUNT(*) FROM missions 
+            WHERE user_id = ? AND statut = 'active'
+        ''', (user_id,))
+        
+        if cursor.fetchone()[0] > 0:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Vous avez déjà une mission active'
+            }), 400
+        
+        # Créer la mission
+        cursor.execute('''
+            INSERT INTO missions 
+            (vehicule_id, user_id, date_mission, heure_debut, motif, destination, 
+             nb_passagers, km_depart, notes, statut, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', datetime('now'))
+        ''', (
+            data['vehicule_id'], user_id, data['date_mission'],
+            data['heure_debut'], data['motif'], data['destination'],
+            data['nb_passagers'], data['km_depart'], data.get('notes', '')
+        ))
+        
+        mission_id = cursor.lastrowid
+        
+        # Marquer le véhicule comme occupé (optionnel, selon votre logique métier)
+        cursor.execute('''
+            UPDATE vehicules 
+            SET statut = 'En mission'
+            WHERE id = ?
+        ''', (data['vehicule_id'],))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Mission créée avec succès',
+            'mission_id': mission_id
+        }), 201
+        
+    except Exception as e:
+        print(f"Erreur lors de la création de la mission: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la création de la mission'
+        }), 500
+
+
+@app.route('/api/missions/<int:mission_id>/complete', methods=['PUT'])
+def api_complete_mission(mission_id):
+    """Terminer une mission"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({
+                'success': False,
+                'error': 'Utilisateur non connecté'
+            }), 401
+        
+        data = request.get_json()
+        user_id = session['user_id']
+        
+        # Validation des données requises
+        required_fields = ['heure_fin', 'km_arrivee']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'success': False,
+                    'message': f'Le champ {field} est requis'
+                }), 400
+        
+        # Vérifier que la mission appartient à l'utilisateur et est active
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT user_id, vehicule_id, km_depart FROM missions 
+            WHERE id = ? AND statut = 'active'
+        ''', (mission_id,))
+        
+        mission = cursor.fetchone()
+        if not mission:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Mission introuvable ou déjà terminée'
+            }), 404
+        
+        if mission[0] != user_id:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Accès non autorisé'
+            }), 403
+        
+        # Validation du kilométrage
+        if data['km_arrivee'] < mission[2]:  # km_depart
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Le kilométrage d\'arrivée doit être supérieur au kilométrage de départ'
+            }), 400
+        
+        # Mettre à jour la mission
+        cursor.execute('''
+            UPDATE missions 
+            SET heure_fin = ?, km_arrivee = ?, notes = ?, statut = 'completed', updated_at = datetime('now')
+            WHERE id = ?
+        ''', (
+            data['heure_fin'], data['km_arrivee'], 
+            data.get('notes', ''), mission_id
+        ))
+        
+        # Libérer le véhicule
+        cursor.execute('''
+            UPDATE vehicules 
+            SET statut = 'Disponible'
+            WHERE id = ?
+        ''', (mission[1],))  # vehicule_id
+        
+        conn.commit()
+        conn.close()
+        
+        distance_parcourue = data['km_arrivee'] - mission[2]
+        
+        return jsonify({
+            'success': True,
+            'message': 'Mission terminée avec succès',
+            'distance_parcourue': distance_parcourue
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur lors de la finalisation de la mission: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la finalisation de la mission'
+        }), 500
+
+
+@app.route('/api/user/<int:user_id>/missions', methods=['GET'])
+def api_get_user_missions(user_id):
+    """Récupérer les missions d'un utilisateur spécifique"""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT 
+                m.id, m.vehicule_id, m.user_id, m.date_mission, 
+                m.heure_debut, m.heure_fin, m.motif, m.destination, 
+                m.nb_passagers, m.km_depart, m.km_arrivee, m.notes, 
+                m.statut, m.created_at, m.updated_at,
+                v.nom as vehicule_nom, v.immatriculation
+            FROM missions m
+            LEFT JOIN vehicules v ON m.vehicule_id = v.id
+            WHERE m.user_id = ?
+            ORDER BY m.created_at DESC
+        ''', (user_id,))
+        
+        missions = cursor.fetchall()
+        conn.close()
+        
+        missions_list = []
+        for mission in missions:
+            missions_list.append({
+                'id': mission[0],
+                'vehicule_id': mission[1],
+                'user_id': mission[2],
+                'date_mission': mission[3],
+                'heure_debut': mission[4],
+                'heure_fin': mission[5],
+                'motif': mission[6],
+                'destination': mission[7],
+                'nb_passagers': mission[8],
+                'km_depart': mission[9],
+                'km_arrivee': mission[10],
+                'notes': mission[11],
+                'statut': mission[12],
+                'created_at': mission[13],
+                'updated_at': mission[14],
+                'vehicule_nom': mission[15],
+                'vehicule_immatriculation': mission[16]
+            })
+        
+        return jsonify({
+            'success': True,
+            'missions': missions_list
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération des missions utilisateur: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la récupération des missions utilisateur'
+        }), 500
+
+
+@app.route('/api/missions/active', methods=['GET'])
+def api_get_active_missions():
+    """Récupérer toutes les missions actives"""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT 
+                m.id, m.vehicule_id, m.user_id, m.date_mission, 
+                m.heure_debut, m.motif, m.destination, m.nb_passagers, 
+                m.km_depart, m.notes, m.created_at,
+                u.nom as user_name,
+                v.nom as vehicule_nom, v.immatriculation
+            FROM missions m
+            JOIN users u ON m.user_id = u.id
+            JOIN vehicules v ON m.vehicule_id = v.id
+            WHERE m.statut = 'active'
+            ORDER BY m.created_at DESC
+        ''', ())
+        
+        missions = cursor.fetchall()
+        conn.close()
+        
+        missions_list = []
+        for mission in missions:
+            missions_list.append({
+                'id': mission[0],
+                'vehicule_id': mission[1],
+                'user_id': mission[2],
+                'date_mission': mission[3],
+                'heure_debut': mission[4],
+                'motif': mission[5],
+                'destination': mission[6],
+                'nb_passagers': mission[7],
+                'km_depart': mission[8],
+                'notes': mission[9],
+                'created_at': mission[10],
+                'user_name': mission[11],
+                'vehicule_nom': mission[12],
+                'vehicule_immatriculation': mission[13]
+            })
+        
+        return jsonify({
+            'success': True,
+            'missions': missions_list
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération des missions actives: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la récupération des missions actives'
+        }), 500
+
+
+@app.route('/api/missions/<int:mission_id>', methods=['DELETE'])
+def api_cancel_mission(mission_id):
+    """Annuler une mission (seulement si elle n'a pas encore commencé)"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({
+                'success': False,
+                'error': 'Utilisateur non connecté'
+            }), 401
+        
+        user_id = session['user_id']
+        
+        # Vérifier que la mission appartient à l'utilisateur
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT user_id, vehicule_id, statut FROM missions 
+            WHERE id = ?
+        ''', (mission_id,))
+        
+        mission = cursor.fetchone()
+        if not mission:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Mission introuvable'
+            }), 404
+        
+        if mission[0] != user_id:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Accès non autorisé'
+            }), 403
+        
+        if mission[2] != 'active':
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Mission déjà terminée ou annulée'
+            }), 400
+        
+        # Annuler la mission
+        cursor.execute('''
+            UPDATE missions 
+            SET statut = 'cancelled', updated_at = datetime('now')
+            WHERE id = ?
+        ''', (mission_id,))
+        
+        # Libérer le véhicule
+        cursor.execute('''
+            UPDATE vehicules 
+            SET statut = 'Disponible'
+            WHERE id = ?
+        ''', (mission[1],))  # vehicule_id
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Mission annulée avec succès'
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur lors de l'annulation de la mission: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de l\'annulation'
+        }), 500
+
+
+# Script pour créer la table missions si elle n'existe pas
+def create_missions_table():
+    """Créer la table missions si elle n'existe pas"""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS missions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                vehicule_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                date_mission DATE NOT NULL,
+                heure_debut TIME NOT NULL,
+                heure_fin TIME,
+                motif TEXT NOT NULL,
+                destination TEXT NOT NULL,
+                nb_passagers INTEGER DEFAULT 1,
+                km_depart INTEGER NOT NULL,
+                km_arrivee INTEGER,
+                notes TEXT,
+                statut TEXT DEFAULT 'active' CHECK (statut IN ('active', 'completed', 'cancelled')),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (vehicule_id) REFERENCES vehicules (id),
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+        
+        conn.commit()
+        conn.close()
+        print("Table missions créée ou vérifiée avec succès")
+        
+    except Exception as e:
+        print(f"Erreur lors de la création de la table missions: {e}")
+
+
 # ============================================================================
 # 🚗 ROUTES VÉHICULES (4 API + 1 page)
 # ============================================================================
 
 
-@app.route('/api/missions', methods=['GET'])
-@login_required
-def api_get_missions():
-    """Récupère les missions de l'utilisateur connecté"""
-    try:
-        user_id = session.get('user_id')
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
-        
-        # Créer la table missions si elle n'existe pas
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS missions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                vehicule_id INTEGER NOT NULL,
-                nom TEXT NOT NULL,
-                vehicule_nom TEXT NOT NULL,
-                date_mission DATE NOT NULL,
-                heure_depart TIME NOT NULL,
-                heure_arrivee TIME,
-                nature_mission TEXT NOT NULL,
-                destination TEXT NOT NULL,
-                passagers INTEGER NOT NULL,
-                km_depart INTEGER NOT NULL,
-                km_arrivee INTEGER,
-                distance_parcourue INTEGER,
-                statut TEXT DEFAULT 'active',
-                notes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users (id),
-                FOREIGN KEY (vehicule_id) REFERENCES vehicules (id)
-            )
-        ''')
-        
-        cursor.execute('''
-            SELECT id, vehicule_id, nom, vehicule_nom, date_mission,
-                   heure_depart, heure_arrivee, nature_mission, destination,
-                   passagers, km_depart, km_arrivee, distance_parcourue,
-                   statut, notes, created_at
-            FROM missions 
-            WHERE user_id = ?
-            ORDER BY created_at DESC
-        ''', (user_id,))
-        
-        missions = []
-        for row in cursor.fetchall():
-            missions.append({
-                'id': row[0],
-                'vehicleId': row[1],
-                'userId': user_id,
-                'nom': row[2],
-                'vehicleName': row[3],
-                'missionDate': row[4],
-                'departureTime': row[5],
-                'arrivalTime': row[6],
-                'missionNature': row[7],
-                'destination': row[8],
-                'passengers': row[9],
-                'kmDepart': row[10],
-                'kmArrivee': row[11],
-                'distanceParcourue': row[12],
-                'status': row[13],
-                'notes': row[14] or '',
-                'startTime': row[15]
-            })
-        
-        conn.commit()
-        conn.close()
-        return jsonify({'success': True, 'missions': missions})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/missions/active', methods=['GET'])
-@login_required
-def api_get_active_missions():
-    """Récupère les missions actives de tous les utilisateurs"""
-    try:
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            SELECT m.id, m.user_id, m.vehicule_id, m.nom, m.vehicule_nom,
-                   m.date_mission, m.heure_depart, m.nature_mission,
-                   m.destination, m.passagers, m.km_depart
-            FROM missions m
-            WHERE m.statut = 'active'
-        ''')
-        
-        active_missions = []
-        for row in cursor.fetchall():
-            active_missions.append({
-                'id': row[0],
-                'userId': row[1],
-                'vehicleId': row[2],
-                'nom': row[3],
-                'vehicleName': row[4],
-                'missionDate': row[5],
-                'departureTime': row[6],
-                'missionNature': row[7],
-                'destination': row[8],
-                'passengers': row[9],
-                'kmDepart': row[10],
-                'status': 'active'
-            })
-        
-        conn.close()
-        return jsonify({'success': True, 'activeMissions': active_missions})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/missions', methods=['POST'])
-@login_required
-def api_create_mission():
-    """Crée une nouvelle mission"""
-    try:
-        data = request.get_json()
-        user_id = session.get('user_id')
-        
-        # Récupérer les infos utilisateur et véhicule
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
-        
-        cursor.execute('SELECT nom, prenom FROM users WHERE id = ?', (user_id,))
-        user = cursor.fetchone()
-        if not user:
-            return jsonify({'success': False, 'error': 'Utilisateur non trouvé'}), 404
-        
-        cursor.execute('SELECT nom FROM vehicules WHERE id = ?', (data['vehicleId'],))
-        vehicule = cursor.fetchone()
-        if not vehicule:
-            return jsonify({'success': False, 'error': 'Véhicule non trouvé'}), 404
-        
-        # Vérifier que l'utilisateur n'a pas déjà une mission active
-        cursor.execute('SELECT COUNT(*) FROM missions WHERE user_id = ? AND statut = "active"', (user_id,))
-        if cursor.fetchone()[0] > 0:
-            return jsonify({'success': False, 'error': 'Vous avez déjà une mission active'}), 400
-        
-        # Créer la mission
-        cursor.execute('''
-            INSERT INTO missions (user_id, vehicule_id, nom, vehicule_nom,
-                                date_mission, heure_depart, nature_mission,
-                                destination, passagers, km_depart, statut)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
-        ''', (
-            user_id,
-            data['vehicleId'],
-            f"{user[0]} {user[1]}",
-            vehicule[0],
-            data['missionDate'],
-            data['departureTime'],
-            data['missionNature'],
-            data['destination'],
-            data['passengers'],
-            data['kmDepart']
-        ))
-        
-        mission_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-        
-        return jsonify({'success': True, 'mission_id': mission_id})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/missions/<int:mission_id>/end', methods=['PUT'])
-@login_required
-def api_end_mission(mission_id):
-    """Termine une mission"""
-    try:
-        data = request.get_json()
-        user_id = session.get('user_id')
-        
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
-        
-        # Vérifier que la mission appartient à l'utilisateur
-        cursor.execute('SELECT km_depart FROM missions WHERE id = ? AND user_id = ? AND statut = "active"', 
-                      (mission_id, user_id))
-        mission = cursor.fetchone()
-        if not mission:
-            return jsonify({'success': False, 'error': 'Mission non trouvée'}), 404
-        
-        km_depart = mission[0]
-        distance_parcourue = data['kmArrivee'] - km_depart
-        
-        # Mettre à jour la mission
-        cursor.execute('''
-            UPDATE missions 
-            SET heure_arrivee = ?, km_arrivee = ?, distance_parcourue = ?,
-                statut = 'completed', notes = ?
-            WHERE id = ?
-        ''', (
-            data['arrivalTime'],
-            data['kmArrivee'],
-            distance_parcourue,
-            data.get('notes', ''),
-            mission_id
-        ))
-        
-        conn.commit()
-        conn.close()
-        
-        return jsonify({'success': True, 'distance_parcourue': distance_parcourue})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/api/user/current', methods=['GET'])
-@login_required
-def api_get_current_user():
-    """Récupère les informations de l'utilisateur connecté"""
-    try:
-        user_id = session.get('user_id')
+# @app.route('/api/missions', methods=['GET'])
+# @login_required
+# def api_get_missions():
+#     """Récupère les missions de l'utilisateur connecté"""
+#     try:
+#         user_id = session.get('user_id')
+#         conn = sqlite3.connect(DATABASE)
+#         cursor = conn.cursor()
         
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
+#         # Créer la table missions si elle n'existe pas
+#         cursor.execute('''
+#             CREATE TABLE IF NOT EXISTS missions (
+#                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+#                 user_id INTEGER NOT NULL,
+#                 vehicule_id INTEGER NOT NULL,
+#                 nom TEXT NOT NULL,
+#                 vehicule_nom TEXT NOT NULL,
+#                 date_mission DATE NOT NULL,
+#                 heure_depart TIME NOT NULL,
+#                 heure_arrivee TIME,
+#                 nature_mission TEXT NOT NULL,
+#                 destination TEXT NOT NULL,
+#                 passagers INTEGER NOT NULL,
+#                 km_depart INTEGER NOT NULL,
+#                 km_arrivee INTEGER,
+#                 distance_parcourue INTEGER,
+#                 statut TEXT DEFAULT 'active',
+#                 notes TEXT,
+#                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+#                 FOREIGN KEY (user_id) REFERENCES users (id),
+#                 FOREIGN KEY (vehicule_id) REFERENCES vehicules (id)
+#             )
+#         ''')
         
-        cursor.execute('SELECT id, email, nom, prenom, role FROM users WHERE id = ?', (user_id,))
-        user = cursor.fetchone()
+#         cursor.execute('''
+#             SELECT id, vehicule_id, nom, vehicule_nom, date_mission,
+#                    heure_depart, heure_arrivee, nature_mission, destination,
+#                    passagers, km_depart, km_arrivee, distance_parcourue,
+#                    statut, notes, created_at
+#             FROM missions 
+#             WHERE user_id = ?
+#             ORDER BY created_at DESC
+#         ''', (user_id,))
         
-        if not user:
-            return jsonify({'success': False, 'error': 'Utilisateur non trouvé'}), 404
+#         missions = []
+#         for row in cursor.fetchall():
+#             missions.append({
+#                 'id': row[0],
+#                 'vehicleId': row[1],
+#                 'userId': user_id,
+#                 'nom': row[2],
+#                 'vehicleName': row[3],
+#                 'missionDate': row[4],
+#                 'departureTime': row[5],
+#                 'arrivalTime': row[6],
+#                 'missionNature': row[7],
+#                 'destination': row[8],
+#                 'passengers': row[9],
+#                 'kmDepart': row[10],
+#                 'kmArrivee': row[11],
+#                 'distanceParcourue': row[12],
+#                 'status': row[13],
+#                 'notes': row[14] or '',
+#                 'startTime': row[15]
+#             })
         
-        conn.close()
+#         conn.commit()
+#         conn.close()
+#         return jsonify({'success': True, 'missions': missions})
         
-        return jsonify({
-            'success': True, 
-            'user': {
-                'id': user[0],
-                'email': user[1],
-                'nom': f"{user[2]} {user[3]}",
-                'role': user[4]
-            }
-        })
+#     except Exception as e:
+#         return jsonify({'success': False, 'error': str(e)}), 500
+
+# @app.route('/api/missions/active', methods=['GET'])
+# @login_required
+# def api_get_active_missions():
+#     """Récupère les missions actives de tous les utilisateurs"""
+#     try:
+#         conn = sqlite3.connect(DATABASE)
+#         cursor = conn.cursor()
         
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-    
+#         cursor.execute('''
+#             SELECT m.id, m.user_id, m.vehicule_id, m.nom, m.vehicule_nom,
+#                    m.date_mission, m.heure_depart, m.nature_mission,
+#                    m.destination, m.passagers, m.km_depart
+#             FROM missions m
+#             WHERE m.statut = 'active'
+#         ''')
+        
+#         active_missions = []
+#         for row in cursor.fetchall():
+#             active_missions.append({
+#                 'id': row[0],
+#                 'userId': row[1],
+#                 'vehicleId': row[2],
+#                 'nom': row[3],
+#                 'vehicleName': row[4],
+#                 'missionDate': row[5],
+#                 'departureTime': row[6],
+#                 'missionNature': row[7],
+#                 'destination': row[8],
+#                 'passengers': row[9],
+#                 'kmDepart': row[10],
+#                 'status': 'active'
+#             })
+        
+#         conn.close()
+#         return jsonify({'success': True, 'activeMissions': active_missions})
+        
+#     except Exception as e:
+#         return jsonify({'success': False, 'error': str(e)}), 500
+
+# @app.route('/api/missions', methods=['POST'])
+# @login_required
+# def api_create_mission():
+#     """Crée une nouvelle mission"""
+#     try:
+#         data = request.get_json()
+#         user_id = session.get('user_id')
+        
+#         # Récupérer les infos utilisateur et véhicule
+#         conn = sqlite3.connect(DATABASE)
+#         cursor = conn.cursor()
+        
+#         cursor.execute('SELECT nom, prenom FROM users WHERE id = ?', (user_id,))
+#         user = cursor.fetchone()
+#         if not user:
+#             return jsonify({'success': False, 'error': 'Utilisateur non trouvé'}), 404
+        
+#         cursor.execute('SELECT nom FROM vehicules WHERE id = ?', (data['vehicleId'],))
+#         vehicule = cursor.fetchone()
+#         if not vehicule:
+#             return jsonify({'success': False, 'error': 'Véhicule non trouvé'}), 404
+        
+#         # Vérifier que l'utilisateur n'a pas déjà une mission active
+#         cursor.execute('SELECT COUNT(*) FROM missions WHERE user_id = ? AND statut = "active"', (user_id,))
+#         if cursor.fetchone()[0] > 0:
+#             return jsonify({'success': False, 'error': 'Vous avez déjà une mission active'}), 400
+        
+#         # Créer la mission
+#         cursor.execute('''
+#             INSERT INTO missions (user_id, vehicule_id, nom, vehicule_nom,
+#                                 date_mission, heure_depart, nature_mission,
+#                                 destination, passagers, km_depart, statut)
+#             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+#         ''', (
+#             user_id,
+#             data['vehicleId'],
+#             f"{user[0]} {user[1]}",
+#             vehicule[0],
+#             data['missionDate'],
+#             data['departureTime'],
+#             data['missionNature'],
+#             data['destination'],
+#             data['passengers'],
+#             data['kmDepart']
+#         ))
+        
+#         mission_id = cursor.lastrowid
+#         conn.commit()
+#         conn.close()
+        
+#         return jsonify({'success': True, 'mission_id': mission_id})
+        
+#     except Exception as e:
+#         return jsonify({'success': False, 'error': str(e)}), 500
+
+# @app.route('/api/missions/<int:mission_id>/end', methods=['PUT'])
+# @login_required
+# def api_end_mission(mission_id):
+#     """Termine une mission"""
+#     try:
+#         data = request.get_json()
+#         user_id = session.get('user_id')
+        
+#         conn = sqlite3.connect(DATABASE)
+#         cursor = conn.cursor()
+        
+#         # Vérifier que la mission appartient à l'utilisateur
+#         cursor.execute('SELECT km_depart FROM missions WHERE id = ? AND user_id = ? AND statut = "active"', 
+#                       (mission_id, user_id))
+#         mission = cursor.fetchone()
+#         if not mission:
+#             return jsonify({'success': False, 'error': 'Mission non trouvée'}), 404
+        
+#         km_depart = mission[0]
+#         distance_parcourue = data['kmArrivee'] - km_depart
+        
+#         # Mettre à jour la mission
+#         cursor.execute('''
+#             UPDATE missions 
+#             SET heure_arrivee = ?, km_arrivee = ?, distance_parcourue = ?,
+#                 statut = 'completed', notes = ?
+#             WHERE id = ?
+#         ''', (
+#             data['arrivalTime'],
+#             data['kmArrivee'],
+#             distance_parcourue,
+#             data.get('notes', ''),
+#             mission_id
+#         ))
+        
+#         conn.commit()
+#         conn.close()
+        
+#         return jsonify({'success': True, 'distance_parcourue': distance_parcourue})
+        
+#     except Exception as e:
+#         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+
     
     
 # --- PAGE VÉHICULES ---
+
+
 @app.route('/gestion_vehicules')
 @login_required
 def gestion_vehicules():

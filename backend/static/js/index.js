@@ -646,4 +646,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
+
+
 console.log('✅ DriveGo JavaScript chargé - Version Flask/Jinja2');
