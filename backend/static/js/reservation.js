@@ -246,14 +246,6 @@ async function loadUserReservations(userId) {
 // VARIABLES GLOBALES MODIFIÉES
 // ========================================
 
-// Variables globales - currentUser sera remplacé par les données de l'API
-let currentUser = {
-    id: 1,
-    name: "Utilisateur",
-    email: "user@example.com",
-    department: "Direction",
-    initials: "U"
-};
 
 // Les véhicules seront maintenant chargés dynamiquement depuis l'API
 let vehicles = [];
@@ -785,3 +777,60 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+fetch('/api/reservations', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        vehicule_id: selectedVehiculeId,
+        date_debut: dateDebutValue,
+        date_fin: dateFinValue,
+        notes: notesValue
+    })
+})
+.then(response => response.json())
+.then(data => {
+    console.log("Réponse API :", data);
+})
+.catch(error => console.error("Erreur fetch :", error));
+
+
+
+
+// pré-remplir ce champ avec le nom de l’utilisateur connecté
+function openReservationModal(vehicleId){
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    if(!vehicle || vehicle.status !== 'available') return;
+
+    // Pré-remplir véhicule
+    document.getElementById('vehicle-id').value = vehicleId;
+    document.getElementById('vehicle-display').value = `${vehicle.type} ${vehicle.name} - ${vehicle.immatriculation}`;
+
+    // Pré-remplir conducteur
+    if(window.currentUser && window.currentUser.name){
+        document.getElementById('driver-name').value = window.currentUser.name;
+    }
+
+    // Date minimale et valeur par défaut = aujourd'hui
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+    document.getElementById('reservation-date').min = dateStr;
+    document.getElementById('reservation-date').value = dateStr;
+
+    // Heure par défaut = maintenant
+    const hh = String(today.getHours()).padStart(2, '0');
+    const min = String(today.getMinutes()).padStart(2, '0');
+    const timeStr = `${hh}:${min}`;
+    document.getElementById('start-time').value = timeStr;
+
+    // Heure de fin par défaut = +1h
+    const endHour = String((today.getHours() + 1) % 24).padStart(2, '0');
+    document.getElementById('end-time').value = `${endHour}:${min}`;
+
+    document.getElementById('reservation-modal').classList.add('show');
+}

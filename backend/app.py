@@ -723,9 +723,16 @@ def inscription():
 @app.route('/login/<int:user_id>')
 def login(user_id):
     """Simule une connexion d'utilisateur pour debug"""
-    if user_id in init_db:
-        session['user_id'] = user_id
-        return redirect(url_for('profil'))
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, role FROM users WHERE id = ?', (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+
+    if user:
+        session['user_id'] = user[0]
+        session['role'] = user[1]
+        return redirect(url_for('profil'))  # ou vers /reservation pour tester
     return "Utilisateur non trouvé", 404
 
 # --- API D'AUTHENTIFICATION ---
@@ -970,13 +977,6 @@ def validate_token():
             'success': False,
             'message': 'Erreur lors de la validation du token'
         }), 500
-
-
-
-
-
-
-
 
 
 # ============================================================================
@@ -1404,9 +1404,6 @@ def create_missions_table():
 # 🚗 ROUTES VÉHICULES (4 API + 1 page)
 # ============================================================================
 
-
-
-
 # @app.route('/api/missions', methods=['GET'])
 # @login_required
 # def api_get_missions():
@@ -1617,12 +1614,8 @@ def create_missions_table():
 #     except Exception as e:
 #         return jsonify({'success': False, 'error': str(e)}), 500
 
-
-
-    
     
 # --- PAGE VÉHICULES ---
-
 
 @app.route('/gestion_vehicules')
 @login_required
@@ -1834,6 +1827,32 @@ def reservation():
     return render_template('reservation.html')
 
 # --- API RÉSERVATIONS ---
+@app.route('/api/reservations/active', methods=['GET'])
+@login_required
+def api_get_active_reservations():
+    """Récupérer les réservations actives de l'utilisateur connecté"""
+    try:
+        user_id = session['user_id']
+        conn = sqlite3.connect(DATABASE)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            SELECT r.id, r.vehicule_id, v.nom AS vehicule_nom, v.immatriculation,
+                   r.date_debut, r.date_fin, r.notes, r.statut
+            FROM reservations r
+            JOIN vehicules v ON r.vehicule_id = v.id
+            WHERE r.user_id = ? AND r.statut = 'active'
+            ORDER BY r.date_debut ASC
+        ''', (user_id,))
+
+        reservations = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+
+        return jsonify(reservations), 200
+    except Exception as e:
+        print("ERREUR /api/reservations/active:", e)
+        return jsonify({"error": "Impossible de récupérer les réservations"}), 500
 
 @app.route('/api/reservations/<int:reservation_id>/cancel', methods=['PUT'])
 @login_required
@@ -1930,98 +1949,108 @@ def api_get_reservations():
         }), 500
 
 @app.route('/api/reservations', methods=['POST'])
-@login_required
-def api_create_reservation():
+def create_reservation():
     """Créer une réservation"""
     try:
+        # Récupérer les vraies données de la requête
         data = request.get_json()
         
-        # DEBUG - Ajouter ces lignes
-        print("=== DONNÉES REÇUES ===")
-        print("Données complètes:", data)
-        print("Clés présentes:", list(data.keys()) if data else "Aucune donnée")
-        print("====================")
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Utilisateur non connecté'}), 401
 
-        # Validation des données
-        required_fields = ['vehicule_id', 'date_debut', 'date_fin']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({
-                    'success': False,
-                    'message': f'Le champ {field} est requis'
-                }), 400
+        vehicule_id = data.get('vehicule_id')
+        date_debut = data.get('date_debut')
+        date_fin = data.get('date_fin')
+        notes = data.get('notes', '')
 
-        vehicule_id = data['vehicule_id']
-        date_debut = data['date_debut']
-        date_fin = data['date_fin']
-        notes = data.get('notes', '').strip()
+        if not all([vehicule_id, date_debut, date_fin]):
+            return jsonify({'success': False, 'message': 'Données manquantes'}), 400
 
-        # Validation des dates
-        is_valid, message = validate_dates(date_debut, date_fin)
-        if not is_valid:
-            return jsonify({
-                'success': False,
-                'message': message
-            }), 400
-
-        # Vérifier que le véhicule existe et est disponible
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
-        cursor.execute('SELECT disponible FROM vehicules WHERE id = ?', (vehicule_id,))
+
+        # Vérifier que le véhicule existe et est disponible
+        cursor.execute("SELECT disponible, nom FROM vehicules WHERE id=?", (vehicule_id,))
         vehicule = cursor.fetchone()
         
         if not vehicule:
             conn.close()
-            return jsonify({
-                'success': False,
-                'message': 'Véhicule non trouvé'
-            }), 404
-        
-        if not vehicule[0]:
+            return jsonify({'success': False, 'message': 'Véhicule non trouvé'}), 404
+            
+        if vehicule[0] == 0:
             conn.close()
-            return jsonify({
-                'success': False,
-                'message': 'Ce véhicule n\'est pas disponible'
-            }), 400
+            return jsonify({'success': False, 'message': 'Véhicule non disponible'}), 400
 
-        # Vérifier les conflits de réservation
+        # Vérifier les conflits de réservation pour les mêmes dates
         cursor.execute('''
             SELECT id FROM reservations 
             WHERE vehicule_id = ? 
-            AND statut != 'annule'
-            AND (
-                (date_debut <= ? AND date_fin >= ?) OR
-                (date_debut <= ? AND date_fin >= ?) OR
-                (date_debut >= ? AND date_fin <= ?)
-            )
+            AND statut NOT IN ('annule', 'terminee')
+            AND ((date_debut <= ? AND date_fin >= ?) 
+                 OR (date_debut <= ? AND date_fin >= ?)
+                 OR (date_debut >= ? AND date_fin <= ?))
         ''', (vehicule_id, date_debut, date_debut, date_fin, date_fin, date_debut, date_fin))
         
-        if cursor.fetchone():
+        conflicting_reservation = cursor.fetchone()
+        if conflicting_reservation:
             conn.close()
-            return jsonify({
-                'success': False,
-                'message': 'Ce véhicule est déjà réservé sur cette période'
-            }), 409
+            return jsonify({'success': False, 'message': 'Véhicule déjà réservé pour cette période'}), 400
 
         # Créer la réservation
         cursor.execute('''
-            INSERT INTO reservations (user_id, vehicule_id, date_debut, date_fin, notes)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (session['user_id'], vehicule_id, date_debut, date_fin, notes))
+            INSERT INTO reservations (user_id, vehicule_id, date_debut, date_fin, notes, statut)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (user_id, vehicule_id, date_debut, date_fin, notes, 'confirmee'))
+
+        reservation_id = cursor.lastrowid
+
+        # Marquer le véhicule comme indisponible
+        cursor.execute('UPDATE vehicules SET disponible = 0 WHERE id = ?', (vehicule_id,))
 
         conn.commit()
         conn.close()
 
+        print(f"Réservation créée avec succès: ID={reservation_id}, Véhicule={vehicule_id}, User={user_id}")
+
         return jsonify({
-            'success': True,
-            'message': 'Réservation créée avec succès'
-        }), 201
+            'success': True, 
+            'message': 'Réservation créée avec succès',
+            'reservation_id': reservation_id
+        })
 
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': 'Erreur lors de la création de la réservation'
-        }), 500
+        print(f"Erreur lors de la création de la réservation: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+    
+@app.route('/api/user/<int:user_id>/reservations', methods=['GET'])
+@login_required
+def api_get_user_reservations(user_id):
+    """Récupérer toutes les réservations d'un utilisateur"""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            SELECT r.id, r.vehicule_id, v.nom AS vehicule_nom, v.immatriculation,
+                   r.date_debut, r.date_fin, r.notes, r.statut
+            FROM reservations r
+            JOIN vehicules v ON r.vehicule_id = v.id
+            WHERE r.user_id = ?
+            ORDER BY r.date_debut DESC
+        ''', (user_id,))
+
+        reservations = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+
+        return jsonify(reservations), 200
+
+    except Exception as e:
+        print(f"ERREUR /api/user/{user_id}/reservations:", e)
+        return jsonify({"error": "Impossible de récupérer les réservations de l'utilisateur"}), 500
 
 @app.route('/api/reservations/<int:reservation_id>', methods=['PUT'])
 @login_required
@@ -2530,3 +2559,10 @@ if __name__ == '__main__':
     
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
+
+
+
+
+
+
