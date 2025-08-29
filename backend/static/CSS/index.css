@@ -2071,62 +2071,74 @@ a:hover {
 /* Boutons Header (Compacts, discrets) */
 .auth-buttons {
     display: flex;
-    gap: 0.8rem;
+    flex-direction: row;
+    gap: 1rem;
     align-items: center;
+    justify-content: center;
 }
 
 .btn-login, .btn-register {
-    padding: 0.6rem 1rem;
+    padding: 0.7rem 1.2rem;
     text-decoration: none;
-    border-radius: 6px;
+    border-radius: 8px;
     font-weight: 500;
-    transition: all 0.3s ease;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
     white-space: nowrap;
+    min-width: 120px;
+    text-align: center;
 }
 
 .btn-login {
-    background: transparent;
-    border: 1.5px solid rgba(255,255,255,0.4);
-    color: rgba(255,255,255,0.9);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
 }
 
 .btn-register {
     background: rgba(255,255,255,0.1);
-    border: 1.5px solid rgba(255,255,255,0.3);
     color: white;
+    border: 2px solid rgba(255,255,255,0.4);
 }
 
-/* Boutons Hero Section (Proéminents, call-to-action) */
+/* Feedback au clic */
+.btn-login:active, .btn-register:active {
+    transform: scale(0.97);
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* Boutons Hero Section (Call-to-action) */
 .cta-buttons {
     display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 1.5rem; /* espace suffisant pour mobile */
     justify-content: center;
+    align-items: center;
     margin-top: 2rem;
 }
 
 .btn {
-    padding: 1rem 2rem;
+    padding: 1.1rem 2rem;
     text-decoration: none;
-    border-radius: 12px;
+    border-radius: 14px;
     font-weight: 600;
-    transition: all 0.4s ease;
     font-size: 1.1rem;
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    min-width: 180px;
     justify-content: center;
+    gap: 0.5rem;
+    min-width: 200px;
+    transition: all 0.3s ease;
     text-align: center;
 }
 
-/* Boutons primaires (Actions de conversion) */
+/* Boutons primaires */
 .btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 5px 15px rgba(102,126,234,0.3);
     position: relative;
     overflow: hidden;
 }
@@ -2142,31 +2154,25 @@ a:hover {
     transition: left 0.5s;
 }
 
-.btn-primary:hover::before {
-    left: 100%;
-}
+.btn-primary:hover::before { left: 100%; }
+.btn-primary:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(102,126,234,0.4); }
 
-.btn-primary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-}
-
-/* Boutons secondaires (Actions d'information) */
+/* Boutons secondaires */
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255,255,255,0.15);
     color: white;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.3);
+    backdrop-filter: blur(8px);
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255,255,255,0.25);
+    border-color: rgba(255,255,255,0.5);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
-/* Footer Links (Discrets, informatifs) */
+/* Footer Links */
 .footer-container {
     text-align: center;
     padding: 2rem 1rem;
@@ -2181,57 +2187,30 @@ a:hover {
 }
 
 .footer-links a {
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255,255,255,0.7);
     text-decoration: none;
     font-size: 0.9rem;
     transition: color 0.3s ease;
 }
 
-.footer-links a:hover {
-    color: white;
-    text-decoration: underline;
-}
+.footer-links a:hover { color: white; text-decoration: underline; }
 
 /* ========== RESPONSIVE ========== */
 
+/* Tablettes et mobiles larges */
 @media (max-width: 768px) {
-    .cta-buttons {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .btn {
-        width: 100%;
-        max-width: 300px;
-        padding: 0.9rem 1.5rem;
-        font-size: 1rem;
-    }
-    
-    .auth-buttons {
-        gap: 0.5rem;
-    }
-    
-    .btn-login, .btn-register {
-        padding: 0.5rem 0.8rem;
-        font-size: 0.8rem;
-    }
-    
-    .footer-links {
-        flex-direction: column;
-        gap: 1rem;
-    }
+    .auth-buttons { flex-direction: column; gap: 1.2rem; width: 100%; }
+    .btn-login, .btn-register { width: 90%; font-size: 1rem; padding: 0.9rem 0; }
+    .cta-buttons { gap: 1.8rem; }
+    .btn { width: 90%; max-width: 280px; font-size: 1.05rem; padding: 1rem 1.5rem; }
+    .footer-links { flex-direction: column; gap: 1.2rem; }
 }
 
+/* Mobiles très petits */
 @media (max-width: 480px) {
-    .cta-buttons {
-        gap: 0.8rem;
-    }
-    
-    .btn {
-        padding: 0.8rem 1.2rem;
-        font-size: 0.95rem;
-        min-width: auto;
-    }
+    .cta-buttons { gap: 2rem; }
+    .btn { font-size: 1rem; padding: 0.9rem 1.2rem; min-width: auto; }
+    .btn-login, .btn-register { font-size: 0.95rem; padding: 0.8rem 1.2rem; }
 }
 
 
