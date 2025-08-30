@@ -1400,32 +1400,59 @@ window.switchUser = switchUser;
 window.exportMissionsToPDF = exportMissionsToPDF;
 
 
-fetch('/api/missions/export-pdf', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({})
-})
+// ========================================
+// EXPORT PDF UNIFIÉ (Desktop + Mobile)
+// ========================================
+async function exportMissionsToPDF() {
+    try {
+        showNotification('🔄 Génération du PDF en cours...', 'info');
 
-// telechargement pdf sur mobile
+        const allMissions = [...activeMissions, ...completedMissions];
+        const userMissions = allMissions.filter(m => m.userId === currentUser?.id);
 
-async function downloadPDF() {
-    const response = await fetch("/api/missions/export-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-    });
+        if (userMissions.length === 0) {
+            showNotification('❌ Aucune mission à exporter', 'warning');
+            return;
+        }
 
-    if (!response.ok) {
-        alert("Erreur lors de l'export PDF");
-        return;
+        const htmlContent = generatePDFContent(userMissions);
+        const filename = `missions_${currentUser.nom}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+        const response = await fetch('/api/missions/export-pdf', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ html_content: htmlContent, filename: filename })
+        });
+
+        if (!response.ok) throw new Error('Erreur lors de la génération du PDF');
+
+        const blob = await response.blob();
+
+        // Détection mobile / desktop
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        if (isMobile) {
+            // Sur mobile : ouvrir le PDF dans un nouvel onglet
+            const url = window.URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            showNotification('✅ PDF ouvert dans un nouvel onglet', 'success');
+        } else {
+            // Sur desktop : télécharger le PDF
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            showNotification('✅ PDF téléchargé avec succès', 'success');
+        }
+
+    } catch (error) {
+        console.error('Erreur lors de l\'export PDF:', error);
+        showNotification('❌ Erreur lors de la génération du PDF', 'error');
     }
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "missions.pdf"; // force le téléchargement
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
 }
