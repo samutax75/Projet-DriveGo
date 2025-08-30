@@ -1397,11 +1397,14 @@ window.openMissionsModal = openMissionsModal;
 window.closeMissionsModal = closeMissionsModal;
 window.goToHomePage = goToHomePage;
 window.switchUser = switchUser;
-window.exportMissionsToPDF = exportMissionsToPDF;
+// Au lieu de créer un blob côté client
+window.location.href = `/api/missions/export-pdf?userId=${currentUser.id}&download=true`;
 
 
 // ========================================
 // EXPORT PDF UNIFIÉ (Desktop + Mobile)
+// ========================================
+// EXPORT PDF UNIFIÉ (Desktop + Mobile) - Version corrigée
 // ========================================
 async function exportMissionsToPDF() {
     try {
@@ -1428,18 +1431,46 @@ async function exportMissionsToPDF() {
         if (!response.ok) throw new Error('Erreur lors de la génération du PDF');
 
         const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
 
         // Détection mobile / desktop
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-            // Sur mobile : ouvrir le PDF dans un nouvel onglet
-            const url = window.URL.createObjectURL(blob);
-            window.open(url, '_blank');
-            showNotification('✅ PDF ouvert dans un nouvel onglet', 'success');
+            // SOLUTION MOBILE AMÉLIORÉE
+            try {
+                // Méthode 1: Créer un lien avec download et le cliquer immédiatement
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                
+                // Déclencher le téléchargement immédiatement
+                a.click();
+                
+                // Nettoyer après un délai
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+
+                showNotification('✅ PDF téléchargé - Vérifiez vos téléchargements', 'success');
+                
+            } catch (downloadError) {
+                console.warn('Téléchargement direct échoué, tentative d\'ouverture:', downloadError);
+                
+                // Méthode 2: Si le téléchargement échoue, essayer d'ouvrir
+                const newWindow = window.open(url, '_blank');
+                if (newWindow) {
+                    showNotification('✅ PDF ouvert dans un nouvel onglet', 'success');
+                } else {
+                    // Méthode 3: Fallback avec un lien manuel
+                    createManualDownloadLink(url, filename);
+                }
+            }
         } else {
-            // Sur desktop : télécharger le PDF
-            const url = window.URL.createObjectURL(blob);
+            // DESKTOP : téléchargement classique
             const a = document.createElement('a');
             a.href = url;
             a.download = filename;
@@ -1450,6 +1481,124 @@ async function exportMissionsToPDF() {
 
             showNotification('✅ PDF téléchargé avec succès', 'success');
         }
+
+    } catch (error) {
+        console.error('Erreur lors de l\'export PDF:', error);
+        showNotification('❌ Erreur lors de la génération du PDF', 'error');
+    }
+}
+
+// Fonction de fallback pour créer un lien de téléchargement manuel
+function createManualDownloadLink(url, filename) {
+    // Créer une modal ou une notification avec un lien de téléchargement
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+    `;
+
+    const content = document.createElement('div');
+    content.style.cssText = `
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        max-width: 90%;
+        max-height: 90%;
+    `;
+
+    content.innerHTML = `
+        <h3>Téléchargement PDF</h3>
+        <p>Cliquez sur le lien ci-dessous pour télécharger votre PDF :</p>
+        <a href="${url}" download="${filename}" style="
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px;
+        ">📄 Télécharger ${filename}</a>
+        <br>
+        <button onclick="this.closest('.modal').remove(); window.URL.revokeObjectURL('${url}')" style="
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 3px;
+            margin-top: 10px;
+            cursor: pointer;
+        ">Fermer</button>
+    `;
+
+    modal.className = 'modal';
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
+    // Fermer en cliquant sur le fond
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+            window.URL.revokeObjectURL(url);
+        }
+    });
+
+    showNotification('📱 Lien de téléchargement affiché', 'info');
+}
+
+// ALTERNATIVE : Version encore plus simple pour mobile
+async function exportMissionsToPDFSimple() {
+    try {
+        showNotification('🔄 Génération du PDF en cours...', 'info');
+
+        const allMissions = [...activeMissions, ...completedMissions];
+        const userMissions = allMissions.filter(m => m.userId === currentUser?.id);
+
+        if (userMissions.length === 0) {
+            showNotification('❌ Aucune mission à exporter', 'warning');
+            return;
+        }
+
+        const htmlContent = generatePDFContent(userMissions);
+        const filename = `missions_${currentUser.nom}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+        const response = await fetch('/api/missions/export-pdf', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ html_content: htmlContent, filename: filename })
+        });
+
+        if (!response.ok) throw new Error('Erreur lors de la génération du PDF');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        // SOLUTION UNIVERSELLE : toujours proposer le téléchargement
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        
+        // Nettoyer après un délai
+        setTimeout(() => {
+            if (document.body.contains(a)) {
+                document.body.removeChild(a);
+            }
+            window.URL.revokeObjectURL(url);
+        }, 1000);
+
+        showNotification('✅ PDF généré - Vérifiez vos téléchargements', 'success');
 
     } catch (error) {
         console.error('Erreur lors de l\'export PDF:', error);
