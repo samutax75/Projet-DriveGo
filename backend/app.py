@@ -18,6 +18,7 @@ from flask import send_from_directory
 from flask import send_file
 import tempfile
 import pdfkit
+import platform
 
 
 app = Flask(__name__)
@@ -249,6 +250,15 @@ init_db()
 # ============================================================================
 # Route PDF
 # ============================================================================
+
+def get_pdfkit_config():
+    """Retourne la config pdfkit adaptée à l'environnement"""
+    if platform.system() == "Windows":
+        return pdfkit.configuration(
+            wkhtmltopdf=r"C:\Users\LENOVO\wkhtmltopdf\bin\wkhtmltopdf.exe"
+        )
+    else:
+        return pdfkit.configuration(wkhtmltopdf="/usr/bin/wkhtmltopdf")
 
 def generate_missions_html(missions, user):
     rows = ""
