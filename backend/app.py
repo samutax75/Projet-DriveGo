@@ -30,9 +30,9 @@ app = Flask(__name__)
 # Configuration pour la production
 app.secret_key = os.environ.get('SECRET_KEY', 'fallback-secret-key-change-in-production')
 # Configuration de la base de données avec migration
-import sqlite3
 from werkzeug.security import generate_password_hash
-wkhtmltopdf_path = r"C:\Users\LENOVO\wkhtmltopdf\bin\wkhtmltopdf.exe"
+# Chemin wkhtmltopdf sur Render
+wkhtmltopdf_path = "/usr/bin/wkhtmltopdf"
 config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
 DATABASE = 'drivego.db'
