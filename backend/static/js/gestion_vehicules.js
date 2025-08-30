@@ -1405,3 +1405,27 @@ fetch('/api/missions/export-pdf', {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({})
 })
+
+// telechargement pdf sur mobile
+
+async function downloadPDF() {
+    const response = await fetch("/api/missions/export-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+    });
+
+    if (!response.ok) {
+        alert("Erreur lors de l'export PDF");
+        return;
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "missions.pdf"; // force le téléchargement
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+}

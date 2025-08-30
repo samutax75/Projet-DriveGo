@@ -19,6 +19,7 @@ from flask import send_file
 import tempfile
 import pdfkit
 import platform
+import sys
 
 
 app = Flask(__name__)
@@ -31,10 +32,15 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'fallback-secret-key-change-in-production')
 # Configuration de la base de données avec migration
 from werkzeug.security import generate_password_hash
-# Chemin wkhtmltopdf sur Render
-wkhtmltopdf_path = "/usr/bin/wkhtmltopdf"
-config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+if sys.platform.startswith("win"):
+    # Chemin Windows
+    wkhtmltopdf_path = r"C:\Users\LENOVO\wkhtmltopdf\bin\wkhtmltopdf.exe"
+else:
+    # Chemin Linux (Render)
+    wkhtmltopdf_path = "/usr/bin/wkhtmltopdf"
 
+# Créer la configuration pdfkit
+config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 DATABASE = 'drivego.db'
 
 def init_db():
