@@ -15,6 +15,10 @@ import urllib.parse
 from functools import wraps
 import jinja2
 from flask import send_from_directory
+from flask import send_file
+import tempfile
+import pdfkit
+
 
 app = Flask(__name__)
 
@@ -24,10 +28,11 @@ app = Flask(__name__)
 
 # Configuration pour la production
 app.secret_key = os.environ.get('SECRET_KEY', 'fallback-secret-key-change-in-production')
-
 # Configuration de la base de données avec migration
 import sqlite3
 from werkzeug.security import generate_password_hash
+wkhtmltopdf_path = r"C:\Users\LENOVO\wkhtmltopdf\bin\wkhtmltopdf.exe"
+config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
 DATABASE = 'drivego.db'
 
@@ -132,7 +137,8 @@ def init_db():
 
 
 def migrate_missions_table(cursor):
-    """Recrée la table missions avec les bonnes colonnes (migration sans perte de données)"""
+    """Recrée la table missions avec les bonnes colonnes (migration sans perte de données)
+       et ajoute les colonnes obligatoires pour le PDF si elles manquent"""
     
     # Vérifier si la table missions existe
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='missions'")
@@ -166,6 +172,22 @@ def migrate_missions_table(cursor):
         cursor.execute("PRAGMA table_info(missions)")
         existing_columns = [col[1] for col in cursor.fetchall()]
 
+        # Colonnes obligatoires pour le PDF
+        required_columns = [
+            "date_mission", "heure_debut", "heure_fin", "motif", "destination",
+            "nb_passagers", "km_depart", "km_arrivee", "statut", "notes"
+        ]
+
+        # Ajouter les colonnes manquantes sans perte de données
+        missing_columns = [c for c in required_columns if c not in existing_columns]
+        if missing_columns:
+            print(f"⚠️ Migration : ajout colonnes manquantes {missing_columns}")
+            for col in missing_columns:
+                col_type = "INTEGER" if "nb_passagers" in col or "km" in col else "TEXT"
+                default = "DEFAULT 0" if col_type == "INTEGER" else "DEFAULT ''"
+                cursor.execute(f"ALTER TABLE missions ADD COLUMN {col} {col_type} {default}")
+
+        # Vérifier si certaines colonnes essentielles manquent pour reconstruire la table
         if "heure_debut" not in existing_columns or "heure_fin" not in existing_columns or "motif" not in existing_columns:
             print("⚠️ Migration : reconstruction de la table missions")
 
@@ -219,9 +241,137 @@ def migrate_missions_table(cursor):
             # Supprimer l’ancienne table
             cursor.execute("DROP TABLE missions_old")
 
-
 # Initialiser la base au lancement
 init_db()
+
+
+
+# ============================================================================
+# Route PDF
+# ============================================================================
+
+def generate_missions_html(missions, user):
+    rows = ""
+    for m in missions:
+        rows += f"""
+        <tr>
+            <td>{m['date_mission']}</td>
+            <td>{m['heure_debut']}</td>
+            <td>{m['heure_fin']}</td>
+            <td>{m['motif']}</td>
+            <td>{m['destination']}</td>
+            <td>{m['nb_passagers']}</td>
+            <td>{m['vehicule_nom']} ({m['immatriculation']})</td>
+            <td>{m['km_depart']}</td>
+            <td>{m['km_arrivee']}</td>
+            <td>{m['statut']}</td>
+        </tr>
+        """
+    html = f"""
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            table {{ width: 100%; border-collapse: collapse; }}
+            th, td {{ border: 1px solid #000; padding: 5px; text-align: left; }}
+            th {{ background-color: #f2f2f2; }}
+        </style>
+    </head>
+    <body>
+        <h2>Missions de {user['nom']} ({user['email']})</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Début</th>
+                    <th>Fin</th>
+                    <th>Motif</th>
+                    <th>Destination</th>
+                    <th>Nb Passagers</th>
+                    <th>Véhicule</th>
+                    <th>Km Départ</th>
+                    <th>Km Arrivée</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows}
+            </tbody>
+        </table>
+    </body>
+    </html>
+    """
+    return html
+
+@app.route('/api/missions/export-pdf', methods=['POST'])
+def export_missions_pdf():
+    try:
+        # Vérifier l'authentification
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'error': 'Non authentifié'}), 401
+
+        user_id = session['user_id']
+
+        # --- Connexion DB ---
+        conn = sqlite3.connect(DATABASE)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # --- Migration pour s'assurer que toutes les colonnes PDF existent ---
+        migrate_missions_table(cursor)
+
+        # --- Récupérer missions ---
+        cursor.execute("""
+            SELECT 
+                m.id, m.date_mission, m.heure_debut, m.heure_fin,
+                m.motif, m.destination, m.nb_passagers, 
+                m.km_depart, m.km_arrivee, m.statut, m.notes,
+                v.nom as vehicule_nom, v.immatriculation,
+                u.nom as user_nom, u.email as user_email
+            FROM missions m
+            JOIN vehicules v ON m.vehicule_id = v.id
+            JOIN users u ON m.user_id = u.id
+            WHERE m.user_id = ?
+            ORDER BY m.created_at DESC
+        """, (user_id,))
+        missions = cursor.fetchall()
+
+        cursor.execute("SELECT nom, email FROM users WHERE id = ?", (user_id,))
+        user = cursor.fetchone()
+
+        conn.close()
+
+        if not missions:
+            return jsonify({'success': False, 'error': 'Aucune mission à exporter'}), 400
+        if not user:
+            return jsonify({'success': False, 'error': 'Utilisateur introuvable'}), 400
+
+        # --- Générer HTML ---
+        html_content = generate_missions_html(missions, user)
+
+        # --- Générer PDF (Windows path) ---
+        wkhtmltopdf_path = r"C:\Users\LENOVO\wkhtmltopdf\bin\wkhtmltopdf.exe"
+        config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+
+        temp_fd, temp_path = tempfile.mkstemp(suffix='.pdf')
+        os.close(temp_fd)
+
+        pdfkit.from_string(html_content, temp_path, configuration=config)
+
+        # --- Nom du fichier sécurisé ---
+        safe_username = "".join(c for c in user['nom'] if c.isalnum() or c in (' ', '-', '_')).strip()
+        filename = f'missions_{safe_username}_{datetime.now().strftime("%Y%m%d")}.pdf'
+
+        return send_file(
+            temp_path,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/pdf'
+        )
+
+    except Exception as e:
+        print(f"Erreur export PDF : {e}")
+        return jsonify({'success': False, 'error': f'Erreur serveur: {str(e)}'}), 500
 
 # ============================================================================
 # 🛠️ FONCTIONS UTILITAIRES (8 fonctions)
@@ -571,7 +721,6 @@ def profil():
     if not user:
         flash("Utilisateur introuvable", "error")
         return redirect(url_for('index'))
-
     utilisateur = {
         'nom': user[0],
         'prenom': user[1],

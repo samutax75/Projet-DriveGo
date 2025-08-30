@@ -100,6 +100,31 @@ function handleAuthError() {
 // GESTION DYNAMIQUE DES VÉHICULES
 // ========================================
 
+// Fonction pour déterminer le nombre de places basé sur le type de véhicule
+function getVehicleSeats(vehicule) {
+    // Si le nombre de places est directement fourni par l'API
+    if (vehicule.nombrePlaces) {
+        return vehicule.nombrePlaces;
+    }
+    
+    // Sinon, déterminer basé sur le nom du véhicule
+    const nom = vehicule.nom ? vehicule.nom.toLowerCase() : '';
+    
+    if (nom.includes('trafic')) {
+        return 9; // Renault Trafic = 9 places généralement
+    } else if (nom.includes('kangoo')) {
+        return 5; // Kangoo utilitaire = 2 places
+    } else if (nom.includes('berlingo')) {
+        return 5; // Citroën Berlingo = 5 places
+    } else if (nom.includes('partner')) {
+        return 5; // Peugeot Partner = 5 places
+    } else if (nom.includes('transit')) {
+        return 9; // Ford Transit = 9 places
+    } else {
+        return 5; // Défaut pour véhicules non identifiés
+    }
+}
+
 // Fonction pour charger les véhicules depuis l'API
 async function loadVehicles() {
     try {
@@ -137,10 +162,8 @@ async function loadVehicles() {
                         name: vehicule.nom,
                         type: type,
                         immatriculation: vehicule.immatriculation,
-                        dateImmatriculation: vehicule.dateImmatriculation,
+                        nombrePlaces: getVehicleSeats(vehicule), // Nouveau champ
                         status: status,
-                        controle: vehicule.controle,
-                        prochainControle: vehicule.prochainControle,
                         finValidite: vehicule.finValidite,
                         numeroCarte: vehicule.numeroCarte,
                         notes: vehicule.notes,
@@ -245,7 +268,6 @@ async function loadUserReservations(userId) {
 // ========================================
 // VARIABLES GLOBALES MODIFIÉES
 // ========================================
-
 
 // Les véhicules seront maintenant chargés dynamiquement depuis l'API
 let vehicles = [];
@@ -377,9 +399,9 @@ function displayVehicles() {
                 </div>
                 <div class="vehicle-info">
                     <div><strong>🔢 Immatriculation:</strong> ${vehicle.immatriculation}</div>
-                    <div><strong>📅 Mise en service:</strong> ${vehicle.dateImmatriculation}</div>
-                    ${vehicle.controle ? `<div><strong>🔧 Dernier contrôle:</strong> ${vehicle.controle}</div>` : ''}
-                    ${vehicle.prochainControle ? `<div><strong>🔧 Prochain contrôle:</strong> ${vehicle.prochainControle}</div>` : ''}
+                    <div><strong>👥 Nombre de places:</strong> ${vehicle.nombrePlaces}</div>
+                    ${vehicle.finValidite ? `<div><strong>📅 Fin de validité:</strong> ${vehicle.finValidite}</div>` : ''}
+                    ${vehicle.numeroCarte ? `<div><strong>💳 Numéro carte:</strong> ${vehicle.numeroCarte}</div>` : ''}
                     ${vehicle.reservedBy ? `<div style="margin-top: 10px; color: #856404;"><strong>👤 Réservé par:</strong> ${vehicle.reservedBy}</div>` : ''}
                     ${vehicle.notes ? `<div style="margin-top: 8px; font-size: 0.9em; color: #666;"><strong>📝 Notes:</strong> ${vehicle.notes}</div>` : ''}
                 </div>
@@ -415,6 +437,7 @@ function displayUserReservations() {
                         <div class="reservation-id">🎫 ${reservation.id}</div>
                         <div class="reservation-details">
                             <div><strong>🚗 Véhicule:</strong> ${vehicle?.type} ${vehicle?.name} (${vehicle?.immatriculation})</div>
+                            <div><strong>👥 Nombre de places:</strong> ${vehicle?.nombrePlaces}</div>
                             <div><strong>📅 Date:</strong> ${formatDate(reservation.date)}</div>
                             <div><strong>🕐 Horaire:</strong> ${reservation.startTime} - ${reservation.endTime}</div>
                             <div><strong>📍 Destination:</strong> ${reservation.destination || 'Non spécifiée'}</div>
@@ -644,6 +667,7 @@ function exportReservations(format) {
             'ID Réservation': reservation.id,
             'Véhicule': `${vehicle?.type} ${vehicle?.name}`,
             'Immatriculation': vehicle?.immatriculation,
+            'Nombre de places': vehicle?.nombrePlaces,
             'Date': formatDate(reservation.date),
             'Heure début': reservation.startTime,
             'Heure fin': reservation.endTime,
@@ -702,6 +726,7 @@ Département: ${currentUser.department}
 ${data.map((item, index) => `
 ${index + 1}. RÉSERVATION ${item['ID Réservation']}
    Véhicule: ${item['Véhicule']} (${item['Immatriculation']})
+   Nombre de places: ${item['Nombre de places']}
    Date: ${item['Date']} 
    Horaires: ${item['Heure début']} - ${item['Heure fin']}
    Destination: ${item['Destination']}
@@ -796,10 +821,7 @@ fetch('/api/reservations', {
 })
 .catch(error => console.error("Erreur fetch :", error));
 
-
-
-
-// pré-remplir ce champ avec le nom de l’utilisateur connecté
+// pré-remplir ce champ avec le nom de l'utilisateur connecté
 function openReservationModal(vehicleId){
     const vehicle = vehicles.find(v => v.id === vehicleId);
     if(!vehicle || vehicle.status !== 'available') return;

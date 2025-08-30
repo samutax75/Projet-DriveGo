@@ -676,7 +676,7 @@ async function refreshData() {
 }
 
 // ========================================
-// FONCTIONS D'AFFICHAGE (restent identiques)
+// FONCTIONS D'AFFICHAGE
 // ========================================
 
 function openMobileModal(vehicle) {
@@ -970,7 +970,7 @@ function showVehicleDetails(vehicle) {
     }
 }
 
-// Générer la liste des missions de l'utilisateur
+// Générer la liste des missions de l'utilisateur avec bouton export
 function generateUserMissionsList() {
     const allMissions = [...activeMissions, ...completedMissions];
     const userMissions = allMissions.filter(m => m.userId === currentUser?.id);
@@ -983,9 +983,18 @@ function generateUserMissionsList() {
         `;
     }
 
+    // Ajouter le bouton d'export en haut de la liste
+    let exportButton = `
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button onclick="exportMissionsToPDF()" class="btn btn-primary">
+                📄 Exporter en PDF
+            </button>
+        </div>
+    `;
+
     const sortedMissions = [...userMissions].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
 
-    return sortedMissions.map(mission => `
+    return exportButton + sortedMissions.map(mission => `
         <div class="mission-item ${mission.status}">
             <div class="mission-header">
                 <div class="mission-destination">📍 ${mission.destination}</div>
@@ -1009,12 +1018,253 @@ function generateUserMissionsList() {
     `).join('');
 }
 
-// Mettre à jour la liste des missions
+// Fonction pour ajouter le bouton d'export dans la section desktop
+function addExportButtonToMissionsSection() {
+    const missionsSection = document.querySelector('.missions-section .card-title');
+    if (missionsSection && !document.getElementById('exportButtonDesktop')) {
+        const exportButtonHTML = `
+            <button id="exportButtonDesktop" onclick="exportMissionsToPDF()" 
+                    class="btn btn-primary" style="margin-left: 15px; font-size: 0.9rem; padding: 8px 16px;">
+                📄 Exporter PDF
+            </button>
+        `;
+        missionsSection.insertAdjacentHTML('beforeend', exportButtonHTML);
+    }
+}
+
+// Mettre à jour la liste des missions avec bouton export
 function updateMissionsList() {
     const missionsList = document.getElementById('missionsList');
     if (missionsList) {
         missionsList.innerHTML = generateUserMissionsList();
     }
+    
+    // Ajouter le bouton d'export dans la section desktop
+    addExportButtonToMissionsSection();
+}
+
+// ========================================
+// FONCTIONS D'EXPORT PDF
+// ========================================
+
+// Fonction pour exporter les missions en PDF
+async function exportMissionsToPDF() {
+    try {
+        showNotification('🔄 Génération du PDF en cours...', 'info');
+        
+        const allMissions = [...activeMissions, ...completedMissions];
+        const userMissions = allMissions.filter(m => m.userId === currentUser?.id);
+        
+        if (userMissions.length === 0) {
+            showNotification('❌ Aucune mission à exporter', 'warning');
+            return;
+        }
+
+        // Créer le contenu HTML pour le PDF
+        const htmlContent = generatePDFContent(userMissions);
+        
+        // Utiliser l'API backend pour générer le PDF
+        const response = await fetch('/api/missions/export-pdf', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                html_content: htmlContent,
+                filename: `missions_${currentUser.nom}_${new Date().toISOString().split('T')[0]}.pdf`
+            })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `missions_${currentUser.nom}_${new Date().toISOString().split('T')[0]}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            showNotification('✅ PDF téléchargé avec succès', 'success');
+        } else {
+            throw new Error('Erreur lors de la génération du PDF');
+        }
+    } catch (error) {
+        console.error('Erreur lors de l\'export PDF:', error);
+        showNotification('❌ Erreur lors de la génération du PDF', 'error');
+    }
+}
+
+// Générer le contenu HTML pour le PDF
+function generatePDFContent(missions) {
+    const sortedMissions = [...missions].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+    
+    let missionsHTML = '';
+    sortedMissions.forEach(mission => {
+        missionsHTML += `
+            <div class="mission-pdf-item">
+                <div class="mission-pdf-header">
+                    <h3>${mission.destination}</h3>
+                    <span class="status-badge ${mission.status}">
+                        ${mission.status === 'active' ? 'En cours' : 'Terminée'}
+                    </span>
+                </div>
+                <div class="mission-pdf-details">
+                    <div class="detail-row">
+                        <span class="label">Véhicule:</span>
+                        <span class="value">${mission.vehicleName}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Date:</span>
+                        <span class="value">${new Date(mission.missionDate).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Nature:</span>
+                        <span class="value">${mission.missionNature}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Passagers:</span>
+                        <span class="value">${mission.passengers}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Horaire:</span>
+                        <span class="value">${mission.departureTime}${mission.arrivalTime ? ' - ' + mission.arrivalTime : ''}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Kilométrage:</span>
+                        <span class="value">Départ: ${mission.kmDepart} km${mission.kmArrivee ? `, Arrivée: ${mission.kmArrivee} km` : ''}</span>
+                    </div>
+                    ${mission.distanceParcourue ? `
+                    <div class="detail-row">
+                        <span class="label">Distance parcourue:</span>
+                        <span class="value">${mission.distanceParcourue} km</span>
+                    </div>
+                    ` : ''}
+                    ${mission.notes ? `
+                    <div class="detail-row">
+                        <span class="label">Notes:</span>
+                        <span class="value">${mission.notes}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    return `
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head>
+            <meta charset="UTF-8">
+            <title>Rapport de Missions - ${currentUser.nom}</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    color: #1f2937;
+                    line-height: 1.6;
+                }
+                .header {
+                    text-align: center;
+                    margin-bottom: 40px;
+                    border-bottom: 2px solid #e5e7eb;
+                    padding-bottom: 20px;
+                }
+                .header h1 {
+                    color: #667eea;
+                    margin-bottom: 10px;
+                }
+                .header .subtitle {
+                    color: #6b7280;
+                    font-size: 1.1rem;
+                }
+                .mission-pdf-item {
+                    border: 1px solid #e5e7eb;
+                    border-radius: 10px;
+                    margin-bottom: 20px;
+                    padding: 20px;
+                    page-break-inside: avoid;
+                }
+                .mission-pdf-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 15px;
+                    border-bottom: 1px solid #f3f4f6;
+                    padding-bottom: 10px;
+                }
+                .mission-pdf-header h3 {
+                    margin: 0;
+                    color: #1f2937;
+                }
+                .status-badge {
+                    padding: 5px 12px;
+                    border-radius: 15px;
+                    font-size: 0.85rem;
+                    font-weight: 500;
+                }
+                .status-badge.active {
+                    background: #fef3c7;
+                    color: #92400e;
+                }
+                .status-badge.completed {
+                    background: #d1fae5;
+                    color: #065f46;
+                }
+                .mission-pdf-details {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 10px;
+                }
+                .detail-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 8px 0;
+                }
+                .label {
+                    font-weight: 600;
+                    color: #374151;
+                }
+                .value {
+                    color: #6b7280;
+                }
+                .footer {
+                    text-align: center;
+                    margin-top: 40px;
+                    padding-top: 20px;
+                    border-top: 1px solid #e5e7eb;
+                    color: #6b7280;
+                    font-size: 0.9rem;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>📊 Rapport de Missions</h1>
+                <div class="subtitle">
+                    <strong>${currentUser.nom}</strong><br>
+                    Généré le ${new Date().toLocaleDateString('fr-FR', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    })}
+                </div>
+            </div>
+            
+            <div class="missions-content">
+                ${missionsHTML}
+            </div>
+            
+            <div class="footer">
+                <p>DriveGo - Système de Gestion du Parc Automobile</p>
+                <p>Document généré automatiquement le ${new Date().toLocaleString('fr-FR')}</p>
+            </div>
+        </body>
+        </html>
+    `;
 }
 
 // Système de notifications
@@ -1147,3 +1397,11 @@ window.openMissionsModal = openMissionsModal;
 window.closeMissionsModal = closeMissionsModal;
 window.goToHomePage = goToHomePage;
 window.switchUser = switchUser;
+window.exportMissionsToPDF = exportMissionsToPDF;
+
+
+fetch('/api/missions/export-pdf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+})
