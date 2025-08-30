@@ -21,6 +21,8 @@ import pdfkit
 import platform
 import sys
 import io
+import shutil
+
 
 app = Flask(__name__)
 
@@ -252,7 +254,6 @@ def migrate_missions_table(cursor):
 init_db()
 
 
-
 # ============================================================================
 # Route PDF
 # ============================================================================
@@ -260,11 +261,43 @@ init_db()
 def get_pdfkit_config():
     """Retourne la config pdfkit adaptée à l'environnement"""
     if platform.system() == "Windows":
-        return pdfkit.configuration(
-            wkhtmltopdf=r"C:\Users\LENOVO\wkhtmltopdf\bin\wkhtmltopdf.exe"
-        )
+        # Chemins possibles sur Windows
+        possible_paths = [
+            r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe",  # Installation standard 64-bit
+            r"C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe",  # Installation 32-bit
+            r"C:\Users\LENOVO\wkhtmltopdf\bin\wkhtmltopdf.exe",  # Votre chemin actuel
+            shutil.which("wkhtmltopdf"),  # Dans le PATH système
+        ]
+        
+        for path in possible_paths:
+            if path and os.path.exists(path):
+                print(f"✅ wkhtmltopdf trouvé à : {path}")
+                return pdfkit.configuration(wkhtmltopdf=path)
+        
+        # Aucun chemin trouvé
+        print("❌ wkhtmltopdf non trouvé sur Windows!")
+        print("Chemins vérifiés :")
+        for path in possible_paths:
+            if path:
+                print(f"  - {path} {'✅' if os.path.exists(path) else '❌'}")
+        print("Installez wkhtmltopdf depuis : https://wkhtmltopdf.org/downloads.html")
+        return None
+        
     else:
-        return pdfkit.configuration(wkhtmltopdf="/usr/bin/wkhtmltopdf")
+        # Linux (Render, etc.)
+        linux_paths = [
+            "/usr/bin/wkhtmltopdf",
+            "/usr/local/bin/wkhtmltopdf",
+            shutil.which("wkhtmltopdf"),
+        ]
+        
+        for path in linux_paths:
+            if path and os.path.exists(path):
+                print(f"✅ wkhtmltopdf trouvé à : {path}")
+                return pdfkit.configuration(wkhtmltopdf=path)
+        
+        print("❌ wkhtmltopdf non trouvé sur Linux!")
+        return None
 
 def generate_missions_html(missions, user):
     rows = ""
@@ -318,6 +351,7 @@ def generate_missions_html(missions, user):
     </html>
     """
     return html
+
 
 # Route unifiée pour GET et POST
 @app.route('/api/missions/export-pdf', methods=['GET', 'POST'])
@@ -417,6 +451,7 @@ def export_missions_pdf():
             return f"Erreur serveur: {str(e)}", 500
         else:
             return jsonify({'success': False, 'error': f'Erreur serveur: {str(e)}'}), 500
+
 
 # ============================================================================
 # 🛠️ FONCTIONS UTILITAIRES (8 fonctions)
