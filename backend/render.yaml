@@ -12,3 +12,12 @@ services:
       mountPath: /opt/render/project/src
       sizeGB: 1
       
+
+      services:
+  - type: web
+    name: drivego
+    env: python
+    buildCommand: |
+      apt-get update && apt-get install -y wkhtmltopdf
+      pip install -r requirements.txt
+    startCommand: python app.py
