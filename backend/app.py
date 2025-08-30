@@ -319,14 +319,24 @@ def generate_missions_html(missions, user):
     """
     return html
 
-@app.route('/api/missions/export-pdf', methods=['POST'])
+# Route unifiée pour GET et POST
+@app.route('/api/missions/export-pdf', methods=['GET', 'POST'])
 def export_missions_pdf():
     try:
         # Vérifier l'authentification
         if 'user_id' not in session:
-            return jsonify({'success': False, 'error': 'Non authentifié'}), 401
+            if request.method == 'GET':
+                return "Non authentifié", 401
+            else:
+                return jsonify({'success': False, 'error': 'Non authentifié'}), 401
 
         user_id = session['user_id']
+
+        # Pour GET : vérifier que c'est bien l'utilisateur demandé (sécurité)
+        if request.method == 'GET':
+            requested_user_id = request.args.get('userId')
+            if requested_user_id and str(user_id) != str(requested_user_id):
+                return "Accès non autorisé", 403
 
         # --- Connexion DB ---
         conn = sqlite3.connect(DATABASE)
@@ -357,15 +367,31 @@ def export_missions_pdf():
 
         conn.close()
 
+        # Vérifier si missions et user existent
         if not missions:
-            return jsonify({'success': False, 'error': 'Aucune mission à exporter'}), 400
+            if request.method == 'GET':
+                return "Aucune mission à exporter", 400
+            else:
+                return jsonify({'success': False, 'error': 'Aucune mission à exporter'}), 400
+        
         if not user:
-            return jsonify({'success': False, 'error': 'Utilisateur introuvable'}), 400
+            if request.method == 'GET':
+                return "Utilisateur introuvable", 400
+            else:
+                return jsonify({'success': False, 'error': 'Utilisateur introuvable'}), 400
 
         # --- Générer HTML ---
-        html_content = generate_missions_html(missions, user)
+        if request.method == 'POST':
+            # Pour POST : utiliser le HTML envoyé par le client (si fourni)
+            data = request.get_json()
+            html_content = data.get('html_content') if data else None
+            if not html_content:
+                html_content = generate_missions_html(missions, user)
+        else:
+            # Pour GET : toujours générer le HTML côté serveur
+            html_content = generate_missions_html(missions, user)
 
-        # --- Générer PDF en mémoire (compatible mobile) ---
+        # --- Générer PDF en mémoire ---
         wkhtmltopdf_path = r"C:\Users\LENOVO\wkhtmltopdf\bin\wkhtmltopdf.exe"
         config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
@@ -377,6 +403,7 @@ def export_missions_pdf():
         safe_username = "".join(c for c in user['nom'] if c.isalnum() or c in (' ', '-', '_')).strip()
         filename = f'missions_{safe_username}_{datetime.now().strftime("%Y%m%d")}.pdf'
 
+        # --- Retourner le PDF ---
         return send_file(
             pdf_stream,
             as_attachment=True,
@@ -385,8 +412,11 @@ def export_missions_pdf():
         )
 
     except Exception as e:
-        print(f"Erreur export PDF : {e}")
-        return jsonify({'success': False, 'error': f'Erreur serveur: {str(e)}'}), 500
+        print(f"Erreur export PDF ({request.method}) : {e}")
+        if request.method == 'GET':
+            return f"Erreur serveur: {str(e)}", 500
+        else:
+            return jsonify({'success': False, 'error': f'Erreur serveur: {str(e)}'}), 500
 
 # ============================================================================
 # 🛠️ FONCTIONS UTILITAIRES (8 fonctions)
