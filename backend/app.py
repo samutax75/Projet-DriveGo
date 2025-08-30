@@ -20,7 +20,7 @@ import tempfile
 import pdfkit
 import platform
 import sys
-
+import io
 
 app = Flask(__name__)
 
@@ -365,21 +365,20 @@ def export_missions_pdf():
         # --- Générer HTML ---
         html_content = generate_missions_html(missions, user)
 
-        # --- Générer PDF (Windows path) ---
+        # --- Générer PDF en mémoire (compatible mobile) ---
         wkhtmltopdf_path = r"C:\Users\LENOVO\wkhtmltopdf\bin\wkhtmltopdf.exe"
         config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
-        temp_fd, temp_path = tempfile.mkstemp(suffix='.pdf')
-        os.close(temp_fd)
-
-        pdfkit.from_string(html_content, temp_path, configuration=config)
+        import io
+        pdf_bytes = pdfkit.from_string(html_content, False, configuration=config)
+        pdf_stream = io.BytesIO(pdf_bytes)
 
         # --- Nom du fichier sécurisé ---
         safe_username = "".join(c for c in user['nom'] if c.isalnum() or c in (' ', '-', '_')).strip()
         filename = f'missions_{safe_username}_{datetime.now().strftime("%Y%m%d")}.pdf'
 
         return send_file(
-            temp_path,
+            pdf_stream,
             as_attachment=True,
             download_name=filename,
             mimetype='application/pdf'
