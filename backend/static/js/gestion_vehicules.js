@@ -1406,6 +1406,8 @@ window.location.href = `/api/missions/export-pdf?userId=${currentUser.id}&downlo
 // ========================================
 // EXPORT PDF UNIFIÉ (Desktop + Mobile) - Version corrigée
 // ========================================
+// EXPORT PDF UNIFIÉ (Desktop + Mobile) - Version corrigée
+// ========================================
 async function exportMissionsToPDF() {
     try {
         showNotification('🔄 Génération du PDF en cours...', 'info');
@@ -1460,13 +1462,32 @@ async function exportMissionsToPDF() {
             } catch (downloadError) {
                 console.warn('Téléchargement direct échoué, tentative d\'ouverture:', downloadError);
                 
-                // Méthode 2: Si le téléchargement échoue, essayer d'ouvrir
-                const newWindow = window.open(url, '_blank');
-                if (newWindow) {
-                    showNotification('✅ PDF ouvert dans un nouvel onglet', 'success');
-                } else {
-                    // Méthode 3: Fallback avec un lien manuel
-                    createManualDownloadLink(url, filename);
+                // Méthode 2: Essayer avec iframe (pour certains navigateurs mobiles)
+                try {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = url;
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                    
+                    setTimeout(() => {
+                        if (document.body.contains(iframe)) {
+                            document.body.removeChild(iframe);
+                        }
+                    }, 3000);
+                    
+                    showNotification('✅ PDF en cours d\'ouverture...', 'success');
+                    
+                } catch (iframeError) {
+                    console.warn('Iframe échoué, tentative window.open:', iframeError);
+                    
+                    // Méthode 3: Si iframe échoue, essayer d'ouvrir
+                    const newWindow = window.open(url, '_blank');
+                    if (newWindow) {
+                        showNotification('✅ PDF ouvert dans un nouvel onglet', 'success');
+                    } else {
+                        // Méthode 4: Fallback final avec un lien manuel
+                        createManualDownloadLink(url, filename);
+                    }
                 }
             }
         } else {
