@@ -97,21 +97,24 @@ def init_db():
         )
     ''')
     
-    # Table des réservations
+   # Table des réservations (version complète)
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS reservations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            vehicule_id INTEGER NOT NULL,
-            date_debut DATE NOT NULL,
-            date_fin DATE NOT NULL,
-            statut TEXT DEFAULT 'en_attente',
-            notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id),
-            FOREIGN KEY (vehicule_id) REFERENCES vehicules (id)
-        )
-    ''')
+    CREATE TABLE IF NOT EXISTS reservations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        vehicule_id INTEGER NOT NULL,
+        date_debut DATE NOT NULL,
+        date_fin DATE NOT NULL,
+        heure_debut TEXT NOT NULL DEFAULT '09:00',
+        heure_fin TEXT NOT NULL DEFAULT '17:00',
+        motif TEXT NOT NULL DEFAULT 'autre',
+        statut TEXT DEFAULT 'en_attente',
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (vehicule_id) REFERENCES vehicules (id)
+    )
+''')
 
     # Migration de la table missions
     migrate_missions_table(cursor)
@@ -258,199 +261,201 @@ init_db()
 # Route PDF
 # ============================================================================
 
-def get_pdfkit_config():
-    """Retourne la config pdfkit adaptée à l'environnement"""
-    if platform.system() == "Windows":
-        # Chemins possibles sur Windows
-        possible_paths = [
-            r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe",  # Installation standard 64-bit
-            r"C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe",  # Installation 32-bit
-            r"C:\Users\LENOVO\wkhtmltopdf\bin\wkhtmltopdf.exe",  # Votre chemin actuel
-            shutil.which("wkhtmltopdf"),  # Dans le PATH système
-        ]
+# def get_pdfkit_config():
+#     """Retourne la config pdfkit adaptée à l'environnement"""
+#     if platform.system() == "Windows":
+#         # Chemins possibles sur Windows
+#         possible_paths = [
+#             r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe",  # Installation standard 64-bit
+#             r"C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe",  # Installation 32-bit
+#             r"C:\Users\LENOVO\wkhtmltopdf\bin\wkhtmltopdf.exe",  # Votre chemin actuel
+#             shutil.which("wkhtmltopdf"),  # Dans le PATH système
+#         ]
         
-        for path in possible_paths:
-            if path and os.path.exists(path):
-                print(f"✅ wkhtmltopdf trouvé à : {path}")
-                return pdfkit.configuration(wkhtmltopdf=path)
+#         for path in possible_paths:
+#             if path and os.path.exists(path):
+#                 print(f"✅ wkhtmltopdf trouvé à : {path}")
+#                 return pdfkit.configuration(wkhtmltopdf=path)
         
-        # Aucun chemin trouvé
-        print("❌ wkhtmltopdf non trouvé sur Windows!")
-        print("Chemins vérifiés :")
-        for path in possible_paths:
-            if path:
-                print(f"  - {path} {'✅' if os.path.exists(path) else '❌'}")
-        print("Installez wkhtmltopdf depuis : https://wkhtmltopdf.org/downloads.html")
-        return None
+#         # Aucun chemin trouvé
+#         print("❌ wkhtmltopdf non trouvé sur Windows!")
+#         print("Chemins vérifiés :")
+#         for path in possible_paths:
+#             if path:
+#                 print(f"  - {path} {'✅' if os.path.exists(path) else '❌'}")
+#         print("Installez wkhtmltopdf depuis : https://wkhtmltopdf.org/downloads.html")
+#         return None
         
-    else:
-        # Linux (Render, etc.)
-        linux_paths = [
-            "/usr/bin/wkhtmltopdf",
-            "/usr/local/bin/wkhtmltopdf",
-            shutil.which("wkhtmltopdf"),
-        ]
+#     else:
+#         # Linux (Render, etc.)
+#         linux_paths = [
+#             "/usr/bin/wkhtmltopdf",
+#             "/usr/local/bin/wkhtmltopdf",
+#             shutil.which("wkhtmltopdf"),
+#         ]
         
-        for path in linux_paths:
-            if path and os.path.exists(path):
-                print(f"✅ wkhtmltopdf trouvé à : {path}")
-                return pdfkit.configuration(wkhtmltopdf=path)
+#         for path in linux_paths:
+#             if path and os.path.exists(path):
+#                 print(f"✅ wkhtmltopdf trouvé à : {path}")
+#                 return pdfkit.configuration(wkhtmltopdf=path)
         
-        print("❌ wkhtmltopdf non trouvé sur Linux!")
-        return None
+#         print("❌ wkhtmltopdf non trouvé sur Linux!")
+#         return None
 
-def generate_missions_html(missions, user):
-    rows = ""
-    for m in missions:
-        rows += f"""
-        <tr>
-            <td>{m['date_mission']}</td>
-            <td>{m['heure_debut']}</td>
-            <td>{m['heure_fin']}</td>
-            <td>{m['motif']}</td>
-            <td>{m['destination']}</td>
-            <td>{m['nb_passagers']}</td>
-            <td>{m['vehicule_nom']} ({m['immatriculation']})</td>
-            <td>{m['km_depart']}</td>
-            <td>{m['km_arrivee']}</td>
-            <td>{m['statut']}</td>
-        </tr>
-        """
-    html = f"""
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <style>
-            table {{ width: 100%; border-collapse: collapse; }}
-            th, td {{ border: 1px solid #000; padding: 5px; text-align: left; }}
-            th {{ background-color: #f2f2f2; }}
-        </style>
-    </head>
-    <body>
-        <h2>Missions de {user['nom']} ({user['email']})</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Début</th>
-                    <th>Fin</th>
-                    <th>Motif</th>
-                    <th>Destination</th>
-                    <th>Nb Passagers</th>
-                    <th>Véhicule</th>
-                    <th>Km Départ</th>
-                    <th>Km Arrivée</th>
-                    <th>Statut</th>
-                </tr>
-            </thead>
-            <tbody>
-                {rows}
-            </tbody>
-        </table>
-    </body>
-    </html>
-    """
-    return html
+# def generate_missions_html(missions, user):
+#     rows = ""
+#     for m in missions:
+#         rows += f"""
+#         <tr>
+#             <td>{m['date_mission']}</td>
+#             <td>{m['heure_debut']}</td>
+#             <td>{m['heure_fin']}</td>
+#             <td>{m['motif']}</td>
+#             <td>{m['destination']}</td>
+#             <td>{m['nb_passagers']}</td>
+#             <td>{m['vehicule_nom']} ({m['immatriculation']})</td>
+#             <td>{m['km_depart']}</td>
+#             <td>{m['km_arrivee']}</td>
+#             <td>{m['statut']}</td>
+#         </tr>
+#         """
+#     html = f"""
+#     <html>
+#     <head>
+#         <meta charset="utf-8">
+#         <style>
+#             table {{ width: 100%; border-collapse: collapse; }}
+#             th, td {{ border: 1px solid #000; padding: 5px; text-align: left; }}
+#             th {{ background-color: #f2f2f2; }}
+#         </style>
+#     </head>
+#     <body>
+#         <h2>Missions de {user['nom']} ({user['email']})</h2>
+#         <table>
+#             <thead>
+#                 <tr>
+#                     <th>Date</th>
+#                     <th>Début</th>
+#                     <th>Fin</th>
+#                     <th>Motif</th>
+#                     <th>Destination</th>
+#                     <th>Nb Passagers</th>
+#                     <th>Véhicule</th>
+#                     <th>Km Départ</th>
+#                     <th>Km Arrivée</th>
+#                     <th>Statut</th>
+#                 </tr>
+#             </thead>
+#             <tbody>
+#                 {rows}
+#             </tbody>
+#         </table>
+#     </body>
+#     </html>
+#     """
+#     return html
 
 
-# Route unifiée pour GET et POST
-@app.route('/api/missions/export-pdf', methods=['GET', 'POST'])
-def export_missions_pdf():
-    try:
-        # Vérifier l'authentification
-        if 'user_id' not in session:
-            if request.method == 'GET':
-                return "Non authentifié", 401
-            else:
-                return jsonify({'success': False, 'error': 'Non authentifié'}), 401
+# # Route unifiée pour GET et POST
+# @app.route('/api/missions/export-pdf', methods=['GET', 'POST'])
+# def export_missions_pdf():
+#     try:
+#         # Vérifier l'authentification
+#         if 'user_id' not in session:
+#             if request.method == 'GET':
+#                 return "Non authentifié", 401
+#             else:
+#                 return jsonify({'success': False, 'error': 'Non authentifié'}), 401
 
-        user_id = session['user_id']
+#         user_id = session['user_id']
 
-        # Pour GET : vérifier que c'est bien l'utilisateur demandé (sécurité)
-        if request.method == 'GET':
-            requested_user_id = request.args.get('userId')
-            if requested_user_id and str(user_id) != str(requested_user_id):
-                return "Accès non autorisé", 403
+#         # Pour GET : vérifier que c'est bien l'utilisateur demandé (sécurité)
+#         if request.method == 'GET':
+#             requested_user_id = request.args.get('userId')
+#             if requested_user_id and str(user_id) != str(requested_user_id):
+#                 return "Accès non autorisé", 403
 
-        # --- Connexion DB ---
-        conn = sqlite3.connect(DATABASE)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
+#         # --- Connexion DB ---
+#         conn = sqlite3.connect(DATABASE)
+#         conn.row_factory = sqlite3.Row
+#         cursor = conn.cursor()
 
-        # --- Migration pour s'assurer que toutes les colonnes PDF existent ---
-        migrate_missions_table(cursor)
+#         # --- Migration pour s'assurer que toutes les colonnes PDF existent ---
+#         migrate_missions_table(cursor)
 
-        # --- Récupérer missions ---
-        cursor.execute("""
-            SELECT 
-                m.id, m.date_mission, m.heure_debut, m.heure_fin,
-                m.motif, m.destination, m.nb_passagers, 
-                m.km_depart, m.km_arrivee, m.statut, m.notes,
-                v.nom as vehicule_nom, v.immatriculation,
-                u.nom as user_nom, u.email as user_email
-            FROM missions m
-            JOIN vehicules v ON m.vehicule_id = v.id
-            JOIN users u ON m.user_id = u.id
-            WHERE m.user_id = ?
-            ORDER BY m.created_at DESC
-        """, (user_id,))
-        missions = cursor.fetchall()
+#         # --- Récupérer missions ---
+#         cursor.execute("""
+#             SELECT 
+#                 m.id, m.date_mission, m.heure_debut, m.heure_fin,
+#                 m.motif, m.destination, m.nb_passagers, 
+#                 m.km_depart, m.km_arrivee, m.statut, m.notes,
+#                 v.nom as vehicule_nom, v.immatriculation,
+#                 u.nom as user_nom, u.email as user_email
+#             FROM missions m
+#             JOIN vehicules v ON m.vehicule_id = v.id
+#             JOIN users u ON m.user_id = u.id
+#             WHERE m.user_id = ?
+#             ORDER BY m.created_at DESC
+#         """, (user_id,))
+#         missions = cursor.fetchall()
 
-        cursor.execute("SELECT nom, email FROM users WHERE id = ?", (user_id,))
-        user = cursor.fetchone()
+#         cursor.execute("SELECT nom, email FROM users WHERE id = ?", (user_id,))
+#         user = cursor.fetchone()
 
-        conn.close()
+#         conn.close()
 
-        # Vérifier si missions et user existent
-        if not missions:
-            if request.method == 'GET':
-                return "Aucune mission à exporter", 400
-            else:
-                return jsonify({'success': False, 'error': 'Aucune mission à exporter'}), 400
+#         # Vérifier si missions et user existent
+#         if not missions:
+#             if request.method == 'GET':
+#                 return "Aucune mission à exporter", 400
+#             else:
+#                 return jsonify({'success': False, 'error': 'Aucune mission à exporter'}), 400
         
-        if not user:
-            if request.method == 'GET':
-                return "Utilisateur introuvable", 400
-            else:
-                return jsonify({'success': False, 'error': 'Utilisateur introuvable'}), 400
+#         if not user:
+#             if request.method == 'GET':
+#                 return "Utilisateur introuvable", 400
+#             else:
+#                 return jsonify({'success': False, 'error': 'Utilisateur introuvable'}), 400
 
-        # --- Générer HTML ---
-        if request.method == 'POST':
-            # Pour POST : utiliser le HTML envoyé par le client (si fourni)
-            data = request.get_json()
-            html_content = data.get('html_content') if data else None
-            if not html_content:
-                html_content = generate_missions_html(missions, user)
-        else:
-            # Pour GET : toujours générer le HTML côté serveur
-            html_content = generate_missions_html(missions, user)
+#         # --- Générer HTML ---
+#         if request.method == 'POST':
+#             # Pour POST : utiliser le HTML envoyé par le client (si fourni)
+#             data = request.get_json()
+#             html_content = data.get('html_content') if data else None
+#             if not html_content:
+#                 html_content = generate_missions_html(missions, user)
+#         else:
+#             # Pour GET : toujours générer le HTML côté serveur
+#             html_content = generate_missions_html(missions, user)
 
-        # --- Générer PDF en mémoire ---
-        wkhtmltopdf_path = r"C:\Users\LENOVO\wkhtmltopdf\bin\wkhtmltopdf.exe"
-        config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+#         # --- Générer PDF en mémoire ---
+#         wkhtmltopdf_path = r"C:\Users\LENOVO\wkhtmltopdf\bin\wkhtmltopdf.exe"
+#         config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
-        import io
-        pdf_bytes = pdfkit.from_string(html_content, False, configuration=config)
-        pdf_stream = io.BytesIO(pdf_bytes)
+#         import io
+#         pdf_bytes = pdfkit.from_string(html_content, False, configuration=config)
+#         pdf_stream = io.BytesIO(pdf_bytes)
 
-        # --- Nom du fichier sécurisé ---
-        safe_username = "".join(c for c in user['nom'] if c.isalnum() or c in (' ', '-', '_')).strip()
-        filename = f'missions_{safe_username}_{datetime.now().strftime("%Y%m%d")}.pdf'
+#         # --- Nom du fichier sécurisé ---
+#         safe_username = "".join(c for c in user['nom'] if c.isalnum() or c in (' ', '-', '_')).strip()
+#         filename = f'missions_{safe_username}_{datetime.now().strftime("%Y%m%d")}.pdf'
 
-        # --- Retourner le PDF ---
-        return send_file(
-            pdf_stream,
-            as_attachment=True,
-            download_name=filename,
-            mimetype='application/pdf'
-        )
+#         # --- Retourner le PDF ---
+#         return send_file(
+#             pdf_stream,
+#             as_attachment=True,
+#             download_name=filename,
+#             mimetype='application/pdf'
+#         )
 
-    except Exception as e:
-        print(f"Erreur export PDF ({request.method}) : {e}")
-        if request.method == 'GET':
-            return f"Erreur serveur: {str(e)}", 500
-        else:
-            return jsonify({'success': False, 'error': f'Erreur serveur: {str(e)}'}), 500
+#     except Exception as e:
+#         print(f"Erreur export PDF ({request.method}) : {e}")
+#         if request.method == 'GET':
+#             return f"Erreur serveur: {str(e)}", 500
+#         else:
+#             return jsonify({'success': False, 'error': f'Erreur serveur: {str(e)}'}), 500
+
+
 
 
 # ============================================================================
@@ -1966,82 +1971,82 @@ def api_get_reservations():
             'message': 'Erreur lors de la récupération des réservations'
         }), 500
 
-@app.route('/api/reservations', methods=['POST'])
-def create_reservation():
-    """Créer une réservation"""
-    try:
-        # Récupérer les vraies données de la requête
-        data = request.get_json()
+# @app.route('/api/reservations', methods=['POST'])
+# def create_reservation():
+#     """Créer une réservation"""
+#     try:
+#         # Récupérer les vraies données de la requête
+#         data = request.get_json()
         
-        user_id = session.get('user_id')
-        if not user_id:
-            return jsonify({'success': False, 'message': 'Utilisateur non connecté'}), 401
+#         user_id = session.get('user_id')
+#         if not user_id:
+#             return jsonify({'success': False, 'message': 'Utilisateur non connecté'}), 401
 
-        vehicule_id = data.get('vehicule_id')
-        date_debut = data.get('date_debut')
-        date_fin = data.get('date_fin')
-        notes = data.get('notes', '')
+#         vehicule_id = data.get('vehicule_id')
+#         date_debut = data.get('date_debut')
+#         date_fin = data.get('date_fin')
+#         notes = data.get('notes', '')
 
-        if not all([vehicule_id, date_debut, date_fin]):
-            return jsonify({'success': False, 'message': 'Données manquantes'}), 400
+#         if not all([vehicule_id, date_debut, date_fin]):
+#             return jsonify({'success': False, 'message': 'Données manquantes'}), 400
 
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
+#         conn = sqlite3.connect(DATABASE)
+#         cursor = conn.cursor()
 
-        # Vérifier que le véhicule existe et est disponible
-        cursor.execute("SELECT disponible, nom FROM vehicules WHERE id=?", (vehicule_id,))
-        vehicule = cursor.fetchone()
+#         # Vérifier que le véhicule existe et est disponible
+#         cursor.execute("SELECT disponible, nom FROM vehicules WHERE id=?", (vehicule_id,))
+#         vehicule = cursor.fetchone()
         
-        if not vehicule:
-            conn.close()
-            return jsonify({'success': False, 'message': 'Véhicule non trouvé'}), 404
+#         if not vehicule:
+#             conn.close()
+#             return jsonify({'success': False, 'message': 'Véhicule non trouvé'}), 404
             
-        if vehicule[0] == 0:
-            conn.close()
-            return jsonify({'success': False, 'message': 'Véhicule non disponible'}), 400
+#         if vehicule[0] == 0:
+#             conn.close()
+#             return jsonify({'success': False, 'message': 'Véhicule non disponible'}), 400
 
-        # Vérifier les conflits de réservation pour les mêmes dates
-        cursor.execute('''
-            SELECT id FROM reservations 
-            WHERE vehicule_id = ? 
-            AND statut NOT IN ('annule', 'terminee')
-            AND ((date_debut <= ? AND date_fin >= ?) 
-                 OR (date_debut <= ? AND date_fin >= ?)
-                 OR (date_debut >= ? AND date_fin <= ?))
-        ''', (vehicule_id, date_debut, date_debut, date_fin, date_fin, date_debut, date_fin))
+#         # Vérifier les conflits de réservation pour les mêmes dates
+#         cursor.execute('''
+#             SELECT id FROM reservations 
+#             WHERE vehicule_id = ? 
+#             AND statut NOT IN ('annule', 'terminee')
+#             AND ((date_debut <= ? AND date_fin >= ?) 
+#                  OR (date_debut <= ? AND date_fin >= ?)
+#                  OR (date_debut >= ? AND date_fin <= ?))
+#         ''', (vehicule_id, date_debut, date_debut, date_fin, date_fin, date_debut, date_fin))
         
-        conflicting_reservation = cursor.fetchone()
-        if conflicting_reservation:
-            conn.close()
-            return jsonify({'success': False, 'message': 'Véhicule déjà réservé pour cette période'}), 400
+#         conflicting_reservation = cursor.fetchone()
+#         if conflicting_reservation:
+#             conn.close()
+#             return jsonify({'success': False, 'message': 'Véhicule déjà réservé pour cette période'}), 400
 
-        # Créer la réservation
-        cursor.execute('''
-            INSERT INTO reservations (user_id, vehicule_id, date_debut, date_fin, notes, statut)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (user_id, vehicule_id, date_debut, date_fin, notes, 'confirmee'))
+#         # Créer la réservation
+#         cursor.execute('''
+#             INSERT INTO reservations (user_id, vehicule_id, date_debut, date_fin, notes, statut)
+#             VALUES (?, ?, ?, ?, ?, ?)
+#         ''', (user_id, vehicule_id, date_debut, date_fin, notes, 'confirmee'))
 
-        reservation_id = cursor.lastrowid
+#         reservation_id = cursor.lastrowid
 
-        # Marquer le véhicule comme indisponible
-        cursor.execute('UPDATE vehicules SET disponible = 0 WHERE id = ?', (vehicule_id,))
+#         # Marquer le véhicule comme indisponible
+#         cursor.execute('UPDATE vehicules SET disponible = 0 WHERE id = ?', (vehicule_id,))
 
-        conn.commit()
-        conn.close()
+#         conn.commit()
+#         conn.close()
 
-        print(f"Réservation créée avec succès: ID={reservation_id}, Véhicule={vehicule_id}, User={user_id}")
+#         print(f"Réservation créée avec succès: ID={reservation_id}, Véhicule={vehicule_id}, User={user_id}")
 
-        return jsonify({
-            'success': True, 
-            'message': 'Réservation créée avec succès',
-            'reservation_id': reservation_id
-        })
+#         return jsonify({
+#             'success': True, 
+#             'message': 'Réservation créée avec succès',
+#             'reservation_id': reservation_id
+#         })
 
-    except Exception as e:
-        print(f"Erreur lors de la création de la réservation: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+#     except Exception as e:
+#         print(f"Erreur lors de la création de la réservation: {e}")
+#         import traceback
+#         traceback.print_exc()
+#         return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
     
 @app.route('/api/user/<int:user_id>/reservations', methods=['GET'])
 @login_required

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planning - Véhicule 5 | DriveGo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/planning_reservation.css') }}">
+
+    
+</head>
+<body>
+    <div class="planning-container">
+        <div class="planning-header">
+            <h1>📅 Planning - Véhicule 5</h1>
+            <div class="vehicle-info">
+                <p>AB-005-CD • Système de réservation dynamique</p>
+            </div>
+        </div>
+
+
+        
+        <div class="calendar-controls">
+            <div class="calendar-nav">
+                <button class="nav-btn" onclick="previousPeriod()">‹ Précédent</button>
+                <div class="current-date" id="currentPeriod">Septembre 2025</div>
+                <button class="nav-btn" onclick="nextPeriod()">Suivant ›</button>
+                <button class="nav-btn" onclick="goToToday()">Aujourd'hui</button>
+            </div>
+            
+            <div class="view-buttons">
+                <button class="view-btn active" onclick="setView('week')" id="weekBtn">Semaine</button>
+                <button class="view-btn" onclick="setView('day')" id="dayBtn">Jour</button>
+                <button class="view-btn" onclick="setView('month')" id="monthBtn">Mois</button>
+            </div>
+        </div>
+        
+        <div class="calendar-container">
+            <div id="calendar"></div>
+            
+            
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button onclick="addNewReservation()" class="btn btn-primary">
+                ➕ Nouvelle réservation
+            </button>
+            <a href="{{ url_for('gestion_vehicules') }}" class="btn btn-secondary">
+                ← Retour aux véhicules
+            </a>
+            <button onclick="refreshCalendar()" class="btn btn-primary">
+                🔄 Actualiser
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de réservation -->
+    <div class="reservation-modal" id="reservationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📅 Nouvelle réservation</h3>
+                <button class="modal-close" onclick="closeReservationModal()">×</button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="reservationForm" onsubmit="submitReservation(event)">
+                    <input type="hidden" id="selectedDate" name="date">
+                    <input type="hidden" name="vehicule_id" value="5">
+                    
+                    <div class="form-group">
+                        <label>Véhicule sélectionné</label>
+                        <input type="text" value="Véhicule 5 (AB-005-CD)" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="conducteur">Conducteur</label>
+                        <input type="text" id="conducteur" name="conducteur" value="Jean Dupont" readonly style="background-color: #e0f2fe; border-color: #0288d1;">
+                        <small style="color: #0288d1; font-size: 0.8rem;">👤 Utilisateur connecté</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Date sélectionnée</label>
+                        <input type="date" id="reservationDate" name="date_reservation" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="heureDebut">Heure de début</label>
+                            <input type="time" id="heureDebut" name="heure_debut" min="08:00" max="17:00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="heureFin">Heure de fin</label>
+                            <input type="time" id="heureFin" name="heure_fin" min="09:00" max="18:00" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="motif">Nature de la mission</label>
+                        <select id="motif" name="motif" required>
+                            <option value="">Sélectionner...</option>
+                            <option value="autonomie">🛒 Autonomie / Vie quotidienne</option>
+                            <option value="culture">🎭 Culture / Éducation</option>
+                            <option value="loisirs">🌳 Loisirs / Bien-être</option>
+                            <option value="sport">🏀 Sport / Activité physique</option>
+                            <option value="sante">🧘 Santé / Thérapie / Sensoriel</option>
+                            <option value="autre">✏️ Autre</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="notes">Notes (optionnel)</label>
+                        <textarea id="notes" name="notes" rows="3" placeholder="Précisions sur la réservation..."></textarea>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button type="button" onclick="closeReservationModal()" class="btn btn-secondary">
+                            Annuler
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            ✅ Confirmer la réservation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/planning_reservation.js') }}"></script>
+    
+</body>
+</html>

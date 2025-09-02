@@ -698,29 +698,25 @@
 
 
 
-
-        async function exportMissionsToPDF() {
-    try {
-        showNotification('🔄 Génération du PDF en cours...', 'info');
-        
-        const allMissions = [...activeMissions, ...completedMissions];
-        const userMissions = allMissions.filter(m => m.userId === currentUser?.id);
-
-        if (userMissions.length === 0) {
-            showNotification('❌ Aucune mission à exporter', 'warning');
-            return;
-        }
-
-        // Redirection directe - mobile friendly
-        window.location.href = `/api/missions/export-pdf?userId=${currentUser.id}&download=true`;
-        
-        showNotification('✅ Génération du PDF...', 'success');
-
-    } catch (error) {
-        console.error('Erreur lors de l\'export PDF:', error);
-        showNotification('❌ Erreur lors de la génération du PDF', 'error');
-    }
+.vehicle-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-// N'oubliez pas d'exposer la fonction
-window.exportMissionsToPDF = exportMissionsToPDF;
+.btn-planning {
+    background: #4f46e5;
+    color: white;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    transition: background-color 0.2s;
+}
+
+.btn-planning:hover {
+    background: #3730a3;
+    text-decoration: none;
+    color: white;
+}
