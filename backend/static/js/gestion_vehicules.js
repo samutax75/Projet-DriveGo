@@ -1707,14 +1707,6 @@ async function endMissionWithDetails(event, vehicleId) {
 
 
 
-
-
-
-
-
-
-
-
 // Exposer les fonctions globalement pour les événements
 window.selectVehicle = selectVehicle;
 window.checkAutre = checkAutre;
