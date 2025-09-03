@@ -413,10 +413,17 @@ async function completeMission(missionId, completionData) {
         
         // Ajouter les photos
         if (completionData.photos && completionData.photos.length > 0) {
-            completionData.photos.forEach((photo, index) => {
-                formData.append(`photos`, photo);
-            });
+    console.log(`Ajout de ${completionData.photos.length} photo(s)`);
+    for (let i = 0; i < completionData.photos.length; i++) {
+        const photo = completionData.photos[i];
+        if (photo && photo.size > 0) {
+            formData.append('photos', photo);  // Sans les backticks
+            console.log(`Photo ${i + 1}: ${photo.name} (${photo.size} bytes)`);
+        } else {
+            console.warn(`Photo ${i + 1} vide ou invalide`);
         }
+    }
+}
 
         const response = await fetch(`/api/missions/${missionId}/complete`, {
             method: 'PUT',
@@ -1484,6 +1491,229 @@ document.addEventListener('DOMContentLoaded', async function () {
         showNotification('Erreur lors du chargement des données', 'error');
     }
 });
+
+
+
+// Fonction améliorée pour terminer une mission avec débogage détaillé
+async function completeMission(missionId, completionData) {
+    console.log('🏁 Tentative de finalisation de mission:', missionId);
+    console.log('📋 Données envoyées:', completionData);
+    
+    try {
+        const formData = new FormData();
+        
+        // Validation et ajout des champs obligatoires
+        if (!completionData.arrivalTime) {
+            throw new Error('Heure d\'arrivée manquante');
+        }
+        if (!completionData.kmArrivee || isNaN(completionData.kmArrivee)) {
+            throw new Error('Kilométrage d\'arrivée invalide');
+        }
+        if (!completionData.carburantArrivee) {
+            throw new Error('Niveau de carburant d\'arrivée manquant');
+        }
+        
+        formData.append('heure_fin', completionData.arrivalTime);
+        formData.append('km_arrivee', completionData.kmArrivee.toString());
+        formData.append('carburant_arrivee', completionData.carburantArrivee);
+        formData.append('plein_effectue', completionData.pleinEffectue ? '1' : '0');
+        formData.append('notes', completionData.notes || '');
+        
+        // Gestion améliorée des photos
+        if (completionData.photos && completionData.photos.length > 0) {
+            console.log(`📷 Ajout de ${completionData.photos.length} photo(s)`);
+            for (let i = 0; i < completionData.photos.length; i++) {
+                const photo = completionData.photos[i];
+                if (photo && photo.size > 0) {
+                    formData.append('photos[]', photo, photo.name || `photo_${i}.jpg`);
+                    console.log(`📸 Photo ${i + 1}: ${photo.name} (${photo.size} bytes)`);
+                } else {
+                    console.warn(`⚠️ Photo ${i + 1} vide ou invalide`);
+                }
+            }
+        }
+
+        // Log des données FormData pour débogage
+        console.log('📦 Contenu FormData:');
+        for (let pair of formData.entries()) {
+            if (pair[1] instanceof File) {
+                console.log(`  ${pair[0]}: [FILE] ${pair[1].name} (${pair[1].size} bytes)`);
+            } else {
+                console.log(`  ${pair[0]}: ${pair[1]}`);
+            }
+        }
+
+        console.log(`🌐 Envoi de la requête vers: /api/missions/${missionId}/complete`);
+        
+        const response = await fetch(`/api/missions/${missionId}/complete`, {
+            method: 'PUT',
+            credentials: 'include',
+            body: formData
+        });
+        
+        console.log(`📡 Réponse HTTP: ${response.status} ${response.statusText}`);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Erreur serveur:', errorText);
+            
+            // Messages d'erreur spécifiques selon le code de statut
+            switch (response.status) {
+                case 400:
+                    throw new Error('Données invalides. Vérifiez tous les champs obligatoires.');
+                case 401:
+                    throw new Error('Session expirée. Reconnectez-vous.');
+                case 404:
+                    throw new Error('Mission introuvable.');
+                case 413:
+                    throw new Error('Fichiers trop volumineux. Réduisez la taille des photos.');
+                case 500:
+                    throw new Error('Erreur serveur. Réessayez plus tard.');
+                default:
+                    throw new Error(`Erreur ${response.status}: ${errorText}`);
+            }
+        }
+        
+        const data = await response.json();
+        console.log('✅ Réponse serveur:', data);
+        
+        if (data.success) {
+            console.log('🎉 Mission terminée avec succès !');
+            return true;
+        } else {
+            console.error('❌ Échec rapporté par le serveur:', data.message || 'Erreur inconnue');
+            throw new Error(data.message || 'Échec de la finalisation de la mission');
+        }
+        
+    } catch (error) {
+        console.error('💥 Erreur lors de la finalisation de la mission:', error);
+        
+        // Afficher l'erreur à l'utilisateur
+        showNotification(`Erreur: ${error.message}`, 'error');
+        
+        // Si c'est une erreur réseau, proposer de réessayer
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            console.log('🌐 Erreur réseau détectée');
+            if (confirm('Erreur de connexion. Voulez-vous réessayer ?')) {
+                return await completeMission(missionId, completionData);
+            }
+        }
+        
+        return false;
+    }
+}
+
+// Fonction améliorée pour endMissionWithDetails avec validation
+async function endMissionWithDetails(event, vehicleId) {
+    event.preventDefault();
+    console.log('🚀 Début de la finalisation de mission pour véhicule:', vehicleId);
+
+    const formData = new FormData(event.target);
+    const arrivalTime = formData.get('arrivalTime');
+    const kmArrivee = parseInt(formData.get('kmArrivee'));
+    const carburantArrivee = formData.get('carburantArrivee');
+    const pleinEffectue = formData.get('pleinEffectue') === 'on';
+    const notes = formData.get('notes');
+    const photoFiles = formData.getAll('photos');
+
+    // Validation côté client
+    if (!arrivalTime) {
+        showNotification('❌ Veuillez indiquer l\'heure d\'arrivée', 'error');
+        return;
+    }
+    
+    if (!kmArrivee || isNaN(kmArrivee)) {
+        showNotification('❌ Veuillez indiquer un kilométrage d\'arrivée valide', 'error');
+        return;
+    }
+    
+    if (!carburantArrivee) {
+        showNotification('❌ Veuillez sélectionner le niveau de carburant d\'arrivée', 'error');
+        return;
+    }
+
+    const userMission = activeMissions.find(m => m.userId === currentUser.id && m.vehicleId === vehicleId);
+    if (!userMission) {
+        console.error('❌ Mission utilisateur introuvable');
+        showNotification('❌ Mission introuvable', 'error');
+        return;
+    }
+
+    console.log('📋 Mission trouvée:', userMission);
+
+    // Validation du kilométrage
+    if (kmArrivee < userMission.kmDepart) {
+        showNotification(`❌ Le kilométrage d'arrivée (${kmArrivee}) ne peut pas être inférieur au départ (${userMission.kmDepart})`, 'error');
+        return;
+    }
+
+    // Filtrer les fichiers photo valides
+    const validPhotos = Array.from(photoFiles).filter(file => file && file.size > 0);
+    if (photoFiles.length > validPhotos.length) {
+        console.log(`⚠️ ${photoFiles.length - validPhotos.length} photo(s) vide(s) ignorée(s)`);
+    }
+
+    const completionData = {
+        arrivalTime: arrivalTime,
+        kmArrivee: kmArrivee,
+        carburantArrivee: carburantArrivee,
+        pleinEffectue: pleinEffectue,
+        notes: notes,
+        photos: validPhotos
+    };
+
+    console.log('📤 Données de finalisation préparées:', {
+        ...completionData,
+        photos: `${validPhotos.length} fichier(s)`
+    });
+
+    // Désactiver le bouton de soumission pour éviter les doubles envois
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = '⏳ Finalisation en cours...';
+    }
+
+    try {
+        const success = await completeMission(userMission.id, completionData);
+        
+        if (success) {
+            const distanceParcourue = kmArrivee - userMission.kmDepart;
+            showNotification(`🏁 Mission terminée ! Distance: ${distanceParcourue} km`, 'success');
+            
+            // Recharger les données
+            await refreshData();
+            
+            if (selectedVehicle && selectedVehicle.id === vehicleId) {
+                if (window.innerWidth <= 1200) {
+                    openMobileModal(selectedVehicle);
+                } else {
+                    showVehicleDetails(selectedVehicle);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('💥 Erreur dans endMissionWithDetails:', error);
+    } finally {
+        // Réactiver le bouton
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = '⏹️ Terminer la mission';
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Exposer les fonctions globalement pour les événements
 window.selectVehicle = selectVehicle;

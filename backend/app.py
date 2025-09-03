@@ -43,6 +43,19 @@ else:
 
 # Créer la configuration pdfkit
 config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+
+
+# Configuration pour les uploads
+UPLOAD_FOLDER = 'static/uploads/mission_photos'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+
+# Créer le dossier uploads s'il n'existe pas
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
 DATABASE = 'drivego.db'
 
 def init_db():
@@ -455,6 +468,217 @@ init_db()
 #         else:
 #             return jsonify({'success': False, 'error': f'Erreur serveur: {str(e)}'}), 500
 
+
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/api/missions/<int:mission_id>/complete', methods=['PUT'])
+def complete_mission(mission_id):
+    try:
+        # Vérifier l'authentification
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        user_id = session['user_id']
+        
+        # Récupérer la mission depuis la base de données
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, user_id, vehicule_id, statut, km_depart 
+            FROM missions 
+            WHERE id = ?
+        """, (mission_id,))
+        
+        mission = cursor.fetchone()
+        
+        if not mission:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Mission introuvable'}), 404
+        
+        # Vérifier que l'utilisateur peut modifier cette mission
+        if mission[1] != user_id:  # mission[1] = user_id
+            conn.close()
+            return jsonify({'success': False, 'message': 'Accès refusé'}), 403
+        
+        # Vérifier que la mission est active
+        if mission[3] != 'active':  # mission[3] = statut
+            conn.close()
+            return jsonify({'success': False, 'message': 'Mission déjà terminée'}), 400
+        
+        # Récupérer les données du formulaire
+        heure_fin = request.form.get('heure_fin', '').strip()
+        km_arrivee_str = request.form.get('km_arrivee', '').strip()
+        carburant_arrivee = request.form.get('carburant_arrivee', '').strip()
+        plein_effectue = request.form.get('plein_effectue', '0') == '1'
+        notes = request.form.get('notes', '').strip()
+        
+        # Validation des données obligatoires
+        if not heure_fin:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Heure de fin requise'}), 400
+        
+        if not km_arrivee_str or not km_arrivee_str.isdigit():
+            conn.close()
+            return jsonify({'success': False, 'message': 'Kilométrage d\'arrivée invalide'}), 400
+        
+        if not carburant_arrivee:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Niveau de carburant requis'}), 400
+        
+        km_arrivee = int(km_arrivee_str)
+        km_depart = mission[4]  # mission[4] = km_depart
+        
+        # Vérifier que le kilométrage d'arrivée >= kilométrage de départ
+        if km_arrivee < km_depart:
+            conn.close()
+            return jsonify({
+                'success': False, 
+                'message': f'Le kilométrage d\'arrivée ({km_arrivee}) ne peut pas être inférieur au départ ({km_depart})'
+            }), 400
+        
+        # Gestion des photos (optionnel)
+        photo_paths = []
+        if 'photos' in request.files:
+            photos = request.files.getlist('photos')
+            
+            # Créer le dossier s'il n'existe pas
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            
+            for photo in photos:
+                if photo and photo.filename != '' and allowed_file(photo.filename):
+                    # Créer un nom de fichier unique
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]  # milliseconds
+                    filename = f"mission_{mission_id}_{timestamp}_{secure_filename(photo.filename)}"
+                    filepath = os.path.join(UPLOAD_FOLDER, filename)
+                    
+                    try:
+                        photo.save(filepath)
+                        photo_paths.append(f"/static/uploads/mission_photos/{filename}")
+                        print(f"Photo sauvegardée: {filename}")
+                    except Exception as e:
+                        print(f"Erreur sauvegarde photo: {e}")
+        
+        # Convertir les chemins des photos en JSON string pour stockage
+        photos_json = ','.join(photo_paths) if photo_paths else ''
+        
+        # Vérifier si la colonne photos existe dans missions
+        cursor.execute("PRAGMA table_info(missions)")
+        columns = [col[1] for col in cursor.fetchall()]
+        has_photos_column = 'photos' in columns
+        has_carburant_columns = all(col in columns for col in ['carburant_depart', 'carburant_arrivee'])
+        has_plein_column = 'plein_effectue' in columns
+        has_creneau_column = 'creneau' in columns
+        has_conducteur2_column = 'conducteur2' in columns
+        
+        # Si les colonnes manquent, les ajouter
+        if not has_photos_column:
+            cursor.execute("ALTER TABLE missions ADD COLUMN photos TEXT DEFAULT ''")
+        if not has_carburant_columns:
+            cursor.execute("ALTER TABLE missions ADD COLUMN carburant_depart TEXT DEFAULT ''")
+            cursor.execute("ALTER TABLE missions ADD COLUMN carburant_arrivee TEXT DEFAULT ''")
+        if not has_plein_column:
+            cursor.execute("ALTER TABLE missions ADD COLUMN plein_effectue BOOLEAN DEFAULT 0")
+        if not has_creneau_column:
+            cursor.execute("ALTER TABLE missions ADD COLUMN creneau TEXT DEFAULT 'journee'")
+        if not has_conducteur2_column:
+            cursor.execute("ALTER TABLE missions ADD COLUMN conducteur2 TEXT DEFAULT ''")
+        
+        # Mettre à jour la mission dans la base de données
+        try:
+            update_query = """
+                UPDATE missions 
+                SET heure_fin = ?, 
+                    km_arrivee = ?, 
+                    carburant_arrivee = ?, 
+                    plein_effectue = ?, 
+                    notes = ?, 
+                    statut = 'completed',
+                    updated_at = CURRENT_TIMESTAMP
+            """
+            update_params = [heure_fin, km_arrivee, carburant_arrivee, plein_effectue, notes]
+            
+            # Ajouter les photos si la colonne existe maintenant
+            if has_photos_column or True:  # True car on vient de l'ajouter si elle manquait
+                update_query += ", photos = ?"
+                update_params.append(photos_json)
+            
+            update_query += " WHERE id = ?"
+            update_params.append(mission_id)
+            
+            cursor.execute(update_query, update_params)
+            
+            conn.commit()
+            
+            # Mettre à jour le statut du véhicule (le rendre disponible)
+            vehicule_id = mission[2]  # mission[2] = vehicule_id
+            cursor.execute("""
+                UPDATE vehicules 
+                SET statut = 'actif' 
+                WHERE id = ?
+            """, (vehicule_id,))
+            
+            conn.commit()
+            conn.close()
+            
+            return jsonify({
+                'success': True, 
+                'message': 'Mission terminée avec succès',
+                'data': {
+                    'mission_id': mission_id,
+                    'distance_parcourue': km_arrivee - km_depart,
+                    'photos_count': len(photo_paths)
+                }
+            }), 200
+            
+        except sqlite3.Error as e:
+            conn.rollback()
+            conn.close()
+            print(f"Erreur base de données: {e}")
+            return jsonify({'success': False, 'message': f'Erreur lors de la mise à jour: {str(e)}'}), 500
+        
+    except Exception as e:
+        print(f"Erreur serveur dans complete_mission: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Erreur serveur interne'}), 500
+
+
+# Route pour vérifier les missions actives (utile pour le debug)
+@app.route('/api/debug/missions/<int:mission_id>', methods=['GET'])
+def debug_mission(mission_id):
+    """Route de debug pour vérifier l'état d'une mission"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+    
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT * FROM missions WHERE id = ?", (mission_id,))
+        mission = cursor.fetchone()
+        
+        if mission:
+            # Récupérer les noms des colonnes
+            cursor.execute("PRAGMA table_info(missions)")
+            columns = [col[1] for col in cursor.fetchall()]
+            
+            # Créer un dictionnaire avec les données
+            mission_dict = dict(zip(columns, mission))
+            
+            conn.close()
+            return jsonify({'success': True, 'mission': mission_dict})
+        else:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Mission introuvable'})
+            
+    except Exception as e:
+        print(f"Erreur debug: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 
