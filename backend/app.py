@@ -22,6 +22,9 @@ import sys
 import io
 import shutil
 from werkzeug.utils import secure_filename
+import os
+import json
+import uuid
 
 
 app = Flask(__name__)
@@ -33,15 +36,22 @@ app = Flask(__name__)
 # Configuration pour la production
 app.secret_key = os.environ.get('SECRET_KEY', 'fallback-secret-key-change-in-production')
 
-# Configuration pour les uploads
-UPLOAD_FOLDER = 'static/uploads/mission_photos'
+# # Configuration pour les uploads
+# UPLOAD_FOLDER = 'static/uploads/mission_photos'
+# ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+
+# # Créer le dossier uploads s'il n'existe pas
+# os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+UPLOAD_FOLDER = 'uploads/missions'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
-
-# Créer le dossier uploads s'il n'existe pas
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 DATABASE = 'drivego.db'
 
@@ -819,11 +829,11 @@ def api_get_vehicules():
 
 # ============================================================================
 # 🚀 ROUTES MISSIONS
-# ============================================================================
+# ==========================================================================
 
 @app.route('/api/missions/<int:mission_id>/complete', methods=['PUT'])
 def complete_mission(mission_id):
-    """Terminer une mission"""
+    """Terminer une mission avec support des photos prises"""
     try:
         # Vérifier l'authentification
         if 'user_id' not in session:
@@ -847,12 +857,11 @@ def complete_mission(mission_id):
             conn.close()
             return jsonify({'success': False, 'message': 'Mission introuvable'}), 404
         
-        # Vérifier que l'utilisateur peut modifier cette mission
+        # Vérifications de sécurité
         if mission[1] != user_id:
             conn.close()
             return jsonify({'success': False, 'message': 'Accès refusé'}), 403
         
-        # Vérifier que la mission est active
         if mission[3] != 'active':
             conn.close()
             return jsonify({'success': False, 'message': 'Mission déjà terminée'}), 400
@@ -880,7 +889,7 @@ def complete_mission(mission_id):
         km_arrivee = int(km_arrivee_str)
         km_depart = mission[4]
         
-        # Vérifier que le kilométrage d'arrivée >= kilométrage de départ
+        # Validation du kilométrage
         if km_arrivee < km_depart:
             conn.close()
             return jsonify({
@@ -888,30 +897,42 @@ def complete_mission(mission_id):
                 'message': f'Le kilométrage d\'arrivée ({km_arrivee}) ne peut pas être inférieur au départ ({km_depart})'
             }), 400
         
-        # Gestion des photos (optionnel)
-        photo_paths = []
-        if 'photos' in request.files:
-            photos = request.files.getlist('photos')
-            
+        # Traitement des photos capturées
+        uploaded_photos = []
+        photos = request.files.getlist('photos[]')  # Récupérer les photos depuis FormData
+        
+        if photos:
             # Créer le dossier s'il n'existe pas
             os.makedirs(UPLOAD_FOLDER, exist_ok=True)
             
-            for photo in photos:
+            for i, photo in enumerate(photos):
                 if photo and photo.filename != '' and allowed_file(photo.filename):
-                    # Créer un nom de fichier unique
-                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]
-                    filename = f"mission_{mission_id}_{timestamp}_{secure_filename(photo.filename)}"
-                    filepath = os.path.join(UPLOAD_FOLDER, filename)
+                    # Générer un nom unique
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    unique_id = str(uuid.uuid4())[:8]
+                    extension = photo.filename.rsplit('.', 1)[1].lower()
+                    filename = f"mission_{mission_id}_{timestamp}_{unique_id}.{extension}"
                     
                     try:
+                        # Sauvegarder le fichier
+                        filepath = os.path.join(UPLOAD_FOLDER, filename)
                         photo.save(filepath)
-                        photo_paths.append(f"/static/uploads/mission_photos/{filename}")
-                        print(f"Photo sauvegardée: {filename}")
+                        
+                        # Ajouter les métadonnées de la photo
+                        uploaded_photos.append({
+                            'filename': filename,
+                            'original_name': photo.filename,
+                            'upload_date': datetime.now().isoformat(),
+                            'url': f"/api/photos/{filename}"
+                        })
+                        
+                        print(f"Photo {i+1} sauvegardée: {filename}")
+                        
                     except Exception as e:
-                        print(f"Erreur sauvegarde photo: {e}")
+                        print(f"Erreur sauvegarde photo {i+1}: {e}")
         
-        # Convertir les chemins des photos en JSON string
-        photos_json = ','.join(photo_paths) if photo_paths else ''
+        # Convertir les photos en JSON pour la base
+        photos_json = json.dumps(uploaded_photos) if uploaded_photos else ''
         
         # Mettre à jour la mission dans la base de données
         try:
@@ -931,9 +952,7 @@ def complete_mission(mission_id):
             
             cursor.execute(update_query, update_params)
             
-            conn.commit()
-            
-            # Mettre à jour le statut du véhicule
+            # Libérer le véhicule
             vehicule_id = mission[2]
             cursor.execute("""
                 UPDATE vehicules 
@@ -950,7 +969,7 @@ def complete_mission(mission_id):
                 'data': {
                     'mission_id': mission_id,
                     'distance_parcourue': km_arrivee - km_depart,
-                    'photos_count': len(photo_paths)
+                    'photos_count': len(uploaded_photos)
                 }
             }), 200
             
