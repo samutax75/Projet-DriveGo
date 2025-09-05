@@ -25,6 +25,8 @@ from werkzeug.utils import secure_filename
 import os
 import json
 import uuid
+from google.oauth2 import id_token
+from google.auth.transport import requests
 
 
 app = Flask(__name__)
@@ -587,6 +589,33 @@ def logout():
 # 🔐 ROUTES D'AUTHENTIFICATION
 # ============================================================================
 
+@app.route('/google-signin', methods=['POST'])
+def google_signin():
+    token = request.json.get('credential')
+    
+    try:
+        # Vérifier le token
+        idinfo = id_token.verify_oauth2_token(
+            token, 
+            requests.Request(), 
+            "VOTRE_CLIENT_ID.apps.googleusercontent.com"
+        )
+        
+        # Récupérer les informations utilisateur
+        user_id = idinfo['sub']
+        email = idinfo['email']
+        name = idinfo['name']
+        picture = idinfo['picture']
+        
+        # Créer ou connecter l'utilisateur
+        # Votre logique ici...
+        
+        return jsonify({'success': True, 'user': {'email': email, 'name': name}})
+        
+    except ValueError:
+        return jsonify({'success': False, 'error': 'Token invalide'}), 400
+
+
 @app.route('/api/user/current', methods=['GET'])
 @login_required
 def api_get_current_user():
@@ -771,7 +800,6 @@ def api_register():
             'success': False,
             'message': 'Erreur lors de la création du compte'
         }), 500
-
 
 # ============================================================================
 # 🚗 ROUTES VÉHICULES

@@ -5,19 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriveGo - Connexion</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/connexion.css') }}">
-
-    <!-- Script Google Identity Services -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     
+
 </head>
 <body>    
     <header>
         <div class="nav-container">
-            <a href="#" class="logo">
-                <img src="../static/images/logo perce-neige.PNG" 
-                     alt="Logo Fondation Perce-Neige" class="logo-image">
-                DriveGo
-            </a>
+            <a href="{{ url_for('index') }}" class="logo">
+    <img src="../static/images/logo perce-neige.PNG" 
+         alt="Logo Fondation Perce-Neige" class="logo-image">
+    DriveGo
+</a>
         </div>
     </header>
 
@@ -35,18 +33,6 @@
 
             <div class="success-message" id="successMessage">
                 Connexion réussie ! Redirection en cours...
-            </div>
-
-            <!-- Bouton de connexion Google -->
-            <div class="google-signin-container">
-                <button class="btn-google" id="googleSignInBtn">
-                    <svg class="google-icon" viewBox="0 0 24 24">...</svg>
-                    Continuer avec Google
-                    </button>
-                </div>
-                    
-            <div class="divider">
-                <span>ou</span>
             </div>
 
             <form id="loginForm">
@@ -70,7 +56,8 @@
                         <input type="checkbox" id="remember" name="remember">
                         <label for="remember">Se souvenir de moi</label>
                     </div>
-                    <a href="#" class="forgot-password">Mot de passe oublié ?</a>
+                    <a href="{{ url_for('mot_de_passe_oublie') }}" class="forgot-password">Mot de passe oublié ?</a>
+
                 </div>
 
                 <button type="submit" class="btn btn-primary" id="submitBtn">
@@ -80,7 +67,8 @@
             </form>
 
             <div class="signup-link">
-                Pas encore de compte ?<a href="#">Créer un compte</a>
+                Pas encore de compte ?<a href="{{ url_for('inscription') }}">Créer un compte</a>
+
             </div>
         </div>
     </main>
@@ -91,7 +79,6 @@
             <p>&copy; 2024 DriveGo. Tous droits réservés. | Votre partenaire mobilité de confiance</p>
         </div>
     </footer>
-
     <script src="{{ url_for('static', filename='js/connexion.js') }}"></script>
     
 </body>
