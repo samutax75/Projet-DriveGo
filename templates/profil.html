@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveGo - Mon Profil</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/profil.css') }}">
+</head>
+<body>
+    <!-- Bouton de retour -->
+     <button class="close-btn" onclick="goBack()" title="Retour">
+                ✕
+            </button>
+    
+    <header>
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="logo-button">
+                <img src="{{ url_for('static', filename='images/logo perce-neige.PNG') }}" alt="Logo Fondation Perce-Neige" class="logo-image">
+                driveGo
+            </a>
+        </div>
+    </header>
+    
+    <div class="container slide-in">
+        <div class="header">
+            <h1>DriveGo</h1>
+            <p>Gérez votre profil conducteur</p>
+        </div>
+
+        <div class="profile-content">
+            <!-- Section Avatar avec Initiales -->
+            <div class="profile-avatar-section">
+                <div class="profile-avatar-container">
+                    <div class="profile-avatar-large floating-animation" id="profileAvatar">
+                        {% if user.prenom and user.nom %}
+                            {{ user.prenom[0] }}{{ user.nom[0] }}
+                        {% elif user.prenom %}
+                            {{ user.prenom[0:2] }}
+                        {% else %}
+                            ??
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="profile-user-info">
+                    <div class="profile-user-name">
+                        {% if user.prenom and user.nom %}
+                            {{ user.prenom }} {{ user.nom }}
+                        {% elif user.prenom %}
+                            {{ user.prenom }}
+                        {% else %}
+                            Utilisateur
+                        {% endif %}
+                    </div>
+                    <div class="profile-user-email">{{ user.email }}</div>
+                </div>
+            </div>
+
+            <div class="status-message" id="statusMessage"></div>
+
+            <form class="profile-form" id="profileForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="firstName">Prénom</label>
+                        <input type="text" id="firstName" class="form-input" value="{{ user.prenom }}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="lastName">Nom</label>
+                        <input type="text" id="lastName" class="form-input" value="{{ user.nom }}" readonly>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="email">Email</label>
+                    <input type="email" id="email" class="form-input" value="{{ user.email }}" readonly>
+                </div>
+
+                <div class="form-group password-group">
+                    <label class="form-label" for="password">Mot de passe</label>
+                    <input type="password" id="password" class="form-input" value="" readonly>
+                    <button type="button" class="password-toggle" onclick="togglePassword()">👁️</button>
+                    <div class="password-strength" id="passwordStrength">
+                        <div class="password-strength-bar"></div>
+                    </div>
+                    <div class="password-hint" id="passwordHint">
+                        Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.
+                    </div>
+                </div>
+
+                <div class="security-section">
+                    <h3 class="section-title">🔒 Sécurité & Confidentialité</h3>
+                    <div class="security-options">
+                        <button type="button" class="btn btn-outline" onclick="changePassword()">
+                            🔑 Changer le mot de passe
+                        </button>
+                        <button type="button" class="btn btn-outline" onclick="downloadData()">
+                            📥 Télécharger mes données
+                        </button>
+                    </div>
+                </div>
+
+                <div class="danger-section">
+                    <h3 class="section-title">⚠️ Attention</h3>
+                    <p>
+                        <strong>Supprimer définitivement votre compte.</strong><br>
+                        Cette action est irréversible. Toutes vos données (historique des réservations, préférences, etc.) seront définitivement supprimées de nos serveurs.
+                    </p>
+                    <button type="button" class="btn btn-danger" onclick="deleteAccount()">
+                        🗑️ Supprimer mon compte
+                    </button>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" id="editBtn" onclick="toggleEditMode()">
+                        ✏️ Modifier le profil
+                    </button>
+                    <button type="button" class="btn btn-primary edit-mode" onclick="saveProfile()">
+                        💾 Enregistrer
+                    </button>
+                    <button type="button" class="btn btn-secondary edit-mode" onclick="cancelEdit()">
+                        ❌ Annuler
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/profil.js') }}"></script>
+</body>
+</html>

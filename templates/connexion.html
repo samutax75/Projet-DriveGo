@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveGo - Connexion</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/connexion.css') }}">
+</head>
+<body>    
+    <header>
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="logo">
+                <img src="../static/images/logo perce-neige.PNG" 
+                     alt="Logo Fondation Perce-Neige" class="logo-image">
+                DriveGo
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="login-container">
+            <div class="login-header">
+                <h1 class="floating">Connexion</h1>
+                <p>Accédez à votre espace DriveGo</p>
+            </div>
+
+            <div class="error-message" id="errorMessage">
+                Email ou mot de passe incorrect
+            </div>
+
+            <div class="success-message" id="successMessage">
+                Connexion réussie ! Redirection en cours...
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="votre.email@exemple.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Mot de passe</label>
+                    <div class="password-container">
+                        <input type="password" id="password" name="password" placeholder="Votre mot de passe" required>
+                        <button type="button" class="password-toggle" id="passwordToggle">
+                            👀
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <div class="remember-me">
+                        <input type="checkbox" id="remember" name="remember">
+                        <label for="remember">Se souvenir de moi</label>
+                    </div>
+                    <a href="{{ url_for('mot_de_passe_oublie') }}" class="forgot-password">Mot de passe oublié ?</a>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <span class="loading-spinner" id="loadingSpinner"></span>
+                    <span id="submitText">Se connecter</span>
+                </button>
+            </form>
+
+            <!-- Bouton Google -->
+            <div id="g_id_onload"
+                 data-client_id="586952928342-mmfucge3269sjkj0706mch5hmc0jpp8d.apps.googleusercontent.com"
+                 data-callback="handleCredentialResponse">
+            </div>
+
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-size="large"
+                 data-theme="outline"
+                 data-text="signin_with"
+                 data-shape="rectangular"
+                 data-logo_alignment="left">
+            </div>
+
+            <div class="signup-link">
+                Pas encore de compte ?<a href="{{ url_for('inscription') }}">Créer un compte</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <p>&copy; 2024 DriveGo. Tous droits réservés. | Votre partenaire mobilité de confiance</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/connexion.js') }}"></script>
+    <!-- SDK Google Identity -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</body>
+</html>
