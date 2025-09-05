@@ -263,6 +263,34 @@ function testConnexionAdmin() {
 
 
 
+
+
+
+
+
+
+
+function handleCredentialResponse(response) {
+    // Envoyer le token reçu à ton backend Flask
+    fetch("/google-signin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: response.credential })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert("Bienvenue " + data.user.name + " !");
+            // Exemple : redirection
+            window.location.href = "/";
+        } else {
+            alert("Erreur Google Sign-In : " + data.error);
+        }
+    })
+    .catch(err => console.error("Erreur réseau:", err));
+}
+
+
 // Pour le debug - accessible depuis la console
 window.testConnexionAdmin = testConnexionAdmin;
 

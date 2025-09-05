@@ -464,3 +464,49 @@ footer {
         height: 40px;
     }
 }
+
+
+
+/*  Bouton se connecter avec Google  */
+
+
+.btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+    width: 100%;
+    max-width: 400px; /* largeur max sur desktop */
+    background-color: #fff;
+    color: #444;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-google:hover {
+    background-color: #f7f7f7;
+}
+
+.google-logo {
+    width: 20px;
+    height: 20px;
+}
+
+/* Adaptation mobile */
+@media (max-width: 480px) {
+    .btn-google {
+        font-size: 14px;   /* texte un peu plus petit */
+        padding: 8px;      /* moins de padding */
+        gap: 6px;          /* réduit l’espace logo/texte */
+    }
+
+    .google-logo {
+        width: 18px;
+        height: 18px;
+    }
+}

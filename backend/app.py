@@ -598,18 +598,23 @@ def google_signin():
         idinfo = id_token.verify_oauth2_token(
             token, 
             requests.Request(), 
-            "VOTRE_CLIENT_ID.apps.googleusercontent.com"
+            "586952928342-mmfucge3269sjkj0706mch5hmc0jpp8d.apps.googleusercontent.com"
         )
         
         # Récupérer les informations utilisateur
         user_id = idinfo['sub']
         email = idinfo['email']
         name = idinfo['name']
-        picture = idinfo['picture']
-        
-        # Créer ou connecter l'utilisateur
-        # Votre logique ici...
-        
+        picture = idinfo.get('picture', '')
+
+        # ⚡ Stocker les infos dans la session Flask
+        session['user_id'] = user_id
+        session['prenom'] = name.split(' ')[0]
+        session['nom'] = ' '.join(name.split(' ')[1:])
+        session['profile_picture_url'] = picture
+        session['fonction'] = 'Éducateur/trice'  # ou autre logique
+
+        # Retourner succès
         return jsonify({'success': True, 'user': {'email': email, 'name': name}})
         
     except ValueError:
