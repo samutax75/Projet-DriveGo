@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: drivego
+    env: python
+    plan: free
+    buildCommand: |
+      apt-get update && \
+      apt-get install -y wkhtmltopdf && \
+      pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.11
+    disk:
+      name: drivego-disk
+      mountPath: /opt/render/project/src
+      sizeGB: 1

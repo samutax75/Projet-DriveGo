@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveGo - Création de compte</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/inscription.css') }}">
+    
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="logo">
+    <img src="../static/images/logo perce-neige.PNG" 
+         alt="Logo Fondation Perce-Neige" class="logo-image">
+    DriveGo</a>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="signup-container">
+            <div class="signup-header">
+                <h1 class="floating">Créer un compte</h1>
+                <p>Rejoignez DriveGo et gérer vos missions facilement</p>
+            </div>
+
+            <div class="error-message" id="errorMessage">
+                Une erreur s'est produite. Veuillez réessayer.
+            </div>
+
+            <div class="success-message" id="successMessage">
+                Compte créé avec succès ! Redirection en cours...
+            </div>
+
+            <form id="signupForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">Prénom *</label>
+                        <input type="text" id="firstName" name="firstName" placeholder="Votre prénom" required>
+                        <div class="validation-message" id="firstNameValidation"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Nom *</label>
+                        <input type="text" id="lastName" name="lastName" placeholder="Votre nom" required>
+                        <div class="validation-message" id="lastNameValidation"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" name="email" placeholder="votre.email@exemple.com" required>
+                    <div class="validation-message" id="emailValidation"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Téléphone *</label>
+                    <input type="tel" id="phone" name="phone" placeholder="0123456789" required>
+                    <div class="validation-message" id="phoneValidation"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="department">Service/Département *</label>
+                    <select id="department" name="department" required>
+                        <option value="">Sélectionnez votre service</option>
+                        <option value="administration">Administration</option>
+                        <option value="transport">Transport</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="commercial">Commercial</option>
+                        <option value="direction">Direction</option>
+                        <option value="autre">Autre</option>
+                    </select>
+                    <div class="validation-message" id="departmentValidation"></div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="password">Mot de passe *</label>
+                        <input type="password" id="password" name="password" placeholder="Minimum 8 caractères" required>
+                        <div class="validation-message" id="passwordValidation"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirmer le mot de passe *</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Répétez le mot de passe" required>
+                        <div class="validation-message" id="confirmPasswordValidation"></div>
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="terms" name="terms" required>
+                    <label for="terms">
+                        J'accepte les <a href="#" target="_blank">conditions d'utilisation</a> et la <a href="#" target="_blank">politique de confidentialité</a> de DriveGo
+                    </label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="newsletter" name="newsletter">
+                    <label for="newsletter">
+                        Je souhaite recevoir les actualités et offres de DriveGo par email
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <span class="loading-spinner" id="loadingSpinner"></span>
+                    <span id="submitText">Créer mon compte</span>
+                </button>
+            </form>
+
+            <div class="login-link">
+                <p>Déjà un compte ? <a href="{{ url_for('connexion') }}">Se connecter</a></p>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <p>&copy; 2024 DriveGo. Tous droits réservés. | Votre partenaire mobilité de confiance</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/inscription.js') }}"></script>
+    
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réserver un véhicule - DriveGo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/reservation.css') }}">
+
+    
+</head>
+
+<body>
+    <!-- Header -->
+    <header>
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="logo">DriveGo</a>
+            
+            <div class="user-info">
+                <div class="user-avatar"></div>
+                <span></span>
+            </div>
+
+            <ul class="nav-links">
+                <li><a href="index.html">Accueil</a></li>
+                <li><a href="gestion_vehicules.html">Départ missions</a></li>
+                <li><a href="reservation.html">Demande de réservation</a></li>
+                <li><a href="Fiches_vehicules.html">Fiches véhicules</a></li>
+                <li><a href="support.html">Support</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <h2 class="page-title"> Réservations</h2>
+        
+        <!-- Tabs -->
+        <div class="tabs-container">
+            <div class="tab active" data-tab="vehicles">Véhicules Disponibles</div>
+            <div class="tab" data-tab="reservations">Mes Réservations</div>
+        </div>
+
+        <div class="tab-content">
+            <!-- Tab Véhicules -->
+            <div class="tab-pane active" id="vehicles-tab">
+                <div class="vehicles-grid" id="vehicles-grid">
+                    <!-- Généré par JavaScript -->
+                </div>
+            </div>
+
+            <!-- Tab Réservations -->
+            <div class="tab-pane" id="reservations-tab">
+                <div class="export-controls">
+                    <h4>📊 Exporter mes réservations</h4>
+                    <div class="export-buttons">
+                        <button class="btn btn-success" onclick="exportReservations('csv')">
+                            📄 Exporter CSV
+                        </button>
+                        <button class="btn btn-warning" onclick="exportReservations('pdf')">
+                            📋 Exporter PDF
+                        </button>
+                        <button class="btn" onclick="exportReservations('json')">
+                            💾 Exporter JSON
+                        </button>
+                    </div>
+                </div>
+
+                <div class="reservations-list" id="reservations-list">
+                    <!-- Généré par JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de réservation -->
+    <div class="modal" id="reservation-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">📝 Nouvelle Réservation</div>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="reservation-form">
+                    <input type="hidden" id="vehicle-id">
+                    
+                    <div class="form-group">
+                        <label>Véhicule sélectionné</label>
+                        <input type="text" id="vehicle-display" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="driver-name">Nom du conducteur</label>
+                        <input type="text" id="driver-name" readonly>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="reservation-date">Date de sortie</label>
+                        <input type="date" id="reservation-date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="start-time">Heure de départ</label>
+                        <input type="time" id="start-time" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="end-time">Heure de retour (approximatif)</label>
+                        <input type="time" id="end-time" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="destination">Destination</label>
+                        <input type="text" id="destination" placeholder="Où allez-vous ?">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="purpose">Motif de la sortie</label>
+                        <select id="purpose" required>
+                            <option value="">-- Sélectionner --</option>
+                            <option value="mission">Mission professionnelle</option>
+                            <option value="formation">Formation</option>
+                            <option value="reunion">Réunion externe</option>
+                            <option value="transport">Transport de matériel</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes">Notes additionnelles</label>
+                        <textarea id="notes" rows="3" placeholder="Informations complémentaires..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn">✅ Confirmer la réservation</button>
+                </form>
+                
+                <div id="modal-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de modification -->
+    <div class="modal" id="edit-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">✏️ Modifier la réservation</div>
+                <button class="close-modal" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-form">
+                    <input type="hidden" id="edit-reservation-id">
+                    
+                    <div class="form-group">
+                        <label>Véhicule</label>
+                        <input type="text" id="edit-vehicle-display" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-date">Date de sortie</label>
+                        <input type="date" id="edit-date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-start-time">Heure de départ</label>
+                        <input type="time" id="edit-start-time" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-end-time">Heure de retour</label>
+                        <input type="time" id="edit-end-time" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-destination">Destination</label>
+                        <input type="text" id="edit-destination">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-purpose">Motif</label>
+                        <select id="edit-purpose" required>
+                            <option value="mission">Mission professionnelle</option>
+                            <option value="formation">Formation</option>
+                            <option value="reunion">Réunion externe</option>
+                            <option value="transport">Transport de matériel</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-notes">Notes additionnelles</label>
+                        <textarea id="edit-notes" rows="3"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn">💾 Sauvegarder les modifications</button>
+                </form>
+                
+                <div id="edit-modal-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/reservation.js') }}"></script>
+    
+</body>
+</html>
