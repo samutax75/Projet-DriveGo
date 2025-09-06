@@ -38,7 +38,7 @@
                         <li><a href="{{ url_for('gestion_vehicules') }}">🚀 Départ Mission</a></li>
                         <li><a href="{{ url_for('vehicles_page') }}">ℹ️ Fiches Véhicules</a></li>
                         <li><a href="{{ url_for('profil') }}">👤 Profil</a></li>
-                        <li><a href="{{ url_for('support') }}">📞 Support</a></li>
+                        <li><a href="{{ url_for('support') }}">🧑‍💻 Support</a></li>
                         <li><a href="{{ url_for('logout') }}" class="logout-btn">🚪 Se déconnecter</a></li>
                     </ul>
 
@@ -139,7 +139,7 @@
                     
                     <li><a href="{{ url_for('gestion_vehicules') }}">🚀 Départ Mission</a></li>
                     <li><a href="{{ url_for('vehicles_page') }}"> ℹ️ Fiches Véhicules</a></li>
-                    <li><a href="{{ url_for('support') }}">📞 Support</a></li>
+                    <li><a href="{{ url_for('support') }}">🧑‍💻 Support</a></li>
                     <li><a href="{{ url_for('logout') }}" class="logout-btn">🚪Se déconnecter</a></li>
                 {% else %}
                 {% endif %}
@@ -166,7 +166,7 @@
                     {% if user_logged_in %}
                         <a href="{{ url_for('gestion_vehicules') }}" class="go-mission-btn">
 
-                            <span class="go-mission-text"> Lancer<br>Mission</span>
+                            <span class="go-mission-text">Départ<br>Mission</span>
 
                 </a>
                     {% else %}
