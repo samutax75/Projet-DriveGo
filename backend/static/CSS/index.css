@@ -2259,7 +2259,7 @@ a:hover {
   position: fixed;
   bottom: 75px;            /* traverse à 20px du bas de l'écran */
   left: 100%;              /* départ hors écran à droite */
-  font-size: 5rem;
+  font-size: 3rem;
   transform: translateX(0);
   transition: transform 3s linear, opacity 0.5s ease;
   z-index: 9999;
