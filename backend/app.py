@@ -592,34 +592,59 @@ def logout():
 @app.route('/google-signin', methods=['POST'])
 def google_signin():
     token = request.json.get('credential')
-    
+
     try:
-        # Vérifier le token
+        # Vérifier le token Google
         idinfo = id_token.verify_oauth2_token(
-            token, 
-            requests.Request(), 
+            token,
+            requests.Request(),
             "586952928342-mmfucge3269sjkj0706mch5hmc0jpp8d.apps.googleusercontent.com"
         )
-        
-        # Récupérer les informations utilisateur
-        user_id = idinfo['sub']
+
         email = idinfo['email']
         name = idinfo['name']
         picture = idinfo.get('picture', '')
 
+        # Connexion à la DB
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+
+        # Vérifier si l'utilisateur existe déjà
+        cursor.execute("SELECT id, nom, prenom, role, profile_picture FROM users WHERE email = ?", (email,))
+        user = cursor.fetchone()
+
+        if not user:
+            # Extraire nom/prénom depuis le "name" Google
+            prenom = name.split(' ')[0]
+            nom = ' '.join(name.split(' ')[1:]) or "Utilisateur"
+
+            # Créer un utilisateur par défaut (mot de passe vide car connexion via Google)
+            cursor.execute('''
+                INSERT INTO users (email, password_hash, nom, prenom, role, profile_picture)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (email, "", nom, prenom, "client", picture))
+            conn.commit()
+
+            # Récupérer l’utilisateur inséré
+            cursor.execute("SELECT id, nom, prenom, role, profile_picture FROM users WHERE email = ?", (email,))
+            user = cursor.fetchone()
+
+        conn.close()
+
+        # user = (id, nom, prenom, role, profile_picture)
+        user_id, nom, prenom, role, profile_picture = user
+
         # ⚡ Stocker les infos dans la session Flask
         session['user_id'] = user_id
-        session['prenom'] = name.split(' ')[0]
-        session['nom'] = ' '.join(name.split(' ')[1:])
-        session['profile_picture_url'] = picture
-        session['fonction'] = 'Éducateur/trice'  # ou autre logique
+        session['prenom'] = prenom
+        session['nom'] = nom
+        session['profile_picture_url'] = profile_picture
+        session['role'] = role
 
-        # Retourner succès
         return jsonify({'success': True, 'user': {'email': email, 'name': name}})
-        
+    
     except ValueError:
         return jsonify({'success': False, 'error': 'Token invalide'}), 400
-
 
 @app.route('/api/user/current', methods=['GET'])
 @login_required
