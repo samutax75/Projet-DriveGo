@@ -27,6 +27,8 @@ import json
 import uuid
 from google.oauth2 import id_token
 from google.auth.transport import requests
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer
 
 
 app = Flask(__name__)
@@ -37,6 +39,23 @@ app = Flask(__name__)
 
 # Configuration pour la production
 app.secret_key = os.environ.get('SECRET_KEY', 'fallback-secret-key-change-in-production')
+
+# Configuration Flask-Mail (à ajouter après app.secret_key)
+# Configuration qui marche PARTOUT (local ET production)
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'samirbenhammou94250@gmail.com')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'ibir xqvc ifwf gzrz')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME', 'samirbenhammou94250@gmail.com')
+
+
+
+# Initialiser Flask-Mail
+mail = Mail(app)
+
+# Générateur de token sécurisé
+serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # # Configuration pour les uploads
 # UPLOAD_FOLDER = 'static/uploads/mission_photos'
@@ -202,10 +221,199 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+
+# ============================================================================
+# FONCTIONS envoi d'email
+# ============================================================================
+def generate_reset_token(email):
+    """Génère un token sécurisé pour reset password"""
+    return serializer.dumps(email, salt='password-reset-salt')
+
+
+def verify_reset_token(token, expiration=3600):
+    """Vérifie le token (expire en 1h par défaut)"""
+    try:
+        email = serializer.loads(token, salt='password-reset-salt', max_age=expiration)
+        return email
+    except:
+        return None
+    
+def get_base_url():
+    """Retourne l'URL de base selon l'environnement"""
+    if os.environ.get('RENDER'):
+        # Remplace par ton URL Render réelle
+        return 'https://projet-drivego-21o9.onrender.com'
+    return 'http://127.0.0.1:5000'    
+    
+    
+def send_reset_email(email, token):
+    """Envoie l'email de réinitialisation avec template HTML"""
+    base_url = get_base_url()
+    reset_url = f"{base_url}/reset_password/{token}"
+    
+    msg = Message(
+        subject='DriveGo - Réinitialisation de votre mot de passe',
+        recipients=[email],
+        html=f'''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f4f4f4; }}
+                .email-container {{ 
+                    max-width: 600px; 
+                    margin: 0 auto; 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 20px;
+                }}
+                .email-content {{ 
+                    background: white; 
+                    padding: 40px; 
+                    border-radius: 15px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                    text-align: center;
+                }}
+                .logo {{ 
+                    color: #667eea; 
+                    font-size: 36px; 
+                    font-weight: bold; 
+                    margin-bottom: 5px;
+                }}
+                .subtitle {{ 
+                    color: #666; 
+                    font-size: 16px;
+                    margin-bottom: 30px;
+                }}
+                .title {{
+                    color: #333;
+                    font-size: 24px;
+                    margin-bottom: 20px;
+                }}
+                .message {{
+                    color: #555;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    margin-bottom: 30px;
+                    text-align: left;
+                }}
+                .reset-btn {{ 
+                    display: inline-block; 
+                    background: linear-gradient(45deg, #667eea, #764ba2); 
+                    color: white !important; 
+                    padding: 15px 30px; 
+                    text-decoration: none; 
+                    border-radius: 25px; 
+                    font-weight: bold;
+                    font-size: 16px;
+                    margin: 20px 0;
+                    transition: transform 0.2s;
+                }}
+                .reset-btn:hover {{
+                    transform: translateY(-2px);
+                }}
+                .link-text {{
+                    word-break: break-all; 
+                    background: #f8f9fa; 
+                    padding: 15px; 
+                    border-radius: 8px; 
+                    font-family: monospace;
+                    font-size: 14px;
+                    margin: 15px 0;
+                    border: 1px solid #e9ecef;
+                }}
+                .warning {{ 
+                    background: #fff3cd; 
+                    border: 1px solid #ffeaa7; 
+                    padding: 20px; 
+                    border-radius: 8px; 
+                    margin: 25px 0; 
+                    text-align: left;
+                }}
+                .warning strong {{
+                    color: #856404;
+                }}
+                .warning ul {{
+                    margin: 10px 0 0 20px;
+                    color: #856404;
+                }}
+                .footer {{ 
+                    margin-top: 30px; 
+                    color: #666; 
+                    font-size: 14px;
+                    border-top: 1px solid #eee;
+                    padding-top: 20px;
+                }}
+                .security-info {{
+                    background: #e3f2fd;
+                    border-left: 4px solid #2196f3;
+                    padding: 15px;
+                    margin: 20px 0;
+                    text-align: left;
+                    font-size: 14px;
+                    color: #1565c0;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="email-container">
+                <div class="email-content">
+                    <div class="logo">🚗 DriveGo</div>
+                    <div class="subtitle">Votre compagnon de conduite</div>
+                    
+                    <h1 class="title">Réinitialisation de mot de passe</h1>
+                    
+                    <div class="message">
+                        <p><strong>Bonjour,</strong></p>
+                        
+                        <p>Vous avez demandé à réinitialiser votre mot de passe pour votre compte DriveGo.</p>
+                        
+                        <p>Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe sécurisé :</p>
+                    </div>
+                    
+                    <a href="{reset_url}" class="reset-btn">
+                        🔐 Réinitialiser mon mot de passe
+                    </a>
+                    
+                    <div class="message">
+                        <p><strong>Le bouton ne fonctionne pas ?</strong><br>
+                        Copiez et collez ce lien dans votre navigateur :</p>
+                    </div>
+                    
+                    <div class="link-text">{reset_url}</div>
+                    
+                    <div class="warning">
+                        <strong>⚠️ Informations importantes :</strong>
+                        <ul>
+                            <li>Ce lien est valide pendant <strong>1 heure seulement</strong></li>
+                            <li>Si vous n'avez pas demandé cette réinitialisation, ignorez cet email</li>
+                            <li>Ne partagez jamais ce lien avec personne</li>
+                            <li>Ce lien ne peut être utilisé qu'une seule fois</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="security-info">
+                        <strong>🛡️ Sécurité :</strong> Vos mots de passe sont chiffrés avec bcrypt et nos systèmes respectent les standards de sécurité les plus élevés.
+                    </div>
+                    
+                    <div class="footer">
+                        <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+                        <p><strong>Équipe DriveGo</strong><br>
+                        Service de gestion de flotte</p>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        '''
+    )
+    mail.send(msg)
+    
+
 # ============================================================================
 # 🛠️ FONCTIONS UTILITAIRES
 # ============================================================================
-
 def validate_email(email):
     """Valide le format de l'email"""
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -303,17 +511,10 @@ def support():
     """Page de support"""
     return render_template('support.html')
 
-@app.route("/mot_de_passe_oublie", methods=["GET", "POST"])
-def mot_de_passe_oublie():
-    if request.method == "POST":
-        email = request.form.get("email")
-        session['password_reset_email'] = email.lower().strip()
-        return redirect(url_for('change_password'))
-    return render_template("mot_de_passe_oublie.html")
 
 @app.route("/change_password", methods=["GET", "POST"])
 def change_password():
-    """Page pour changer le mot de passe"""
+    """Page pour changer le mot de passe (normal ou reset)"""
     if request.method == "POST":
         # Vérifier si c'est une requête AJAX
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
@@ -322,13 +523,14 @@ def change_password():
         new_password = request.form.get("new_password")
         confirm_password = request.form.get("confirm_password")
         
-        # Vérifier si c'est une réinitialisation
+        # Vérifier si c'est une réinitialisation depuis email
         is_reset = session.get('password_reset_email') is not None
         reset_email = session.get('password_reset_email')
 
         errors = {}
 
         if is_reset:
+            # Mode réinitialisation depuis email
             if not reset_email:
                 if is_ajax:
                     return jsonify({
@@ -336,10 +538,10 @@ def change_password():
                         'message': 'Session de réinitialisation expirée'
                     }), 400
                 else:
-                    flash("Session de réinitialisation expirée", "error")
+                    flash("❌ Session de réinitialisation expirée", "error")
                     return redirect(url_for('mot_de_passe_oublie'))
         else:
-            # Changement de mot de passe normal
+            # Mode changement normal (utilisateur connecté)
             user_id = session.get('user_id')
             if not user_id:
                 if is_ajax:
@@ -348,13 +550,14 @@ def change_password():
                         'message': 'Vous devez être connecté'
                     }), 401
                 else:
+                    flash("❌ Vous devez être connecté", "error")
                     return redirect(url_for('connexion'))
             
             # Validation du mot de passe actuel
             if not current_password:
                 errors['current_password'] = "Le mot de passe actuel est requis"
             else:
-                conn = sqlite3.connect('drivego.db')
+                conn = sqlite3.connect(DATABASE)
                 cursor = conn.cursor()
                 cursor.execute("SELECT password_hash FROM users WHERE id = ?", (user_id,))
                 user_data = cursor.fetchone()
@@ -363,27 +566,30 @@ def change_password():
                 if not user_data or not check_password_hash(user_data[0], current_password):
                     errors['current_password'] = "Mot de passe actuel incorrect"
 
-        # Validation commune
+        # Validations communes
+        if not new_password:
+            errors['new_password'] = "Le nouveau mot de passe est requis"
+        elif len(new_password) < 8:
+            errors['new_password'] = "Le mot de passe doit contenir au moins 8 caractères"
+
         if new_password != confirm_password:
             errors['confirm_password'] = "Les mots de passe ne correspondent pas"
 
-        if len(new_password) < 8:
-            errors['new_password'] = "Le mot de passe doit contenir au moins 8 caractères"
+        # Validation de la complexité du mot de passe
+        if new_password:
+            password_errors = []
+            if not re.search(r'[A-Z]', new_password):
+                password_errors.append("au moins une lettre majuscule")
+            if not re.search(r'[a-z]', new_password):
+                password_errors.append("au moins une lettre minuscule")
+            if not re.search(r'\d', new_password):
+                password_errors.append("au moins un chiffre")
+            if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:"\\|,.<>\?]', new_password):
+                password_errors.append("au moins un caractère spécial")
 
-        # Validation complexité
-        password_errors = []
-        if not re.search(r'[A-Z]', new_password):
-            password_errors.append("au moins une lettre majuscule")
-        if not re.search(r'[a-z]', new_password):
-            password_errors.append("au moins une lettre minuscule")
-        if not re.search(r'\d', new_password):
-            password_errors.append("au moins un chiffre")
-        if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:"\\|,.<>\?]', new_password):
-            password_errors.append("au moins un caractère spécial")
-
-        if password_errors:
-            error_msg = f"Le mot de passe doit contenir : {', '.join(password_errors)}"
-            errors['new_password'] = error_msg
+            if password_errors:
+                error_msg = f"Le mot de passe doit contenir : {', '.join(password_errors)}"
+                errors['new_password'] = error_msg
 
         # S'il y a des erreurs
         if errors:
@@ -396,21 +602,26 @@ def change_password():
             else:
                 for field, error in errors.items():
                     flash(error, "error")
-                return render_template("change_password.html")
+                return render_template("change_password.html", is_reset=is_reset)
 
-        # Procéder au changement
+        # Procéder au changement de mot de passe
         try:
             hashed_password = generate_password_hash(new_password)
             
-            conn = sqlite3.connect('drivego.db')
+            conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
             
             if is_reset:
+                # Mise à jour via email de reset
                 cursor.execute("UPDATE users SET password_hash = ? WHERE email = ?", (hashed_password, reset_email))
+                # Nettoyer la session
                 session.pop('password_reset_email', None)
+                success_message = "✅ Votre mot de passe a été réinitialisé avec succès !"
             else:
+                # Mise à jour normale
                 user_id = session.get('user_id')
                 cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hashed_password, user_id))
+                success_message = "✅ Votre mot de passe a été modifié avec succès !"
             
             conn.commit()
             conn.close()
@@ -418,11 +629,17 @@ def change_password():
             if is_ajax:
                 return jsonify({
                     'success': True,
-                    'message': 'Mot de passe modifié avec succès !'
+                    'message': success_message
                 }), 200
             else:
-                flash("Mot de passe changé avec succès", "success")
-                return redirect(url_for("connexion"))
+                flash(success_message, "success")
+                if is_reset:
+                    # Après un reset, rediriger vers la connexion
+                    flash("🔐 Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.", "info")
+                    return redirect(url_for("connexion"))
+                else:
+                    # Après un changement normal, retour au dashboard
+                    return redirect(url_for("index"))
             
         except Exception as e:
             print(f"Erreur lors du changement de mot de passe: {e}")
@@ -433,12 +650,83 @@ def change_password():
                     'message': 'Erreur lors de la mise à jour. Veuillez réessayer.'
                 }), 500
             else:
-                flash("Erreur lors de la mise à jour. Veuillez réessayer.", "error")
-                return render_template("change_password.html")
+                flash("❌ Erreur lors de la mise à jour. Veuillez réessayer.", "error")
+                return render_template("change_password.html", is_reset=is_reset)
 
-    # GET request
+    # Requête GET - Afficher la page
     is_reset = session.get('password_reset_email') is not None
     return render_template("change_password.html", is_reset=is_reset)
+
+
+@app.route("/mot_de_passe_oublie", methods=["GET", "POST"])
+def mot_de_passe_oublie():
+    """Page et traitement du mot de passe oublié"""
+    if request.method == "POST":
+        email = request.form.get("email", "").lower().strip()
+        
+        if not email:
+            flash("Veuillez saisir une adresse email.", "error")
+            return render_template("mot_de_passe_oublie.html")
+        
+        # Vérifier si l'utilisateur existe dans la base de données
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, nom, prenom FROM users WHERE email = ?", (email,))
+        user = cursor.fetchone()
+        conn.close()
+        
+        if user:
+            try:
+                # Générer le token sécurisé
+                token = generate_reset_token(email)
+                
+                # Envoyer l'email
+                send_reset_email(email, token)
+                
+                flash("📧 Un email de réinitialisation a été envoyé à votre adresse. Vérifiez votre boîte mail (et vos spams).", "success")
+                
+            except Exception as e:
+                print(f"Erreur lors de l'envoi de l'email: {e}")
+                flash("❌ Erreur lors de l'envoi de l'email. Veuillez réessayer dans quelques minutes.", "error")
+        else:
+            # Message identique pour éviter l'énumération des emails
+            flash("📧 Un email de réinitialisation a été envoyé à votre adresse. Vérifiez votre boîte mail (et vos spams).", "success")
+    
+    return render_template("mot_de_passe_oublie.html")
+
+@app.route("/reset_password/<token>")
+def reset_password(token):
+    """Traite le lien de réinitialisation depuis l'email"""
+    try:
+        # Vérifier la validité du token
+        email = verify_reset_token(token)
+        
+        if email is None:
+            flash("❌ Le lien de réinitialisation est invalide ou a expiré. Veuillez faire une nouvelle demande.", "error")
+            return redirect(url_for('mot_de_passe_oublie'))
+        
+        # Vérifier que l'utilisateur existe toujours
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+        user = cursor.fetchone()
+        conn.close()
+        
+        if not user:
+            flash("❌ Utilisateur non trouvé. Veuillez contacter l'administrateur.", "error")
+            return redirect(url_for('mot_de_passe_oublie'))
+        
+        # Stocker l'email en session pour la page change_password
+        session['password_reset_email'] = email
+        flash("✅ Lien valide ! Vous pouvez maintenant créer votre nouveau mot de passe.", "success")
+        
+        # Redirection vers change_password
+        return redirect(url_for('change_password'))
+        
+    except Exception as e:
+        print(f"Erreur dans reset_password: {e}")
+        flash("❌ Erreur lors du traitement du lien. Veuillez réessayer.", "error")
+        return redirect(url_for('mot_de_passe_oublie'))
 
 @app.route('/profil', methods=['GET', 'POST'])
 @login_required
