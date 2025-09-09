@@ -31,6 +31,7 @@ from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
 
 
+
 app = Flask(__name__)
 
 # ============================================================================
