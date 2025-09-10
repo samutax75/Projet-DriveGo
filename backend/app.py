@@ -213,6 +213,8 @@ def migrate_missions_table(cursor):
             if col_name not in existing_columns:
                 cursor.execute(f"ALTER TABLE missions ADD COLUMN {col_name} {col_def}")
 
+
+
 # Initialiser la base au lancement
 init_db()
 
@@ -225,6 +227,12 @@ def allowed_file(filename):
 
 # ============================================================================
 # FONCTIONS envoi d'email
+# ============================================================================
+
+
+
+
+
 # ============================================================================
 def generate_reset_token(email):
     """Génère un token sécurisé pour reset password"""
@@ -415,6 +423,8 @@ def send_reset_email(email, token):
 # ============================================================================
 # 🛠️ FONCTIONS UTILITAIRES
 # ============================================================================
+
+
 def validate_email(email):
     """Valide le format de l'email"""
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'

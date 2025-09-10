@@ -720,3 +720,78 @@
     text-decoration: none;
     color: white;
 }
+
+
+
+/* bouton select nature de la mission */
+
+select {
+  appearance: none; /* enlève le style par défaut */
+  background: #ffffff; /* fond blanc */
+  color: #111827; /* texte noir/gris foncé */
+  padding: 12px 18px;
+  font-size: 16px;
+  border: 2px solid #e5e7eb; /* bord gris clair */
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  max-width: 400px;
+  margin-top: 6px;
+}
+
+select:hover {
+  border-color: #3b82f6; /* bleu clair au survol */
+}
+
+select:focus {
+  outline: none;
+  border-color: #2563eb; /* bleu plus intense */
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+}
+
+
+/* Votre CSS existant (à garder) */
+select {
+  appearance: none;
+  background: #ffffff;
+  color: #111827;
+  padding: 12px 18px;
+  font-size: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  max-width: 400px;
+  margin-top: 6px;
+  
+  /* AJOUTEZ seulement ces lignes pour forcer l'ouverture vers le bas */
+  position: relative;
+  margin-bottom: 20px;
+}
+
+select:hover {
+  border-color: #3b82f6;
+}
+
+select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+}
+
+/* ET ajoutez ces nouvelles règles */
+.form-group {
+  margin-bottom: 25px;
+  overflow: visible;
+}
+
+.mission-control {
+  padding-bottom: 40px;
+}
+
+
+

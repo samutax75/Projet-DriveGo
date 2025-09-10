@@ -734,7 +734,7 @@ async function startMission(event, vehicleId) {
     const missionDate = formData.get('missionDate');
     const creneau = formData.get('creneau');
     const departureTime = formData.get('departureTime');
-    let missionNature = formData.get('missionNature');
+    let missionNature = formData.get('mission');
     const autreText = formData.get('autreText');
     const destination = formData.get('destination');
     const passengers = parseInt(formData.get('passengers'));
@@ -1127,16 +1127,42 @@ function generateVehicleDetailsHTML(vehicle) {
                     </div>
 
                     <div class="form-group">
-                        <label for="missionNature">📋 Nature de la mission</label>
-                        <select id="missionNature" name="missionNature" required onchange="checkAutre(this)">
-                            <option value="">Sélectionner le type de mission</option>
-                            <option value="transport-personnel">🚌 Transport de personnel</option>
-                            <option value="livraison">📦 Livraison</option>
-                            <option value="maintenance">🔧 Maintenance</option>
-                            <option value="urgence">🚨 Mission d'urgence</option>
-                            <option value="formation">🎓 Formation/Conduite</option>
-                            <option value="autre">✏️ Autre</option>
-                        </select>
+                        <label for="mission">Nature de la mission </label>
+                    
+                            <select id="mission" name="mission" onchange="checkAutre(this)" required>
+                                <option value="" disabled selected>-- Sélectionner une mission --</option>
+
+                                <optgroup label="🎯 Sorties éducatives & culturelles">
+                                    <option value="cinema">🎬 Cinéma / Spectacle</option>
+                                    <option value="musee">🎨 Musée / Exposition</option>
+                                    <option value="bibliotheque">📚 Bibliothèque / Médiathèque</option>
+                                </optgroup>
+
+                                <optgroup label="🏀 Sorties sport & loisirs">
+                                    <option value="piscine">🏊 Piscine / Sport adapté</option>
+                                    <option value="loisirs">🎳 Loisirs (bowling, jeux, parc…)</option>
+                                    <option value="restaurant">🍔 Sortie restaurant / café</option>
+                                </optgroup>
+
+                                <optgroup label="🌳 Sorties nature & découvertes">
+                                    <option value="parc">🌳 Parc / Balade</option>
+                                    <option value="ferme">🐑 Ferme pédagogique / Zoo</option>
+                                </optgroup>
+
+                                <optgroup label="🏥 Santé">
+                                    <option value="medical">🏥 Rendez-vous médical / accompagnement</option>
+                                </optgroup>
+
+                                <optgroup label="⚙️ Services & interventions">
+                                    <option value="livraison">📦 Livraison</option>
+                                    <option value="maintenance">🔧 Maintenance</option>
+                                    <option value="urgence">🚨 Mission d'urgence</option>
+                                </optgroup>
+
+                                <optgroup label="✏️ Divers">
+                                    <option value="autre">✏️ Autre</option>
+                                </optgroup>
+                            </select>
                     </div>
                     
                     <div class="form-group hidden" id="autreGroup">
@@ -1144,6 +1170,8 @@ function generateVehicleDetailsHTML(vehicle) {
                         <input type="text" id="autreText" name="autreText" placeholder="Décrivez la mission">
                     </div>
                     
+
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="destination">📍 Destination</label>
