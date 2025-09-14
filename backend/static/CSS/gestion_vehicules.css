@@ -795,3 +795,89 @@ select:focus {
 
 
 
+
+/* Bouton passer volant  */
+
+
+/* Header avec bouton pour le Centre de Contrôle */
+.card-header-with-button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.card-header-with-button .card-title {
+    margin-bottom: 0;
+}
+
+/* Bouton Passer le Volant dans le header */
+.btn-passer-volant-header {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 10px 16px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.btn-passer-volant-header .icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.btn-passer-volant-header:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #5a6fd8 0%, #6b42a0 100%);
+    text-decoration: none;
+    color: white;
+}
+
+.btn-passer-volant-header:active {
+    transform: translateY(0);
+}
+
+/* Responsive pour tablette et mobile */
+@media (max-width: 1200px) {
+    .card-header-with-button {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .btn-passer-volant-header {
+        font-size: 16px;
+        padding: 12px 20px;
+    }
+}
+
+/* Cache le bouton du header sur très petit écran (mobile) */
+@media (max-width: 900px) {
+    .details-section {
+        display: none; /* La section entière est cachée sur mobile */
+    }
+}
+
+/* Garde le comportement du bouton mobile fixe inchangé */
+@media (max-width: 900px) {
+    .drivego-btn {
+        position: fixed;
+        left: 50%;
+        bottom: 18px;
+        transform: translateX(-50%);
+        width: calc(100% - 36px);
+        padding: 14px 18px;
+        border-radius: 12px;
+        font-size: 18px;
+        z-index: 999;
+    }
+}

@@ -401,31 +401,33 @@ function canUserAccessVehicle(vehicle) {
 
     return { canAccess: false, reason: 'occupied' };
 }
-
 function getVehicleStatus(vehicle) {
-    const access = canUserAccessVehicle(vehicle);
-    
-    if (access.reason === 'my-mission') {
-        const mission = activeMissions.find(m => m.userId === currentUser.id && m.vehicleId === vehicle.id);
-        const creneauText = getCreneauText(mission.creneau);
-        return {
-            status: 'my-mission',
-            text: `🎯 ${creneauText} - ${currentUser.prenom}`,
-            user: currentUser.prenom,
-            canSelect: true
-        };
+    // Vérifier d'abord le statut de la base de données
+    if (vehicle.statut === 'En mission') {
+        // Vérifier si c'est MA mission
+        const myMission = activeMissions.find(m => m.userId === currentUser.id && m.vehicleId === vehicle.id);
+        
+        if (myMission) {
+            const creneauText = getCreneauText(myMission.creneau);
+            return {
+                status: 'my-mission',
+                text: `🎯 ${creneauText} - ${currentUser.prenom}`,
+                user: currentUser.prenom,
+                canSelect: true
+            };
+        } else {
+            // Mission d'un autre utilisateur
+            return {
+                status: 'occupied',
+                text: '🚗 En mission - Autre utilisateur',
+                user: 'Autre utilisateur',
+                canSelect: false
+            };
+        }
     }
     
-    if (access.reason === 'available') {
-        return {
-            status: 'available',
-            text: '✅ Disponible',
-            user: null,
-            canSelect: true
-        };
-    }
-    
-    if (access.reason === 'maintenance') {
+    // Véhicule en maintenance
+    if (!vehicle.disponible) {
         return {
             status: 'maintenance',
             text: '🔧 Maintenance',
@@ -434,15 +436,15 @@ function getVehicleStatus(vehicle) {
         };
     }
     
-    const otherMission = activeMissions.find(m => m.vehicleId === vehicle.id);
+    // Vérifier si l'utilisateur a déjà une mission active
+    const hasActiveUserMission = activeMissions.some(m => m.userId === currentUser.id);
     
-    if (otherMission) {
-        const creneauText = getCreneauText(otherMission.creneau);
+    if (vehicle.disponible && vehicle.statut === 'actif' && !hasActiveUserMission) {
         return {
-            status: 'occupied',
-            text: `🚗 ${creneauText} - Autre utilisateur`,
-            user: 'Autre utilisateur',
-            canSelect: false
+            status: 'available',
+            text: '✅ Disponible',
+            user: null,
+            canSelect: true
         };
     }
     
@@ -453,6 +455,7 @@ function getVehicleStatus(vehicle) {
         canSelect: false
     };
 }
+
 
 function getCreneauText(creneau) {
     const creneaux = {
@@ -769,6 +772,7 @@ async function startMission(event, vehicleId) {
         } else {
             showVehicleDetails(selectedVehicle);
         }
+        
     } else {
         showNotification('❌ Erreur lors de la création de la mission', 'error');
     }
@@ -950,6 +954,7 @@ function generateVehicleDetailsHTML(vehicle) {
                         <div class="mission-info-label">Conducteur principal</div>
                         <div class="mission-info-value">👤 ${userActiveMission.nom}</div>
                     </div>
+                    
                     ${userActiveMission.conducteur2 ? `
                     <div class="mission-info-item">
                         <div class="mission-info-label">2ème conducteur</div>
@@ -990,6 +995,38 @@ function generateVehicleDetailsHTML(vehicle) {
                     </div>
                 </div>
                 
+
+<div class="navigation-section" style="margin: 20px 0; padding: 15px; background: linear-gradient(135deg, #f8faff 0%, #e0f2fe 100%); border-radius: 10px; border-left: 4px solid #667eea;">
+    <h4 style="color: #1f2937; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+        🧭 Navigation
+    </h4>
+    <button onclick="openWaze('${userActiveMission.destination.replace(/'/g, "\\'")}')" style="
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 24px;
+        color: white;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 18px rgba(102, 126, 234, 0.4)'"
+       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.3)'">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width: 18px; height: 18px;">
+            <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
+        </svg>
+        Lancer Waze
+    </button>
+    <div style="font-size: 12px; color: #6b7280; margin-top: 8px; text-align: center;">
+        📍 ${userActiveMission.destination}
+    </div>
+</div>
                 <div class="mission-control">
                     <h4 style="color: #1f2937; margin-bottom: 20px;">🏁 Terminer la mission</h4>
                     <form onsubmit="endMissionWithDetails(event, ${vehicle.id})">
@@ -1122,7 +1159,7 @@ function generateVehicleDetailsHTML(vehicle) {
                         <div class="form-group">
                             <label for="passengers">👥 Nombre de passagers</label>
                             <input type="number" id="passengers" name="passengers" 
-                                   placeholder="2" min="0" max="8" required>
+                                   placeholder="2" min="0" max="200" required>
                         </div>
                     </div>
 
@@ -1220,6 +1257,46 @@ function generateVehicleDetailsHTML(vehicle) {
         ${missionControlHTML}
     `;
 }
+
+
+
+// fonction waze
+
+function openWaze(destination) {
+    if (!destination) {
+        showNotification('Aucune destination trouvée', 'error');
+        return;
+    }
+    
+    const address = encodeURIComponent(destination);
+    const wazeApp = `waze://?q=${address}&navigate=yes`;
+    const wazeWeb = `https://www.waze.com/ul?q=${address}&navigate=yes`;
+    
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = wazeApp;
+        document.body.appendChild(iframe);
+        
+        setTimeout(() => {
+            if (document.hasFocus()) {
+                window.open(wazeWeb, '_blank');
+            }
+            if (iframe.parentNode) {
+                document.body.removeChild(iframe);
+            }
+        }, 2000);
+    } else {
+        window.open(wazeWeb, '_blank');
+    }
+    
+    showNotification(`Navigation lancée vers ${destination}`, 'success');
+}
+
+
+
 
 function checkAutre(selectElement) {
     const autreGroup = document.getElementById("autreGroup");
@@ -1801,7 +1878,266 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 });
 
-// Exposer les fonctions globalement pour les événements
+
+// passer voalnt 
+
+
+// ========================================
+// FONCTION POUR NAVIGUER VERS PASSER LE VOLANT
+// ========================================
+
+function goToPasserVolant() {
+    window.location.href = '/passer_volant';
+}
+
+// ========================================
+// FONCTION POUR AJOUTER LE BOUTON AU CENTRE DE CONTRÔLE (DESKTOP)
+// ========================================
+
+function addPasserVolantButton() {
+    // Trouver le titre du Centre de Contrôle
+    const centreControleTitle = document.querySelector('.details-section .card-title');
+    
+    if (centreControleTitle && !document.querySelector('.btn-passer-volant-header')) {
+        // Créer le conteneur header avec le bouton
+        const headerContainer = document.createElement('div');
+        headerContainer.className = 'card-header-with-button';
+        headerContainer.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        `;
+        
+        // Créer le bouton
+        const passerVolantBtn = document.createElement('a');
+        passerVolantBtn.href = '/passer_volant';
+        passerVolantBtn.className = 'btn-passer-volant-header';
+        passerVolantBtn.style.cssText = `
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 500;
+            font-size: 14px;
+            padding: 10px 16px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        `;
+        
+        passerVolantBtn.innerHTML = `
+            <span class="icon" style="display: flex; align-items: center;">
+                <svg viewBox="0 0 24 24" fill="currentColor" style="width: 16px; height: 16px;">
+                    <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8.009 8.009 0 0 1-8 8z"/>
+                    <path d="M9 9h6v6H9z"/>
+                    <path d="m5.64 7.05 1.42 1.42L5.64 9.89l-1.42-1.42 1.42-1.42zM18.36 16.95l-1.42-1.42 1.42-1.42 1.42 1.42-1.42 1.42z"/>
+                </svg>
+            </span>
+            Passer le Volant
+        `;
+        
+        // Ajouter les effets hover
+        passerVolantBtn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 6px 18px rgba(102, 126, 234, 0.4)';
+            this.style.background = 'linear-gradient(135deg, #5a6fd8 0%, #6b42a0 100%)';
+        });
+        
+        passerVolantBtn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
+            this.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        });
+        
+        // Réorganiser la structure
+        const parent = centreControleTitle.parentNode;
+        centreControleTitle.style.marginBottom = '0';
+        
+        // Insérer le nouveau container avant le titre
+        parent.insertBefore(headerContainer, centreControleTitle);
+        
+        // Déplacer le titre dans le container
+        headerContainer.appendChild(centreControleTitle);
+        
+        // Ajouter le bouton
+        headerContainer.appendChild(passerVolantBtn);
+    }
+}
+
+// ========================================
+// MODIFICATION DE LA FONCTION openMobileModal POUR AJOUTER LE BOUTON
+// ========================================
+
+function openMobileModal(vehicle) {
+    const modal = document.getElementById('mobileModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    
+    if (!modal || !modalTitle || !modalBody) return;
+    
+    modalTitle.textContent = `🎯 ${vehicle.nom}`;
+    modalBody.innerHTML = generateVehicleDetailsHTML(vehicle);
+    
+    // AJOUTER LE BOUTON PASSER LE VOLANT EN HAUT DU MODAL
+    const passerVolantSection = document.createElement('div');
+    passerVolantSection.style.cssText = `
+        text-align: center;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: linear-gradient(135deg, #f8faff 0%, #e0f2fe 100%);
+        border-radius: 10px;
+        border: 1px solid #bae6fd;
+    `;
+    
+    const passerVolantBtn = document.createElement('a');
+    passerVolantBtn.href = '/passer_volant';
+    passerVolantBtn.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        text-decoration: none;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+        font-size: 16px;
+        padding: 12px 24px;
+        border-radius: 25px;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+        width: 100%;
+        max-width: 280px;
+    `;
+    
+    passerVolantBtn.innerHTML = `
+        <span style="display: flex; align-items: center;">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width: 20px; height: 20px;">
+                <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8.009 8.009 0 0 1-8 8z"/>
+                <path d="M9 9h6v6H9z"/>
+                <path d="m5.64 7.05 1.42 1.42L5.64 9.89l-1.42-1.42 1.42-1.42zM18.36 16.95l-1.42-1.42 1.42-1.42 1.42 1.42-1.42 1.42z"/>
+            </svg>
+        </span>
+        Passer le Volant
+    `;
+    
+    passerVolantSection.appendChild(passerVolantBtn);
+    modalBody.insertBefore(passerVolantSection, modalBody.firstChild);
+    
+    // Ajouter le bouton pour voir les missions à la fin
+    modalBody.innerHTML += `
+        <div style="margin-top: 30px; text-align: center;">
+            <button onclick="openMissionsModal()" class="btn btn-primary">
+                📊 Voir mes missions
+            </button>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+// ========================================
+// MODIFICATION DE LA FONCTION openMissionsModal POUR AJOUTER LE BOUTON
+// ========================================
+
+function openMissionsModal() {
+    const modal = document.getElementById('missionsModal');
+    const missionsList = document.getElementById('modalMissionsList');
+    
+    if (!modal || !missionsList) return;
+    
+    // Ajouter le bouton Passer le Volant en haut des missions
+    let missionsContent = `
+        <div style="text-align: center; margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #f8faff 0%, #e0f2fe 100%); border-radius: 10px; border: 1px solid #bae6fd;">
+            <a href="/passer_volant" style="
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                text-decoration: none;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                font-weight: 600;
+                font-size: 16px;
+                padding: 12px 24px;
+                border-radius: 25px;
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                transition: all 0.3s ease;
+                width: 100%;
+                max-width: 280px;
+            ">
+                <span style="display: flex; align-items: center;">
+                    <svg viewBox="0 0 24 24" fill="currentColor" style="width: 20px; height: 20px;">
+                        <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8.009 8.009 0 0 1-8 8z"/>
+                        <path d="M9 9h6v6H9z"/>
+                        <path d="m5.64 7.05 1.42 1.42L5.64 9.89l-1.42-1.42 1.42-1.42zM18.36 16.95l-1.42-1.42 1.42-1.42 1.42 1.42-1.42 1.42z"/>
+                    </svg>
+                </span>
+                Passer le Volant
+            </a>
+        </div>
+    `;
+    
+    missionsContent += generateUserMissionsList();
+    missionsList.innerHTML = missionsContent;
+    
+    modal.style.display = 'block';
+}
+
+// ========================================
+// MODIFICATION DE L'INITIALISATION
+// ========================================
+
+document.addEventListener('DOMContentLoaded', async function () {
+    console.log('🚗 DriveGo - Initialisation de la page véhicules...');
+    
+    try {
+        const userLoaded = await fetchCurrentUser();
+        if (!userLoaded) {
+            console.error('Impossible de charger les données utilisateur');
+            return;
+        }
+        
+        const [vehiclesLoaded, missionsLoaded] = await Promise.all([
+            loadVehicles(),
+            loadUserMissions()
+        ]);
+        
+        if (!vehiclesLoaded) {
+            console.error('Impossible de charger les véhicules');
+        }
+        
+        generateVehicleList();
+        updateMissionsList();
+        
+        // AJOUTER LE BOUTON PASSER LE VOLANT (DESKTOP UNIQUEMENT)
+        addPasserVolantButton();
+
+        const noSelection = document.getElementById('noSelection');
+        const details = document.getElementById('vehicleDetails');
+        
+        if (noSelection) noSelection.style.display = 'block';
+        if (details) details.style.display = 'none';
+
+        console.log(`👤 Utilisateur connecté: ${currentUser?.prenom}`);
+        console.log(`🚗 ${vehicles.length} véhicules chargés`);
+        console.log(`🎯 ${activeMissions.length} missions actives`);
+        console.log(`✅ ${completedMissions.length} missions terminées`);
+        
+     } catch (error) {
+        console.error('Erreur lors de l\'initialisation:', error);
+        showNotification('Erreur lors du chargement des données', 'error');
+    }
+});
+
+
+// ========================================
+// EXPOSER LES FONCTIONS GLOBALEMENT
 window.selectVehicle = selectVehicle;
 window.checkAutre = checkAutre;
 window.startMission = startMission;
@@ -1815,3 +2151,6 @@ window.exportMissionsToPDF = exportMissionsToPDF;
 window.takePhoto = takePhoto;
 window.clearPhotos = clearPhotos;
 window.removePhoto = removePhoto;
+window.goToPasserVolant = goToPasserVolant;
+window.addPasserVolantButton = addPasserVolantButton;
+window.openWaze = openWaze;

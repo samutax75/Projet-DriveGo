@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveGo - Passer le Volant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/passer_volant.css') }}">
+
+</head>
+<body>
+    <!-- Bouton de retour -->
+    <a href="{{ url_for('gestion_vehicules') }}" class="close-button">×</a>
+    
+    <div class="container">
+        <header class="header">
+            <h1>🔄 Passer le Volant</h1>
+            <p>Transférez la conduite à un autre conducteur</p>
+        </header>
+
+        <div class="card">
+            <div id="loadingState" class="loading">
+                ⏳ Chargement des informations...
+            </div>
+
+            <div id="errorState" class="error" style="display: none;">
+                ❌ <span id="errorMessage"></span>
+            </div>
+
+            <div id="mainContent" style="display: none;">
+                <!-- Informations actuelles -->
+                <div class="current-info">
+                    <h3>📋 Mission en cours</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Conducteur actuel</div>
+                            <div class="info-value" id="currentDriver">-</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Véhicule</div>
+                            <div class="info-value" id="currentVehicle">-</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Destination</div>
+                            <div class="info-value" id="currentDestination">-</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Heure de départ</div>
+                            <div class="info-value" id="currentDepartureTime">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulaire de transfert -->
+                <div class="form-section">
+                    <h3>👥 Nouveau conducteur</h3>
+                    <form id="transferForm">
+                        <div class="form-group">
+                            <label for="newDriver">Sélectionner le nouveau conducteur</label>
+                            <select id="newDriver" name="newDriver" required>
+                                <option value="">-- Choisir un conducteur --</option>
+                                <!-- Options remplies par JavaScript -->
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="transferNotes">Notes de transfert (optionnel)</label>
+                            <input type="text" id="transferNotes" name="transferNotes" 
+                                   placeholder="Remarques sur le transfert...">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            🔄 Transférer le volant
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/passer_volant.js') }}"></script>
+
+
+    
+</body>
+</html>

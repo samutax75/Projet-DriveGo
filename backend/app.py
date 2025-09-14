@@ -29,9 +29,10 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
+from flask_mail import Mail, Message
+from dotenv import load_dotenv
 
-
-
+load_dotenv()
 app = Flask(__name__)
 
 # ============================================================================
@@ -46,9 +47,9 @@ app.secret_key = os.environ.get('SECRET_KEY', 'fallback-secret-key-change-in-pro
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'samirbenhammou94250@gmail.com')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'ibir xqvc ifwf gzrz')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME', 'samirbenhammou94250@gmail.com')
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
 
 
 
@@ -177,6 +178,12 @@ def migrate_missions_table(cursor):
                 conducteur2 TEXT DEFAULT '',
                 notes TEXT,
                 statut TEXT DEFAULT 'active',
+                control_status TEXT DEFAULT 'manual',
+                transferred_to_user_id INTEGER DEFAULT NULL,
+                transferred_to_name TEXT DEFAULT NULL,
+                transfer_notes TEXT DEFAULT NULL,
+                transferred_at TIMESTAMP DEFAULT NULL,
+                can_be_ended BOOLEAN DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (vehicule_id) REFERENCES vehicules (id),
@@ -188,7 +195,7 @@ def migrate_missions_table(cursor):
         cursor.execute("PRAGMA table_info(missions)")
         existing_columns = [col[1] for col in cursor.fetchall()]
 
-        # Colonnes obligatoires
+        # Colonnes obligatoires existantes
         required_columns = [
             ("date_mission", "DATE NOT NULL DEFAULT ''"),
             ("heure_debut", "TEXT DEFAULT ''"),
@@ -208,13 +215,25 @@ def migrate_missions_table(cursor):
             ("notes", "TEXT DEFAULT ''")
         ]
 
-        # Ajouter les colonnes manquantes
+        # Ajouter les colonnes manquantes (existantes)
         for col_name, col_def in required_columns:
             if col_name not in existing_columns:
                 cursor.execute(f"ALTER TABLE missions ADD COLUMN {col_name} {col_def}")
-
-
-
+        
+        # Nouvelles colonnes pour le transfert
+        transfer_columns = [
+            ("control_status", "TEXT DEFAULT 'manual'"),
+            ("transferred_to_user_id", "INTEGER DEFAULT NULL"),
+            ("transferred_to_name", "TEXT DEFAULT NULL"),
+            ("transfer_notes", "TEXT DEFAULT NULL"),
+            ("transferred_at", "TIMESTAMP DEFAULT NULL"),
+            ("can_be_ended", "BOOLEAN DEFAULT 1")
+        ]
+        
+        # Ajouter les colonnes de transfert manquantes
+        for col_name, col_def in transfer_columns:
+            if col_name not in existing_columns:
+                cursor.execute(f"ALTER TABLE missions ADD COLUMN {col_name} {col_def}")
 # Initialiser la base au lancement
 init_db()
 
@@ -226,11 +245,191 @@ def allowed_file(filename):
 
 
 # ============================================================================
-# FONCTIONS envoi d'email
+# Route passer volant 
 # ============================================================================
+@app.route('/passer_volant')
+def passer_volant():
+    """Page passer_volant"""
+    return render_template('passer_volant.html')
 
 
 
+
+@app.route('/api/missions/<int:mission_id>/transfer', methods=['PUT'])
+def transfer_mission(mission_id):
+    """Transférer le contrôle d'une mission à un autre conducteur"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        user_id = session['user_id']
+        data = request.get_json()
+        
+        # Récupérer la mission
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, user_id, statut, control_status 
+            FROM missions 
+            WHERE id = ?
+        """, (mission_id,))
+        
+        mission = cursor.fetchone()
+        
+        if not mission:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Mission introuvable'}), 404
+        
+        # Vérifications de sécurité
+        if mission[1] != user_id:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Accès refusé'}), 403
+        
+        if mission[2] != 'active':
+            conn.close()
+            return jsonify({'success': False, 'message': 'Mission déjà terminée'}), 400
+        
+        # Récupérer les données de transfert
+        new_driver_id = data.get('new_driver_id')
+        new_driver_name = data.get('new_driver_name')
+        notes = data.get('notes', '')
+        
+        # Validation
+        if not new_driver_id and not new_driver_name:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Nouveau conducteur requis'}), 400
+        
+        # Effectuer le transfert
+        cursor.execute("""
+            UPDATE missions 
+            SET control_status = 'transferred',
+                transferred_to_user_id = ?,
+                transferred_to_name = ?,
+                transfer_notes = ?,
+                transferred_at = CURRENT_TIMESTAMP,
+                can_be_ended = 1,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (new_driver_id, new_driver_name, notes, mission_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Contrôle transféré avec succès',
+            'can_resume': True,
+            'can_end_mission': True
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur transfert mission: {e}")
+        return jsonify({'success': False, 'message': 'Erreur lors du transfert'}), 500
+
+
+@app.route('/api/missions/<int:mission_id>/resume', methods=['PUT'])
+def resume_mission_control(mission_id):
+    """Reprendre le contrôle d'une mission transférée"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        user_id = session['user_id']
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que la mission appartient à l'utilisateur
+        cursor.execute("""
+            SELECT id, user_id, statut, control_status 
+            FROM missions 
+            WHERE id = ?
+        """, (mission_id,))
+        
+        mission = cursor.fetchone()
+        
+        if not mission:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Mission introuvable'}), 404
+        
+        if mission[1] != user_id:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Accès refusé'}), 403
+        
+        if mission[2] != 'active':
+            conn.close()
+            return jsonify({'success': False, 'message': 'Mission déjà terminée'}), 400
+        
+        if mission[3] != 'transferred':
+            conn.close()
+            return jsonify({'success': False, 'message': 'Mission non transférée'}), 400
+        
+        # Reprendre le contrôle
+        cursor.execute("""
+            UPDATE missions 
+            SET control_status = 'manual',
+                transferred_to_user_id = NULL,
+                transferred_to_name = NULL,
+                transfer_notes = NULL,
+                transferred_at = NULL,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (mission_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Contrôle repris avec succès'
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur reprise contrôle: {e}")
+        return jsonify({'success': False, 'message': 'Erreur lors de la reprise'}), 500
+
+
+@app.route('/api/missions/<int:mission_id>/status', methods=['GET'])
+def get_mission_status(mission_id):
+    """Récupérer le statut d'une mission"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, control_status, transferred_to_user_id, 
+                   transferred_to_name, transfer_notes, transferred_at,
+                   can_be_ended, statut
+            FROM missions 
+            WHERE id = ?
+        """, (mission_id,))
+        
+        mission = cursor.fetchone()
+        conn.close()
+        
+        if not mission:
+            return jsonify({'success': False, 'message': 'Mission introuvable'}), 404
+        
+        return jsonify({
+            'success': True,
+            'mission_id': mission[0],
+            'control_status': mission[1] or 'manual',
+            'transferred_to_user_id': mission[2],
+            'transferred_to_name': mission[3],
+            'transfer_notes': mission[4],
+            'transferred_at': mission[5],
+            'can_end_mission': bool(mission[6]) if mission[6] is not None else True,
+            'can_resume_control': (mission[1] == 'transferred'),
+            'mission_status': mission[7]
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur récupération statut: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
 
 
 # ============================================================================
@@ -478,7 +677,145 @@ def adapt_user_role(fonction_base, prenom):
             return 'Éducateur'
     else:
         return fonction_base
+# ============================================================================
+#  ROUTES aide 
+# ============================================================================
+@app.route('/aide')
+def aide():
+    """Page d'aide"""
+    return render_template('aide.html')
 
+@app.route('/contact', methods=['POST'])
+def contact():
+    try:
+        # Récupérer les données du formulaire
+        nom = request.form.get('nom')
+        email = request.form.get('email')
+        telephone = request.form.get('telephone', 'Non renseigné')
+        sujet = request.form.get('sujet')
+        message_content = request.form.get('message')
+        
+        # Validation des champs obligatoires
+        if not all([nom, email, sujet, message_content]):
+            return jsonify({
+                'success': False, 
+                'message': '❌ Tous les champs obligatoires doivent être remplis.'
+            }), 400
+        
+        # Créer l'email pour vous (notification)
+        msg_admin = Message(
+            subject=f'🔔 Nouveau message de contact - {sujet}',
+            recipients=['samirbenhammou94250@gmail.com'],  # Votre email
+            html=f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px 10px 0 0;">
+                    <h2 style="margin: 0;">📧 Nouveau message de contact - DriveGo</h2>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e9ecef;">
+                    <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <h3 style="color: #495057; border-bottom: 2px solid #667eea; padding-bottom: 10px;">Informations du contact</h3>
+                        
+                        <table style="width: 100%; margin: 20px 0;">
+                            <tr style="background: #f8f9fa;">
+                                <td style="padding: 12px; font-weight: bold; color: #495057; width: 120px;">👤 Nom :</td>
+                                <td style="padding: 12px; color: #212529;">{nom}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; font-weight: bold; color: #495057;">📧 Email :</td>
+                                <td style="padding: 12px; color: #212529;"><a href="mailto:{email}" style="color: #667eea; text-decoration: none;">{email}</a></td>
+                            </tr>
+                            <tr style="background: #f8f9fa;">
+                                <td style="padding: 12px; font-weight: bold; color: #495057;">📱 Téléphone :</td>
+                                <td style="padding: 12px; color: #212529;">{telephone}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; font-weight: bold; color: #495057;">🏷️ Sujet :</td>
+                                <td style="padding: 12px; color: #212529;"><span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px;">{sujet.upper()}</span></td>
+                            </tr>
+                        </table>
+                        
+                        <h4 style="color: #495057; margin: 25px 0 15px 0;">💬 Message :</h4>
+                        <div style="background: #f8f9fa; padding: 20px; border-left: 4px solid #667eea; border-radius: 4px; line-height: 1.6; color: #495057;">
+                            {message_content.replace(chr(10), '<br>')}
+                        </div>
+                        
+                        <div style="margin-top: 30px; text-align: center;">
+                            <a href="mailto:{email}" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold;">Répondre à {nom}</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px; color: #6c757d; font-size: 14px;">
+                    <p>📅 Message reçu le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</p>
+                    <p>🌟 DriveGo - Système de contact automatisé</p>
+                </div>
+            </div>
+            '''
+        )
+        
+        # Créer l'email de confirmation pour l'utilisateur
+        msg_user = Message(
+            subject='✅ Confirmation de réception - DriveGo',
+            recipients=[email],
+            html=f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 20px; border-radius: 10px 10px 0 0;">
+                    <h2 style="margin: 0;">✅ Message bien reçu !</h2>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e9ecef;">
+                    <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <h3 style="color: #495057;">Bonjour {nom},</h3>
+                        
+                        <p style="color: #495057; line-height: 1.6; margin: 20px 0;">
+                            Nous avons bien reçu votre message concernant "<strong>{sujet}</strong>" et nous vous remercions de nous avoir contactés.
+                        </p>
+                        
+                        <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; border-left: 4px solid #007bff; margin: 20px 0;">
+                            <h4 style="color: #007bff; margin-top: 0;">🎯 Votre demande :</h4>
+                            <p style="color: #495057; margin: 10px 0; font-style: italic;">"{message_content[:100]}{'...' if len(message_content) > 100 else ''}"</p>
+                        </div>
+                        
+                        <div style="background: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+                            <h4 style="color: #856404; margin-top: 0;">⏱️ Délai de réponse :</h4>
+                            <p style="color: #856404; margin: 10px 0;">Notre équipe vous répondra dans les <strong>24-48 heures</strong> ouvrables.</p>
+                        </div>
+                        
+                        <p style="color: #495057; line-height: 1.6;">
+                            En attendant, n'hésitez pas à consulter notre <a href="#" style="color: #007bff;">FAQ</a> qui pourrait répondre immédiatement à vos questions.
+                        </p>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <p style="color: #6c757d; font-size: 14px; margin: 0;">Merci de votre confiance !</p>
+                            <p style="color: #007bff; font-weight: bold; margin: 5px 0;">L'équipe DriveGo 🚗</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px; color: #6c757d; font-size: 12px;">
+                    <p>Si vous n'êtes pas à l'origine de cette demande, veuillez ignorer cet email.</p>
+                    <p>© 2024 DriveGo - Tous droits réservés</p>
+                </div>
+            </div>
+            '''
+        )
+        
+        # Envoyer les emails
+        mail.send(msg_admin)
+        mail.send(msg_user)
+        
+        return jsonify({
+            'success': True,
+            'message': '🎉 Votre message a été envoyé avec succès ! Notre équipe vous répondra dans les plus brefs délais.'
+        })
+        
+    except Exception as e:
+        print(f"Erreur lors de l'envoi de l'email: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '❌ Une erreur est survenue lors de l\'envoi. Veuillez réessayer plus tard.'
+        }), 500
 
 # ============================================================================
 # 🌐 ROUTES PUBLIQUES
@@ -506,11 +843,6 @@ def index():
         user_role=user_role,
         user_profile_picture=user_profile_picture
     )
-
-@app.route('/aide')
-def aide():
-    """Page d'aide"""
-    return render_template('aide.html')
 
 @app.route('/fiches_vehicules')
 def vehicles_page():
@@ -1190,7 +1522,7 @@ def api_get_vehicules():
 
 @app.route('/api/missions/<int:mission_id>/complete', methods=['PUT'])
 def complete_mission(mission_id):
-    """Terminer une mission avec support des photos prises"""
+    """Terminer une mission avec support des photos prises et du transfert de contrôle"""
     try:
         # Vérifier l'authentification
         if 'user_id' not in session:
@@ -1203,7 +1535,7 @@ def complete_mission(mission_id):
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT id, user_id, vehicule_id, statut, km_depart 
+            SELECT id, user_id, vehicule_id, statut, km_depart, control_status, can_be_ended 
             FROM missions 
             WHERE id = ?
         """, (mission_id,))
@@ -1219,9 +1551,18 @@ def complete_mission(mission_id):
             conn.close()
             return jsonify({'success': False, 'message': 'Accès refusé'}), 403
         
+        # MODIFIÉ : Vérifier le statut de la mission (accepter 'active' même si transférée)
         if mission[3] != 'active':
             conn.close()
             return jsonify({'success': False, 'message': 'Mission déjà terminée'}), 400
+        
+        # NOUVEAU : Vérifier si la mission peut être terminée (même si transférée)
+        control_status = mission[5] or 'manual'
+        can_be_ended = mission[6] if mission[6] is not None else True
+        
+        if not can_be_ended:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Impossible de terminer cette mission'}), 400
         
         # Récupérer les données du formulaire
         heure_fin = request.form.get('heure_fin', '').strip()
@@ -1293,6 +1634,7 @@ def complete_mission(mission_id):
         
         # Mettre à jour la mission dans la base de données
         try:
+            # MODIFIÉ : Inclure la remise à zéro du contrôle transféré
             update_query = """
                 UPDATE missions 
                 SET heure_fin = ?, 
@@ -1302,10 +1644,18 @@ def complete_mission(mission_id):
                     notes = ?, 
                     photos = ?,
                     statut = 'completed',
+                    control_status = 'manual',
+                    transferred_to_user_id = NULL,
+                    transferred_to_name = NULL,
+                    transfer_notes = NULL,
+                    transferred_at = NULL,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
             """
-            update_params = [heure_fin, km_arrivee, carburant_arrivee, plein_effectue, notes, photos_json, mission_id]
+            update_params = [
+                heure_fin, km_arrivee, carburant_arrivee, 
+                plein_effectue, notes, photos_json, mission_id
+            ]
             
             cursor.execute(update_query, update_params)
             
@@ -1320,13 +1670,19 @@ def complete_mission(mission_id):
             conn.commit()
             conn.close()
             
+            # Message de succès adapté selon le contexte
+            success_message = 'Mission terminée avec succès'
+            if control_status == 'transferred':
+                success_message += ' (contrôle était transféré)'
+            
             return jsonify({
                 'success': True, 
-                'message': 'Mission terminée avec succès',
+                'message': success_message,
                 'data': {
                     'mission_id': mission_id,
                     'distance_parcourue': km_arrivee - km_depart,
-                    'photos_count': len(uploaded_photos)
+                    'photos_count': len(uploaded_photos),
+                    'was_transferred': control_status == 'transferred'
                 }
             }), 200
             
