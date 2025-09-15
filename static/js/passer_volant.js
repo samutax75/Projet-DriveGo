@@ -464,5 +464,41 @@ async function init() {
     }
 }
 
+
+
+
+
+async function transferMission(missionId, newDriverId, newDriverName) {
+    const res = await fetch(`/api/missions/${missionId}/transfer`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_driver_id: newDriverId, new_driver_name: newDriverName })
+    });
+    
+    const data = await res.json();
+    if (data.success) {
+        // Mettre à jour le second conducteur dans l'interface
+        let conducteur2Elem = document.querySelector('.mission-info-value.conducteur2');
+        
+        if (!conducteur2Elem) {
+            // Si le bloc n'existe pas encore, le créer
+            const container = document.querySelector('.mission-info');
+            const div = document.createElement('div');
+            div.classList.add('mission-info-item');
+            div.innerHTML = `
+                <div class="mission-info-label">2ème conducteur</div>
+                <div class="mission-info-value conducteur2">👤 ${data.transferred_to_name}</div>
+            `;
+            container.appendChild(div);
+        } else {
+            // Si le bloc existe déjà, juste mettre à jour le nom
+            conducteur2Elem.textContent = `👤 ${data.transferred_to_name}`;
+        }
+    } else {
+        alert(data.message);
+    }
+}
+
+
 // Démarrer l'initialisation
 document.addEventListener('DOMContentLoaded', init);
