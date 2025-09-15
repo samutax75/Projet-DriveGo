@@ -27,8 +27,12 @@ import json
 import uuid
 from google.oauth2 import id_token
 from google.auth.transport import requests
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer
+from flask_mail import Mail, Message
+from dotenv import load_dotenv
 
-
+load_dotenv()
 app = Flask(__name__)
 
 # ============================================================================
@@ -37,6 +41,23 @@ app = Flask(__name__)
 
 # Configuration pour la production
 app.secret_key = os.environ.get('SECRET_KEY', 'fallback-secret-key-change-in-production')
+
+# Configuration Flask-Mail (à ajouter après app.secret_key)
+# Configuration qui marche PARTOUT (local ET production)
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
+
+
+
+# Initialiser Flask-Mail
+mail = Mail(app)
+
+# Générateur de token sécurisé
+serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # # Configuration pour les uploads
 # UPLOAD_FOLDER = 'static/uploads/mission_photos'
@@ -157,6 +178,12 @@ def migrate_missions_table(cursor):
                 conducteur2 TEXT DEFAULT '',
                 notes TEXT,
                 statut TEXT DEFAULT 'active',
+                control_status TEXT DEFAULT 'manual',
+                transferred_to_user_id INTEGER DEFAULT NULL,
+                transferred_to_name TEXT DEFAULT NULL,
+                transfer_notes TEXT DEFAULT NULL,
+                transferred_at TIMESTAMP DEFAULT NULL,
+                can_be_ended BOOLEAN DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (vehicule_id) REFERENCES vehicules (id),
@@ -168,7 +195,7 @@ def migrate_missions_table(cursor):
         cursor.execute("PRAGMA table_info(missions)")
         existing_columns = [col[1] for col in cursor.fetchall()]
 
-        # Colonnes obligatoires
+        # Colonnes obligatoires existantes
         required_columns = [
             ("date_mission", "DATE NOT NULL DEFAULT ''"),
             ("heure_debut", "TEXT DEFAULT ''"),
@@ -188,11 +215,25 @@ def migrate_missions_table(cursor):
             ("notes", "TEXT DEFAULT ''")
         ]
 
-        # Ajouter les colonnes manquantes
+        # Ajouter les colonnes manquantes (existantes)
         for col_name, col_def in required_columns:
             if col_name not in existing_columns:
                 cursor.execute(f"ALTER TABLE missions ADD COLUMN {col_name} {col_def}")
-
+        
+        # Nouvelles colonnes pour le transfert
+        transfer_columns = [
+            ("control_status", "TEXT DEFAULT 'manual'"),
+            ("transferred_to_user_id", "INTEGER DEFAULT NULL"),
+            ("transferred_to_name", "TEXT DEFAULT NULL"),
+            ("transfer_notes", "TEXT DEFAULT NULL"),
+            ("transferred_at", "TIMESTAMP DEFAULT NULL"),
+            ("can_be_ended", "BOOLEAN DEFAULT 1")
+        ]
+        
+        # Ajouter les colonnes de transfert manquantes
+        for col_name, col_def in transfer_columns:
+            if col_name not in existing_columns:
+                cursor.execute(f"ALTER TABLE missions ADD COLUMN {col_name} {col_def}")
 # Initialiser la base au lancement
 init_db()
 
@@ -202,9 +243,389 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+
+# ============================================================================
+# Route passer volant 
+# ============================================================================
+@app.route('/passer_volant')
+def passer_volant():
+    """Page passer_volant"""
+    return render_template('passer_volant.html')
+
+
+@app.route('/api/missions/<int:mission_id>/transfer', methods=['PUT'])
+def transfer_mission(mission_id):
+    """Transférer le contrôle d'une mission à un autre conducteur"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        user_id = session['user_id']
+        data = request.get_json()
+        
+        # Récupérer la mission
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, user_id, statut, control_status 
+            FROM missions 
+            WHERE id = ?
+        """, (mission_id,))
+        
+        mission = cursor.fetchone()
+        
+        if not mission:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Mission introuvable'}), 404
+        
+        # Vérifications de sécurité
+        if mission[1] != user_id:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Accès refusé'}), 403
+        
+        if mission[2] != 'active':
+            conn.close()
+            return jsonify({'success': False, 'message': 'Mission déjà terminée'}), 400
+        
+        # Récupérer les données de transfert
+        new_driver_id = data.get('new_driver_id')
+        new_driver_name = data.get('new_driver_name')
+        notes = data.get('notes', '')
+        
+        # Validation
+        if not new_driver_id and not new_driver_name:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Nouveau conducteur requis'}), 400
+        
+        # Effectuer le transfert avec l'heure
+        from datetime import datetime
+        heure_transfert = datetime.now().strftime('%H:%M')
+        
+        cursor.execute("""
+            UPDATE missions 
+            SET control_status = 'transferred',
+                transferred_to_user_id = ?,
+                transferred_to_name = ?,
+                transfer_notes = ?,
+                transferred_at = CURRENT_TIMESTAMP,
+                heure_transfert = ?,
+                can_be_ended = 1,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (new_driver_id, new_driver_name, notes, heure_transfert, mission_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Contrôle transféré avec succès',
+            'transfer_time': heure_transfert,
+            'can_resume': True,
+            'can_end_mission': True
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur transfert mission: {e}")
+        return jsonify({'success': False, 'message': 'Erreur lors du transfert'}), 500
+
+
+@app.route('/api/missions/<int:mission_id>/resume', methods=['PUT'])
+def resume_mission_control(mission_id):
+    """Reprendre le contrôle d'une mission transférée"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        user_id = session['user_id']
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que la mission appartient à l'utilisateur
+        cursor.execute("""
+            SELECT id, user_id, statut, control_status 
+            FROM missions 
+            WHERE id = ?
+        """, (mission_id,))
+        
+        mission = cursor.fetchone()
+        
+        if not mission:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Mission introuvable'}), 404
+        
+        if mission[1] != user_id:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Accès refusé'}), 403
+        
+        if mission[2] != 'active':
+            conn.close()
+            return jsonify({'success': False, 'message': 'Mission déjà terminée'}), 400
+        
+        if mission[3] != 'transferred':
+            conn.close()
+            return jsonify({'success': False, 'message': 'Mission non transférée'}), 400
+        
+        # Reprendre le contrôle
+        cursor.execute("""
+            UPDATE missions 
+            SET control_status = 'manual',
+                transferred_to_user_id = NULL,
+                transferred_to_name = NULL,
+                transfer_notes = NULL,
+                transferred_at = NULL,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (mission_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Contrôle repris avec succès'
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur reprise contrôle: {e}")
+        return jsonify({'success': False, 'message': 'Erreur lors de la reprise'}), 500
+
+
+@app.route('/api/missions/<int:mission_id>/status', methods=['GET'])
+def get_mission_status(mission_id):
+    """Récupérer le statut d'une mission"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, control_status, transferred_to_user_id, 
+                   transferred_to_name, transfer_notes, transferred_at,
+                   can_be_ended, statut
+            FROM missions 
+            WHERE id = ?
+        """, (mission_id,))
+        
+        mission = cursor.fetchone()
+        conn.close()
+        
+        if not mission:
+            return jsonify({'success': False, 'message': 'Mission introuvable'}), 404
+        
+        return jsonify({
+            'success': True,
+            'mission_id': mission[0],
+            'control_status': mission[1] or 'manual',
+            'transferred_to_user_id': mission[2],
+            'transferred_to_name': mission[3],
+            'transfer_notes': mission[4],
+            'transferred_at': mission[5],
+            'can_end_mission': bool(mission[6]) if mission[6] is not None else True,
+            'can_resume_control': (mission[1] == 'transferred'),
+            'mission_status': mission[7]
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur récupération statut: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+
+# ============================================================================
+def generate_reset_token(email):
+    """Génère un token sécurisé pour reset password"""
+    return serializer.dumps(email, salt='password-reset-salt')
+
+
+def verify_reset_token(token, expiration=3600):
+    """Vérifie le token (expire en 1h par défaut)"""
+    try:
+        email = serializer.loads(token, salt='password-reset-salt', max_age=expiration)
+        return email
+    except:
+        return None
+    
+def get_base_url():
+    """Retourne l'URL de base selon l'environnement"""
+    if os.environ.get('RENDER'):
+        # Remplace par ton URL Render réelle
+        return 'https://projet-drivego-21o9.onrender.com'
+    return 'http://127.0.0.1:5000'    
+    
+    
+def send_reset_email(email, token):
+    """Envoie l'email de réinitialisation avec template HTML"""
+    base_url = get_base_url()
+    reset_url = f"{base_url}/reset_password/{token}"
+    
+    msg = Message(
+        subject='DriveGo - Réinitialisation de votre mot de passe',
+        recipients=[email],
+        html=f'''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f4f4f4; }}
+                .email-container {{ 
+                    max-width: 600px; 
+                    margin: 0 auto; 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 20px;
+                }}
+                .email-content {{ 
+                    background: white; 
+                    padding: 40px; 
+                    border-radius: 15px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                    text-align: center;
+                }}
+                .logo {{ 
+                    color: #667eea; 
+                    font-size: 36px; 
+                    font-weight: bold; 
+                    margin-bottom: 5px;
+                }}
+                .subtitle {{ 
+                    color: #666; 
+                    font-size: 16px;
+                    margin-bottom: 30px;
+                }}
+                .title {{
+                    color: #333;
+                    font-size: 24px;
+                    margin-bottom: 20px;
+                }}
+                .message {{
+                    color: #555;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    margin-bottom: 30px;
+                    text-align: left;
+                }}
+                .reset-btn {{ 
+                    display: inline-block; 
+                    background: linear-gradient(45deg, #667eea, #764ba2); 
+                    color: white !important; 
+                    padding: 15px 30px; 
+                    text-decoration: none; 
+                    border-radius: 25px; 
+                    font-weight: bold;
+                    font-size: 16px;
+                    margin: 20px 0;
+                    transition: transform 0.2s;
+                }}
+                .reset-btn:hover {{
+                    transform: translateY(-2px);
+                }}
+                .link-text {{
+                    word-break: break-all; 
+                    background: #f8f9fa; 
+                    padding: 15px; 
+                    border-radius: 8px; 
+                    font-family: monospace;
+                    font-size: 14px;
+                    margin: 15px 0;
+                    border: 1px solid #e9ecef;
+                }}
+                .warning {{ 
+                    background: #fff3cd; 
+                    border: 1px solid #ffeaa7; 
+                    padding: 20px; 
+                    border-radius: 8px; 
+                    margin: 25px 0; 
+                    text-align: left;
+                }}
+                .warning strong {{
+                    color: #856404;
+                }}
+                .warning ul {{
+                    margin: 10px 0 0 20px;
+                    color: #856404;
+                }}
+                .footer {{ 
+                    margin-top: 30px; 
+                    color: #666; 
+                    font-size: 14px;
+                    border-top: 1px solid #eee;
+                    padding-top: 20px;
+                }}
+                .security-info {{
+                    background: #e3f2fd;
+                    border-left: 4px solid #2196f3;
+                    padding: 15px;
+                    margin: 20px 0;
+                    text-align: left;
+                    font-size: 14px;
+                    color: #1565c0;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="email-container">
+                <div class="email-content">
+                    <div class="logo">🚗 DriveGo</div>
+                    <div class="subtitle">Votre compagnon de conduite</div>
+                    
+                    <h1 class="title">Réinitialisation de mot de passe</h1>
+                    
+                    <div class="message">
+                        <p><strong>Bonjour,</strong></p>
+                        
+                        <p>Vous avez demandé à réinitialiser votre mot de passe pour votre compte DriveGo.</p>
+                        
+                        <p>Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe sécurisé :</p>
+                    </div>
+                    
+                    <a href="{reset_url}" class="reset-btn">
+                        🔐 Réinitialiser mon mot de passe
+                    </a>
+                    
+                    <div class="message">
+                        <p><strong>Le bouton ne fonctionne pas ?</strong><br>
+                        Copiez et collez ce lien dans votre navigateur :</p>
+                    </div>
+                    
+                    <div class="link-text">{reset_url}</div>
+                    
+                    <div class="warning">
+                        <strong>⚠️ Informations importantes :</strong>
+                        <ul>
+                            <li>Ce lien est valide pendant <strong>1 heure seulement</strong></li>
+                            <li>Si vous n'avez pas demandé cette réinitialisation, ignorez cet email</li>
+                            <li>Ne partagez jamais ce lien avec personne</li>
+                            <li>Ce lien ne peut être utilisé qu'une seule fois</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="security-info">
+                        <strong>🛡️ Sécurité :</strong> Vos mots de passe sont chiffrés avec bcrypt et nos systèmes respectent les standards de sécurité les plus élevés.
+                    </div>
+                    
+                    <div class="footer">
+                        <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+                        <p><strong>Équipe DriveGo</strong><br>
+                        Service de gestion de flotte</p>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        '''
+    )
+    mail.send(msg)
+    
+
 # ============================================================================
 # 🛠️ FONCTIONS UTILITAIRES
 # ============================================================================
+
 
 def validate_email(email):
     """Valide le format de l'email"""
@@ -259,7 +680,145 @@ def adapt_user_role(fonction_base, prenom):
             return 'Éducateur'
     else:
         return fonction_base
+# ============================================================================
+#  ROUTES Aide 
+# ============================================================================
+@app.route('/aide')
+def aide():
+    """Page d'aide"""
+    return render_template('aide.html')
 
+@app.route('/contact', methods=['POST'])
+def contact():
+    try:
+        # Récupérer les données du formulaire
+        nom = request.form.get('nom')
+        email = request.form.get('email')
+        telephone = request.form.get('telephone', 'Non renseigné')
+        sujet = request.form.get('sujet')
+        message_content = request.form.get('message')
+        
+        # Validation des champs obligatoires
+        if not all([nom, email, sujet, message_content]):
+            return jsonify({
+                'success': False, 
+                'message': '❌ Tous les champs obligatoires doivent être remplis.'
+            }), 400
+        
+        # Créer l'email pour vous (notification)
+        msg_admin = Message(
+            subject=f'🔔 Nouveau message de contact - {sujet}',
+            recipients=['samirbenhammou94250@gmail.com'],  # Votre email
+            html=f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px 10px 0 0;">
+                    <h2 style="margin: 0;">📧 Nouveau message de contact - DriveGo</h2>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e9ecef;">
+                    <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <h3 style="color: #495057; border-bottom: 2px solid #667eea; padding-bottom: 10px;">Informations du contact</h3>
+                        
+                        <table style="width: 100%; margin: 20px 0;">
+                            <tr style="background: #f8f9fa;">
+                                <td style="padding: 12px; font-weight: bold; color: #495057; width: 120px;">👤 Nom :</td>
+                                <td style="padding: 12px; color: #212529;">{nom}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; font-weight: bold; color: #495057;">📧 Email :</td>
+                                <td style="padding: 12px; color: #212529;"><a href="mailto:{email}" style="color: #667eea; text-decoration: none;">{email}</a></td>
+                            </tr>
+                            <tr style="background: #f8f9fa;">
+                                <td style="padding: 12px; font-weight: bold; color: #495057;">📱 Téléphone :</td>
+                                <td style="padding: 12px; color: #212529;">{telephone}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; font-weight: bold; color: #495057;">🏷️ Sujet :</td>
+                                <td style="padding: 12px; color: #212529;"><span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px;">{sujet.upper()}</span></td>
+                            </tr>
+                        </table>
+                        
+                        <h4 style="color: #495057; margin: 25px 0 15px 0;">💬 Message :</h4>
+                        <div style="background: #f8f9fa; padding: 20px; border-left: 4px solid #667eea; border-radius: 4px; line-height: 1.6; color: #495057;">
+                            {message_content.replace(chr(10), '<br>')}
+                        </div>
+                        
+                        <div style="margin-top: 30px; text-align: center;">
+                            <a href="mailto:{email}" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold;">Répondre à {nom}</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px; color: #6c757d; font-size: 14px;">
+                    <p>📅 Message reçu le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</p>
+                    <p>🌟 DriveGo - Système de contact automatisé</p>
+                </div>
+            </div>
+            '''
+        )
+        
+        # Créer l'email de confirmation pour l'utilisateur
+        msg_user = Message(
+            subject='✅ Confirmation de réception - DriveGo',
+            recipients=[email],
+            html=f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 20px; border-radius: 10px 10px 0 0;">
+                    <h2 style="margin: 0;">✅ Message bien reçu !</h2>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e9ecef;">
+                    <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <h3 style="color: #495057;">Bonjour {nom},</h3>
+                        
+                        <p style="color: #495057; line-height: 1.6; margin: 20px 0;">
+                            Nous avons bien reçu votre message concernant "<strong>{sujet}</strong>" et nous vous remercions de nous avoir contactés.
+                        </p>
+                        
+                        <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; border-left: 4px solid #007bff; margin: 20px 0;">
+                            <h4 style="color: #007bff; margin-top: 0;">🎯 Votre demande :</h4>
+                            <p style="color: #495057; margin: 10px 0; font-style: italic;">"{message_content[:100]}{'...' if len(message_content) > 100 else ''}"</p>
+                        </div>
+                        
+                        <div style="background: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+                            <h4 style="color: #856404; margin-top: 0;">⏱️ Délai de réponse :</h4>
+                            <p style="color: #856404; margin: 10px 0;">Notre équipe vous répondra dans les <strong>24-48 heures</strong> ouvrables.</p>
+                        </div>
+                        
+                        <p style="color: #495057; line-height: 1.6;">
+                            En attendant, n'hésitez pas à consulter notre <a href="#" style="color: #007bff;">FAQ</a> qui pourrait répondre immédiatement à vos questions.
+                        </p>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <p style="color: #6c757d; font-size: 14px; margin: 0;">Merci de votre confiance !</p>
+                            <p style="color: #007bff; font-weight: bold; margin: 5px 0;">L'équipe DriveGo 🚗</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px; color: #6c757d; font-size: 12px;">
+                    <p>Si vous n'êtes pas à l'origine de cette demande, veuillez ignorer cet email.</p>
+                    <p>© 2024 DriveGo - Tous droits réservés</p>
+                </div>
+            </div>
+            '''
+        )
+        
+        # Envoyer les emails
+        mail.send(msg_admin)
+        mail.send(msg_user)
+        
+        return jsonify({
+            'success': True,
+            'message': '🎉 Votre message a été envoyé avec succès ! Notre équipe vous répondra dans les plus brefs délais.'
+        })
+        
+    except Exception as e:
+        print(f"Erreur lors de l'envoi de l'email: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '❌ Une erreur est survenue lors de l\'envoi. Veuillez réessayer plus tard.'
+        }), 500
 
 # ============================================================================
 # 🌐 ROUTES PUBLIQUES
@@ -288,11 +847,6 @@ def index():
         user_profile_picture=user_profile_picture
     )
 
-@app.route('/aide')
-def aide():
-    """Page d'aide"""
-    return render_template('aide.html')
-
 @app.route('/fiches_vehicules')
 def vehicles_page():
     """Page d'affichage des véhicules"""
@@ -303,17 +857,10 @@ def support():
     """Page de support"""
     return render_template('support.html')
 
-@app.route("/mot_de_passe_oublie", methods=["GET", "POST"])
-def mot_de_passe_oublie():
-    if request.method == "POST":
-        email = request.form.get("email")
-        session['password_reset_email'] = email.lower().strip()
-        return redirect(url_for('change_password'))
-    return render_template("mot_de_passe_oublie.html")
 
 @app.route("/change_password", methods=["GET", "POST"])
 def change_password():
-    """Page pour changer le mot de passe"""
+    """Page pour changer le mot de passe (normal ou reset)"""
     if request.method == "POST":
         # Vérifier si c'est une requête AJAX
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
@@ -322,13 +869,14 @@ def change_password():
         new_password = request.form.get("new_password")
         confirm_password = request.form.get("confirm_password")
         
-        # Vérifier si c'est une réinitialisation
+        # Vérifier si c'est une réinitialisation depuis email
         is_reset = session.get('password_reset_email') is not None
         reset_email = session.get('password_reset_email')
 
         errors = {}
 
         if is_reset:
+            # Mode réinitialisation depuis email
             if not reset_email:
                 if is_ajax:
                     return jsonify({
@@ -336,10 +884,10 @@ def change_password():
                         'message': 'Session de réinitialisation expirée'
                     }), 400
                 else:
-                    flash("Session de réinitialisation expirée", "error")
+                    flash("❌ Session de réinitialisation expirée", "error")
                     return redirect(url_for('mot_de_passe_oublie'))
         else:
-            # Changement de mot de passe normal
+            # Mode changement normal (utilisateur connecté)
             user_id = session.get('user_id')
             if not user_id:
                 if is_ajax:
@@ -348,13 +896,14 @@ def change_password():
                         'message': 'Vous devez être connecté'
                     }), 401
                 else:
+                    flash("❌ Vous devez être connecté", "error")
                     return redirect(url_for('connexion'))
             
             # Validation du mot de passe actuel
             if not current_password:
                 errors['current_password'] = "Le mot de passe actuel est requis"
             else:
-                conn = sqlite3.connect('drivego.db')
+                conn = sqlite3.connect(DATABASE)
                 cursor = conn.cursor()
                 cursor.execute("SELECT password_hash FROM users WHERE id = ?", (user_id,))
                 user_data = cursor.fetchone()
@@ -363,27 +912,30 @@ def change_password():
                 if not user_data or not check_password_hash(user_data[0], current_password):
                     errors['current_password'] = "Mot de passe actuel incorrect"
 
-        # Validation commune
+        # Validations communes
+        if not new_password:
+            errors['new_password'] = "Le nouveau mot de passe est requis"
+        elif len(new_password) < 8:
+            errors['new_password'] = "Le mot de passe doit contenir au moins 8 caractères"
+
         if new_password != confirm_password:
             errors['confirm_password'] = "Les mots de passe ne correspondent pas"
 
-        if len(new_password) < 8:
-            errors['new_password'] = "Le mot de passe doit contenir au moins 8 caractères"
+        # Validation de la complexité du mot de passe
+        if new_password:
+            password_errors = []
+            if not re.search(r'[A-Z]', new_password):
+                password_errors.append("au moins une lettre majuscule")
+            if not re.search(r'[a-z]', new_password):
+                password_errors.append("au moins une lettre minuscule")
+            if not re.search(r'\d', new_password):
+                password_errors.append("au moins un chiffre")
+            if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:"\\|,.<>\?]', new_password):
+                password_errors.append("au moins un caractère spécial")
 
-        # Validation complexité
-        password_errors = []
-        if not re.search(r'[A-Z]', new_password):
-            password_errors.append("au moins une lettre majuscule")
-        if not re.search(r'[a-z]', new_password):
-            password_errors.append("au moins une lettre minuscule")
-        if not re.search(r'\d', new_password):
-            password_errors.append("au moins un chiffre")
-        if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:"\\|,.<>\?]', new_password):
-            password_errors.append("au moins un caractère spécial")
-
-        if password_errors:
-            error_msg = f"Le mot de passe doit contenir : {', '.join(password_errors)}"
-            errors['new_password'] = error_msg
+            if password_errors:
+                error_msg = f"Le mot de passe doit contenir : {', '.join(password_errors)}"
+                errors['new_password'] = error_msg
 
         # S'il y a des erreurs
         if errors:
@@ -396,21 +948,26 @@ def change_password():
             else:
                 for field, error in errors.items():
                     flash(error, "error")
-                return render_template("change_password.html")
+                return render_template("change_password.html", is_reset=is_reset)
 
-        # Procéder au changement
+        # Procéder au changement de mot de passe
         try:
             hashed_password = generate_password_hash(new_password)
             
-            conn = sqlite3.connect('drivego.db')
+            conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
             
             if is_reset:
+                # Mise à jour via email de reset
                 cursor.execute("UPDATE users SET password_hash = ? WHERE email = ?", (hashed_password, reset_email))
+                # Nettoyer la session
                 session.pop('password_reset_email', None)
+                success_message = "✅ Votre mot de passe a été réinitialisé avec succès !"
             else:
+                # Mise à jour normale
                 user_id = session.get('user_id')
                 cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hashed_password, user_id))
+                success_message = "✅ Votre mot de passe a été modifié avec succès !"
             
             conn.commit()
             conn.close()
@@ -418,11 +975,17 @@ def change_password():
             if is_ajax:
                 return jsonify({
                     'success': True,
-                    'message': 'Mot de passe modifié avec succès !'
+                    'message': success_message
                 }), 200
             else:
-                flash("Mot de passe changé avec succès", "success")
-                return redirect(url_for("connexion"))
+                flash(success_message, "success")
+                if is_reset:
+                    # Après un reset, rediriger vers la connexion
+                    flash("🔐 Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.", "info")
+                    return redirect(url_for("connexion"))
+                else:
+                    # Après un changement normal, retour au dashboard
+                    return redirect(url_for("index"))
             
         except Exception as e:
             print(f"Erreur lors du changement de mot de passe: {e}")
@@ -433,12 +996,83 @@ def change_password():
                     'message': 'Erreur lors de la mise à jour. Veuillez réessayer.'
                 }), 500
             else:
-                flash("Erreur lors de la mise à jour. Veuillez réessayer.", "error")
-                return render_template("change_password.html")
+                flash("❌ Erreur lors de la mise à jour. Veuillez réessayer.", "error")
+                return render_template("change_password.html", is_reset=is_reset)
 
-    # GET request
+    # Requête GET - Afficher la page
     is_reset = session.get('password_reset_email') is not None
     return render_template("change_password.html", is_reset=is_reset)
+
+
+@app.route("/mot_de_passe_oublie", methods=["GET", "POST"])
+def mot_de_passe_oublie():
+    """Page et traitement du mot de passe oublié"""
+    if request.method == "POST":
+        email = request.form.get("email", "").lower().strip()
+        
+        if not email:
+            flash("Veuillez saisir une adresse email.", "error")
+            return render_template("mot_de_passe_oublie.html")
+        
+        # Vérifier si l'utilisateur existe dans la base de données
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, nom, prenom FROM users WHERE email = ?", (email,))
+        user = cursor.fetchone()
+        conn.close()
+        
+        if user:
+            try:
+                # Générer le token sécurisé
+                token = generate_reset_token(email)
+                
+                # Envoyer l'email
+                send_reset_email(email, token)
+                
+                flash("📧 Un email de réinitialisation a été envoyé à votre adresse. Vérifiez votre boîte mail (et vos spams).", "success")
+                
+            except Exception as e:
+                print(f"Erreur lors de l'envoi de l'email: {e}")
+                flash("❌ Erreur lors de l'envoi de l'email. Veuillez réessayer dans quelques minutes.", "error")
+        else:
+            # Message identique pour éviter l'énumération des emails
+            flash("📧 Un email de réinitialisation a été envoyé à votre adresse. Vérifiez votre boîte mail (et vos spams).", "success")
+    
+    return render_template("mot_de_passe_oublie.html")
+
+@app.route("/reset_password/<token>")
+def reset_password(token):
+    """Traite le lien de réinitialisation depuis l'email"""
+    try:
+        # Vérifier la validité du token
+        email = verify_reset_token(token)
+        
+        if email is None:
+            flash("❌ Le lien de réinitialisation est invalide ou a expiré. Veuillez faire une nouvelle demande.", "error")
+            return redirect(url_for('mot_de_passe_oublie'))
+        
+        # Vérifier que l'utilisateur existe toujours
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+        user = cursor.fetchone()
+        conn.close()
+        
+        if not user:
+            flash("❌ Utilisateur non trouvé. Veuillez contacter l'administrateur.", "error")
+            return redirect(url_for('mot_de_passe_oublie'))
+        
+        # Stocker l'email en session pour la page change_password
+        session['password_reset_email'] = email
+        flash("✅ Lien valide ! Vous pouvez maintenant créer votre nouveau mot de passe.", "success")
+        
+        # Redirection vers change_password
+        return redirect(url_for('change_password'))
+        
+    except Exception as e:
+        print(f"Erreur dans reset_password: {e}")
+        flash("❌ Erreur lors du traitement du lien. Veuillez réessayer.", "error")
+        return redirect(url_for('mot_de_passe_oublie'))
 
 @app.route('/profil', methods=['GET', 'POST'])
 @login_required
@@ -584,7 +1218,6 @@ def logout():
     flash('Vous avez été déconnecté', 'info')
     return redirect(url_for('index'))
 
-
 # ============================================================================
 # 🔐 ROUTES D'AUTHENTIFICATION
 # ============================================================================
@@ -592,34 +1225,59 @@ def logout():
 @app.route('/google-signin', methods=['POST'])
 def google_signin():
     token = request.json.get('credential')
-    
+
     try:
-        # Vérifier le token
+        # Vérifier le token Google
         idinfo = id_token.verify_oauth2_token(
-            token, 
-            requests.Request(), 
+            token,
+            requests.Request(),
             "586952928342-mmfucge3269sjkj0706mch5hmc0jpp8d.apps.googleusercontent.com"
         )
-        
-        # Récupérer les informations utilisateur
-        user_id = idinfo['sub']
+
         email = idinfo['email']
         name = idinfo['name']
         picture = idinfo.get('picture', '')
 
+        # Connexion à la DB
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+
+        # Vérifier si l'utilisateur existe déjà
+        cursor.execute("SELECT id, nom, prenom, role, profile_picture FROM users WHERE email = ?", (email,))
+        user = cursor.fetchone()
+
+        if not user:
+            # Extraire nom/prénom depuis le "name" Google
+            prenom = name.split(' ')[0]
+            nom = ' '.join(name.split(' ')[1:]) or "Utilisateur"
+
+            # Créer un utilisateur par défaut (mot de passe vide car connexion via Google)
+            cursor.execute('''
+                INSERT INTO users (email, password_hash, nom, prenom, role, profile_picture)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (email, "", nom, prenom, "client", picture))
+            conn.commit()
+
+            # Récupérer l’utilisateur inséré
+            cursor.execute("SELECT id, nom, prenom, role, profile_picture FROM users WHERE email = ?", (email,))
+            user = cursor.fetchone()
+
+        conn.close()
+
+        # user = (id, nom, prenom, role, profile_picture)
+        user_id, nom, prenom, role, profile_picture = user
+
         # ⚡ Stocker les infos dans la session Flask
         session['user_id'] = user_id
-        session['prenom'] = name.split(' ')[0]
-        session['nom'] = ' '.join(name.split(' ')[1:])
-        session['profile_picture_url'] = picture
-        session['fonction'] = 'Éducateur/trice'  # ou autre logique
+        session['prenom'] = prenom
+        session['nom'] = nom
+        session['profile_picture_url'] = profile_picture
+        session['role'] = role
 
-        # Retourner succès
         return jsonify({'success': True, 'user': {'email': email, 'name': name}})
-        
+    
     except ValueError:
         return jsonify({'success': False, 'error': 'Token invalide'}), 400
-
 
 @app.route('/api/user/current', methods=['GET'])
 @login_required
@@ -806,6 +1464,40 @@ def api_register():
             'message': 'Erreur lors de la création du compte'
         }), 500
 
+
+@app.route('/api/users', methods=['GET'])
+@login_required
+def api_get_all_users():
+    """Récupère la liste de tous les utilisateurs existants dans la base"""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT id, nom, prenom, email, role FROM users ORDER BY nom, prenom')
+        users = cursor.fetchall()
+        conn.close()
+        
+        users_list = []
+        for user in users:
+            users_list.append({
+                'id': user[0],
+                'nom': f"{user[1]} {user[2]}",  # Nom complet
+                'prenom': user[2],              # Prénom seul
+                'email': user[3],
+                'role': user[4]
+            })
+        
+        return jsonify({
+            'success': True,
+            'users': users_list
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur récupération utilisateurs: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la récupération des utilisateurs'
+        }), 500
 # ============================================================================
 # 🚗 ROUTES VÉHICULES
 # ============================================================================
@@ -866,7 +1558,7 @@ def api_get_vehicules():
 
 @app.route('/api/missions/<int:mission_id>/complete', methods=['PUT'])
 def complete_mission(mission_id):
-    """Terminer une mission avec support des photos prises"""
+    """Terminer une mission avec support des photos prises et du transfert de contrôle"""
     try:
         # Vérifier l'authentification
         if 'user_id' not in session:
@@ -879,7 +1571,7 @@ def complete_mission(mission_id):
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT id, user_id, vehicule_id, statut, km_depart 
+            SELECT id, user_id, vehicule_id, statut, km_depart, control_status, can_be_ended 
             FROM missions 
             WHERE id = ?
         """, (mission_id,))
@@ -895,9 +1587,18 @@ def complete_mission(mission_id):
             conn.close()
             return jsonify({'success': False, 'message': 'Accès refusé'}), 403
         
+        # MODIFIÉ : Vérifier le statut de la mission (accepter 'active' même si transférée)
         if mission[3] != 'active':
             conn.close()
             return jsonify({'success': False, 'message': 'Mission déjà terminée'}), 400
+        
+        # NOUVEAU : Vérifier si la mission peut être terminée (même si transférée)
+        control_status = mission[5] or 'manual'
+        can_be_ended = mission[6] if mission[6] is not None else True
+        
+        if not can_be_ended:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Impossible de terminer cette mission'}), 400
         
         # Récupérer les données du formulaire
         heure_fin = request.form.get('heure_fin', '').strip()
@@ -969,6 +1670,7 @@ def complete_mission(mission_id):
         
         # Mettre à jour la mission dans la base de données
         try:
+            # MODIFIÉ : Inclure la remise à zéro du contrôle transféré
             update_query = """
                 UPDATE missions 
                 SET heure_fin = ?, 
@@ -978,10 +1680,18 @@ def complete_mission(mission_id):
                     notes = ?, 
                     photos = ?,
                     statut = 'completed',
+                    control_status = 'manual',
+                    transferred_to_user_id = NULL,
+                    transferred_to_name = NULL,
+                    transfer_notes = NULL,
+                    transferred_at = NULL,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
             """
-            update_params = [heure_fin, km_arrivee, carburant_arrivee, plein_effectue, notes, photos_json, mission_id]
+            update_params = [
+                heure_fin, km_arrivee, carburant_arrivee, 
+                plein_effectue, notes, photos_json, mission_id
+            ]
             
             cursor.execute(update_query, update_params)
             
@@ -996,13 +1706,19 @@ def complete_mission(mission_id):
             conn.commit()
             conn.close()
             
+            # Message de succès adapté selon le contexte
+            success_message = 'Mission terminée avec succès'
+            if control_status == 'transferred':
+                success_message += ' (contrôle était transféré)'
+            
             return jsonify({
                 'success': True, 
-                'message': 'Mission terminée avec succès',
+                'message': success_message,
                 'data': {
                     'mission_id': mission_id,
                     'distance_parcourue': km_arrivee - km_depart,
-                    'photos_count': len(uploaded_photos)
+                    'photos_count': len(uploaded_photos),
+                    'was_transferred': control_status == 'transferred'
                 }
             }), 200
             
@@ -1178,21 +1894,26 @@ def api_get_user_missions(user_id):
 
 @app.route('/api/missions/active', methods=['GET'])
 def api_get_active_missions():
-    """Récupérer toutes les missions actives"""
+    """Récupérer toutes les missions actives avec info de transfert"""
     try:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
         
+        # Requête corrigée avec les bons index
         cursor.execute('''
             SELECT 
                 m.id, m.vehicule_id, m.user_id, m.date_mission, 
                 m.heure_debut, m.motif, m.destination, m.nb_passagers, 
                 m.km_depart, m.notes, m.created_at,
                 u.nom as user_name, u.prenom as user_prenom,
-                v.nom as vehicule_nom, v.immatriculation
+                v.nom as vehicule_nom, v.immatriculation,
+                m.control_status,
+                m.transferred_to_user_id, m.transferred_to_name,
+                u2.nom as transferred_user_nom, u2.prenom as transferred_user_prenom
             FROM missions m
             JOIN users u ON m.user_id = u.id
             JOIN vehicules v ON m.vehicule_id = v.id
+            LEFT JOIN users u2 ON m.transferred_to_user_id = u2.id
             WHERE m.statut = 'active'
             ORDER BY m.created_at DESC
         ''', ())
@@ -1202,6 +1923,24 @@ def api_get_active_missions():
         
         missions_list = []
         for mission in missions:
+            # CORRIGER LES INDEX
+            control_status = mission[15] or 'manual'  # index 15 maintenant
+            
+            if control_status == 'transferred':
+                # Si transféré, utiliser les infos du conducteur transféré
+                if mission[16]:  # transferred_to_user_id existe (index 16)
+                    conducteur_actuel = f"{mission[18]} {mission[19]}"  # index 18,19
+                else:
+                    conducteur_actuel = mission[17] or "Conducteur transféré"  # index 17
+                
+                conducteur_original = f"{mission[11]} {mission[12]}"
+                status_text = f"Transféré à {conducteur_actuel}"
+            else:
+                # Sinon, c'est le conducteur original
+                conducteur_actuel = f"{mission[11]} {mission[12]}"
+                conducteur_original = conducteur_actuel
+                status_text = "En cours"
+            
             missions_list.append({
                 'id': mission[0],
                 'vehicule_id': mission[1],
@@ -1217,7 +1956,13 @@ def api_get_active_missions():
                 'user_name': mission[11],
                 'user_prenom': mission[12],
                 'vehicule_nom': mission[13],
-                'vehicule_immatriculation': mission[14]
+                'vehicule_immatriculation': mission[14],
+                'control_status': control_status,
+                'conducteur_actuel': conducteur_actuel,
+                'conducteur_original': conducteur_original,
+                'is_transferred': control_status == 'transferred',
+                'status_text': status_text,
+                'transferred_to_name': mission[17]
             })
         
         return jsonify({
@@ -1231,7 +1976,6 @@ def api_get_active_missions():
             'success': False,
             'message': 'Erreur lors de la récupération des missions actives'
         }), 500
-
 @app.route('/api/missions/<int:mission_id>', methods=['DELETE'])
 def api_cancel_mission(mission_id):
     """Annuler une mission"""

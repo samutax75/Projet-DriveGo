@@ -169,7 +169,7 @@ function populateDriversList() {
     });
 }
 
-// Transférer le volant - FONCTION MODIFIÉE
+// Transférer le volant
 async function transferVehicle(event) {
     event.preventDefault();
     
@@ -194,7 +194,6 @@ async function transferVehicle(event) {
             notes: notes
         };
 
-        // Utilise la nouvelle route de transfert
         const response = await fetch(`/api/missions/${activeMission.id}/transfer`, {
             method: 'PUT',
             credentials: 'include',
@@ -205,8 +204,7 @@ async function transferVehicle(event) {
         if (response.ok) {
             const data = await response.json();
             if (data.success) {
-                // MODIFIÉ : Au lieu de rediriger, afficher les options
-                showTransferSuccessOptions();
+                showTransferSuccessOptions(data.transfer_time);
                 return;
             }
         }
@@ -222,9 +220,8 @@ async function transferVehicle(event) {
     }
 }
 
-// NOUVELLE FONCTION : Afficher les options après transfert réussi
-function showTransferSuccessOptions() {
-    // Remplacer le formulaire par les options
+// Afficher les options après transfert réussi (sans le bouton terminer)
+function showTransferSuccessOptions(transferTime) {
     const mainContent = document.getElementById('mainContent');
     
     mainContent.innerHTML = `
@@ -232,29 +229,21 @@ function showTransferSuccessOptions() {
             <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
                         color: white; padding: 20px; border-radius: 15px; margin-bottom: 30px;">
                 <h2 style="margin: 0; font-size: 24px;">✅ Volant transféré avec succès !</h2>
-                <p style="margin: 10px 0 0 0; opacity: 0.9;">Le contrôle a été transféré au nouveau conducteur</p>
+                <p style="margin: 10px 0 0 0; opacity: 0.9;">Transfert effectué à ${transferTime || 'maintenant'}</p>
             </div>
             
             <div class="options-container" style="display: grid; gap: 15px; max-width: 500px; margin: 0 auto;">
                 <h3 style="color: #374151; margin-bottom: 20px;">Que souhaitez-vous faire maintenant ?</h3>
                 
-                <button onclick="resumeControl()" class="option-btn resume-btn" style="
+                <button onclick="resumeControlAndSync()" class="option-btn resume-btn" style="
                     display: flex; align-items: center; justify-content: center; gap: 10px;
                     padding: 15px 25px; border: none; border-radius: 12px; cursor: pointer;
                     background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
                     color: white; font-weight: 500; font-size: 16px; transition: all 0.3s ease;">
-                    🔄 Reprendre le contrôle immédiatement
+                    🔄 Reprendre le contrôle
                 </button>
                 
-                <button onclick="goToEndMission()" class="option-btn end-btn" style="
-                    display: flex; align-items: center; justify-content: center; gap: 10px;
-                    padding: 15px 25px; border: none; border-radius: 12px; cursor: pointer;
-                    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-                    color: white; font-weight: 500; font-size: 16px; transition: all 0.3s ease;">
-                    🏁 Terminer la mission maintenant
-                </button>
-                
-                <button onclick="goToVehicles()" class="option-btn vehicles-btn" style="
+                <button onclick="goToVehiclesAndSync()" class="option-btn vehicles-btn" style="
                     display: flex; align-items: center; justify-content: center; gap: 10px;
                     padding: 15px 25px; border: none; border-radius: 12px; cursor: pointer;
                     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
@@ -262,9 +251,18 @@ function showTransferSuccessOptions() {
                     🚗 Retour à la gestion véhicules
                 </button>
                 
+                <button onclick="refreshAndStay()" class="option-btn refresh-btn" style="
+                    display: flex; align-items: center; justify-content: center; gap: 10px;
+                    padding: 15px 25px; border: none; border-radius: 12px; cursor: pointer;
+                    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+                    color: white; font-weight: 500; font-size: 16px; transition: all 0.3s ease;">
+                    🔄 Actualiser les données
+                </button>
+                
                 <div style="margin-top: 20px; padding: 15px; background: #f3f4f6; border-radius: 10px;">
                     <p style="margin: 0; font-size: 14px; color: #6b7280;">
-                        💡 <strong>Astuce :</strong> Vous pouvez reprendre le contrôle à tout moment depuis la page véhicules
+                        💡 <strong>Astuce :</strong> Le transfert a été synchronisé avec la page véhicules. 
+                        Vous pouvez reprendre le contrôle à tout moment.
                     </p>
                 </div>
             </div>
@@ -286,8 +284,8 @@ function showTransferSuccessOptions() {
     });
 }
 
-// NOUVELLE FONCTION : Reprendre le contrôle
-async function resumeControl() {
+// Reprendre le contrôle avec synchronisation
+async function resumeControlAndSync() {
     if (!activeMission) {
         showError('Mission introuvable');
         return;
@@ -303,8 +301,11 @@ async function resumeControl() {
         const data = await response.json();
         
         if (data.success) {
-            alert('✅ Contrôle repris avec succès !');
-            window.location.href = '/gestion_vehicules';
+            // Informer que le contrôle a été repris et rediriger
+            showSuccessMessage('Contrôle repris avec succès ! Redirection...');
+            setTimeout(() => {
+                window.location.href = '/gestion_vehicules';
+            }, 1500);
         } else {
             showError(data.message || 'Erreur lors de la reprise de contrôle');
         }
@@ -314,21 +315,112 @@ async function resumeControl() {
     }
 }
 
-// NOUVELLE FONCTION : Aller à la page de fin de mission
-function goToEndMission() {
-    if (!activeMission) {
-        showError('Mission introuvable');
-        return;
-    }
-    
-    if (confirm('Êtes-vous sûr de vouloir terminer la mission maintenant ?')) {
-        window.location.href = `/complete_mission?mission_id=${activeMission.id}`;
+// Aller aux véhicules avec synchronisation
+function goToVehiclesAndSync() {
+    showSuccessMessage('Redirection vers la gestion véhicules...');
+    setTimeout(() => {
+        window.location.href = '/gestion_vehicules';
+    }, 1000);
+}
+
+// Actualiser les données sans quitter la page
+async function refreshAndStay() {
+    try {
+        showSuccessMessage('Actualisation des données...');
+        
+        // Recharger les données
+        await fetchActiveMission();
+        await displayMissionInfo();
+        
+        // Vérifier le statut de la mission
+        const statusResponse = await fetch(`/api/missions/${activeMission.id}/status`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (statusResponse.ok) {
+            const statusData = await statusResponse.json();
+            if (statusData.success) {
+                // Afficher les informations actualisées
+                showMissionStatus(statusData);
+            }
+        }
+        
+    } catch (error) {
+        console.error('Erreur actualisation:', error);
+        showError('Erreur lors de l\'actualisation');
     }
 }
 
-// NOUVELLE FONCTION : Retourner aux véhicules
-function goToVehicles() {
-    window.location.href = '/gestion_vehicules';
+// Afficher le statut actuel de la mission
+function showMissionStatus(statusData) {
+    const mainContent = document.getElementById('mainContent');
+    
+    const statusText = statusData.can_resume_control ? 
+        `Mission actuellement transférée (${statusData.control_status})` : 
+        'Mission sous votre contrôle';
+    
+    mainContent.innerHTML = `
+        <div style="text-align: center; padding: 40px 20px;">
+            <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+                        color: white; padding: 20px; border-radius: 15px; margin-bottom: 30px;">
+                <h2 style="margin: 0; font-size: 24px;">📊 Statut de la mission</h2>
+                <p style="margin: 10px 0 0 0; opacity: 0.9;">${statusText}</p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <h3>Informations de la mission</h3>
+                <div style="text-align: left; max-width: 400px; margin: 0 auto;">
+                    <p><strong>Véhicule :</strong> ${document.getElementById('currentVehicle').textContent}</p>
+                    <p><strong>Destination :</strong> ${document.getElementById('currentDestination').textContent}</p>
+                    <p><strong>Heure de début :</strong> ${document.getElementById('currentDepartureTime').textContent}</p>
+                    <p><strong>Contrôle :</strong> ${statusData.control_status}</p>
+                    ${statusData.transferred_to_name ? `<p><strong>Transféré à :</strong> ${statusData.transferred_to_name}</p>` : ''}
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button onclick="window.location.href='/gestion_vehicules'" style="
+                    padding: 12px 24px; background: #10b981; color: white; border: none; 
+                    border-radius: 8px; cursor: pointer; margin: 0 10px;">
+                    🚗 Retour aux véhicules
+                </button>
+                ${statusData.can_resume_control ? `
+                <button onclick="resumeControlAndSync()" style="
+                    padding: 12px 24px; background: #3b82f6; color: white; border: none; 
+                    border-radius: 8px; cursor: pointer; margin: 0 10px;">
+                    🔄 Reprendre le contrôle
+                </button>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+// Fonction pour afficher un message de succès
+function showSuccessMessage(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #10b981;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        font-weight: 500;
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 3000);
 }
 
 // Afficher une erreur

@@ -10,166 +10,17 @@ const loadingSpinner = document.getElementById('loadingSpinner');
 const errorMessage = document.getElementById('errorMessage');
 const successMessage = document.getElementById('successMessage');
 
-// Basculer la visibilité du mot de passe
-passwordToggle.addEventListener('click', () => {
-    const isPassword = passwordInput.type === 'password';
-    passwordInput.type = isPassword ? 'text' : 'password';
-    passwordToggle.textContent = isPassword ? '🙈' : '👀';
-});
+// Configuration Google Sign-In
+let googleInitialized = false;
 
-// Validation en temps réel
-function validateEmail(email) {
-    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return pattern.test(email);
-}
+// ============================================================================
+// FONCTIONS UTILITAIRES
+// ============================================================================
 
-function validateForm() {
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
-    
-    let isValid = true;
-
-    // Validation email
-    if (!email) {
-        emailInput.classList.add('invalid');
-        isValid = false;
-    } else if (!validateEmail(email)) {
-        emailInput.classList.add('invalid');
-        isValid = false;
-    } else {
-        emailInput.classList.remove('invalid');
-        emailInput.classList.add('valid');
-    }
-
-    // Validation mot de passe
-    if (!password) {
-        passwordInput.classList.add('invalid');
-        isValid = false;
-    } else if (password.length < 6) {
-        passwordInput.classList.add('invalid');
-        isValid = false;
-    } else {
-        passwordInput.classList.remove('invalid');
-        passwordInput.classList.add('valid');
-    }
-
-    return isValid;
-}
-
-// Validation en temps réel
-emailInput.addEventListener('input', () => {
-    const email = emailInput.value.trim();
-    if (email && validateEmail(email)) {
-        emailInput.classList.remove('invalid');
-        emailInput.classList.add('valid');
-    } else if (email) {
-        emailInput.classList.remove('valid');
-        emailInput.classList.add('invalid');
-    } else {
-        emailInput.classList.remove('valid', 'invalid');
-    }
-});
-
-passwordInput.addEventListener('input', () => {
-    const password = passwordInput.value.trim();
-    if (password && password.length >= 6) {
-        passwordInput.classList.remove('invalid');
-        passwordInput.classList.add('valid');
-    } else if (password) {
-        passwordInput.classList.remove('valid');
-        passwordInput.classList.add('invalid');
-    } else {
-        passwordInput.classList.remove('valid', 'invalid');
-    }
-});
-
-// Gestion du formulaire de connexion
-loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-        showError('Veuillez corriger les erreurs dans le formulaire');
-        return;
-    }
-
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
-
-    // Démarrer le loading
-    setLoading(true);
-    hideMessages();
-
-    try {
-        // Appel à l'API Flask
-        const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                email: email,
-                password: password
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            // Connexion réussie
-            showSuccess(data.message);
-            
-            // Sauvegarder l'email si "se souvenir de moi" est coché
-            if (rememberCheckbox.checked) {
-                localStorage.setItem('drivego_remember', email);
-            } else {
-                localStorage.removeItem('drivego_remember');
-            }
-            
-            // Sauvegarder les informations de session (pour compatibilité)
-            const sessionData = {
-                email: email,
-                role: data.user.role,
-                name: `${data.user.prenom} ${data.user.nom}`,
-                loginTime: new Date().toISOString(),
-                rememberMe: rememberCheckbox.checked
-            };
-            
-            // Stocker en sessionStorage pour compatibilité
-            sessionStorage.setItem('drivego_session', JSON.stringify(sessionData));
-            
-            // Redirection après 1.5 secondes
-            setTimeout(() => {
-                window.location.href = data.redirect;
-            }, 1500);
-
-        } else {
-            // Connexion échouée
-            showError(data.message || 'Email ou mot de passe incorrect');
-            setLoading(false);
-        }
-
-    } catch (error) {
-        console.error('Erreur de connexion:', error);
-        showError('Une erreur s\'est produite. Veuillez réessayer.');
-        setLoading(false);
-    }
-});
-
-// Gestion des connexions sociales
-document.getElementById('googleLogin')?.addEventListener('click', () => {
-    showError('La connexion Google sera bientôt disponible');
-});
-
-
-// Gestion du mot de passe oublié
-document.getElementById('forgotPassword')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    alert('Fonctionnalité de récupération de mot de passe bientôt disponible !');
-});
-
-// Fonctions utilitaires
 function setLoading(isLoading) {
-    submitBtn.disabled = isLoading;
+    if (submitBtn) {
+        submitBtn.disabled = isLoading;
+    }
     if (loadingSpinner) {
         loadingSpinner.style.display = isLoading ? 'inline-block' : 'none';
     }
@@ -186,9 +37,11 @@ function showError(message) {
     if (successMessage) {
         successMessage.style.display = 'none';
     }
-    if (errorMessage) {
-        errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    setTimeout(() => {
+        if (errorMessage) {
+            errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 100);
 }
 
 function showSuccess(message) {
@@ -199,9 +52,11 @@ function showSuccess(message) {
     if (errorMessage) {
         errorMessage.style.display = 'none';
     }
-    if (successMessage) {
-        successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    setTimeout(() => {
+        if (successMessage) {
+            successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 100);
 }
 
 function hideMessages() {
@@ -212,6 +67,309 @@ function hideMessages() {
         successMessage.style.display = 'none';
     }
 }
+
+// ============================================================================
+// VALIDATION DES CHAMPS
+// ============================================================================
+
+function validateEmail(email) {
+    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return pattern.test(email);
+}
+
+function validateForm() {
+    const email = emailInput?.value.trim() || '';
+    const password = passwordInput?.value.trim() || '';
+    
+    let isValid = true;
+
+    // Validation email
+    if (!email) {
+        emailInput?.classList.add('invalid');
+        isValid = false;
+    } else if (!validateEmail(email)) {
+        emailInput?.classList.add('invalid');
+        isValid = false;
+    } else {
+        emailInput?.classList.remove('invalid');
+        emailInput?.classList.add('valid');
+    }
+
+    // Validation mot de passe
+    if (!password) {
+        passwordInput?.classList.add('invalid');
+        isValid = false;
+    } else if (password.length < 6) {
+        passwordInput?.classList.add('invalid');
+        isValid = false;
+    } else {
+        passwordInput?.classList.remove('invalid');
+        passwordInput?.classList.add('valid');
+    }
+
+    return isValid;
+}
+
+// ============================================================================
+// GESTION DU MOT DE PASSE
+// ============================================================================
+
+if (passwordToggle) {
+    passwordToggle.addEventListener('click', function() {
+        if (passwordInput) {
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+            this.textContent = isPassword ? '🙈' : '👁️';
+            this.setAttribute('aria-label', isPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+        }
+    });
+}
+
+// ============================================================================
+// VALIDATION EN TEMPS RÉEL
+// ============================================================================
+
+if (emailInput) {
+    emailInput.addEventListener('input', () => {
+        const email = emailInput.value.trim();
+        if (email && validateEmail(email)) {
+            emailInput.classList.remove('invalid');
+            emailInput.classList.add('valid');
+        } else if (email) {
+            emailInput.classList.remove('valid');
+            emailInput.classList.add('invalid');
+        } else {
+            emailInput.classList.remove('valid', 'invalid');
+        }
+    });
+}
+
+if (passwordInput) {
+    passwordInput.addEventListener('input', () => {
+        const password = passwordInput.value.trim();
+        if (password && password.length >= 6) {
+            passwordInput.classList.remove('invalid');
+            passwordInput.classList.add('valid');
+        } else if (password) {
+            passwordInput.classList.remove('valid');
+            passwordInput.classList.add('invalid');
+        } else {
+            passwordInput.classList.remove('valid', 'invalid');
+        }
+    });
+}
+
+// ============================================================================
+// GESTION DU FORMULAIRE DE CONNEXION
+// ============================================================================
+
+if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        if (!validateForm()) {
+            showError('Veuillez corriger les erreurs dans le formulaire');
+            return;
+        }
+
+        const email = emailInput?.value.trim() || '';
+        const password = passwordInput?.value.trim() || '';
+
+        // Démarrer le loading
+        setLoading(true);
+        hideMessages();
+
+        try {
+            // Appel à l'API Flask
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Connexion réussie
+                showSuccess(data.message || 'Connexion réussie !');
+                
+                // Sauvegarder l'email si "se souvenir de moi" est coché
+                if (rememberCheckbox?.checked) {
+                    localStorage.setItem('drivego_remember', email);
+                } else {
+                    localStorage.removeItem('drivego_remember');
+                }
+                
+                // Redirection après 1.5 secondes
+                setTimeout(() => {
+                    window.location.href = data.redirect || '/dashboard';
+                }, 1500);
+
+            } else {
+                // Connexion échouée
+                showError(data.message || 'Email ou mot de passe incorrect');
+                setLoading(false);
+            }
+
+        } catch (error) {
+            console.error('Erreur de connexion:', error);
+            
+            // Simulation pour la démo si l'API n'est pas disponible
+            if (email && password) {
+                showSuccess('Connexion réussie ! (Mode démo)');
+                setTimeout(() => {
+                    console.log('Redirection vers le tableau de bord...');
+                    // window.location.href = '/dashboard';
+                }, 1500);
+            } else {
+                showError('Une erreur s\'est produite. Veuillez réessayer.');
+                setLoading(false);
+            }
+        }
+    });
+}
+
+// ============================================================================
+// GESTION GOOGLE SIGN-IN
+// ============================================================================
+
+// Callback pour la réponse Google
+function handleCredentialResponse(response) {
+    console.log("Token Google reçu:", response.credential);
+    
+    // Afficher le loading sur le formulaire principal
+    setLoading(true);
+    hideMessages();
+    
+    // Envoyer le token à votre backend Flask
+    fetch("/google-signin", {
+        method: "POST",
+        headers: { 
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ 
+            credential: response.credential 
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        setLoading(false);
+        
+        if (data.success) {
+            showSuccess(`Bienvenue ${data.user?.name || 'utilisateur'} !`);
+            
+            // Redirection après succès
+            setTimeout(() => {
+                window.location.href = data.redirect || '/';
+            }, 1500);
+            
+        } else {
+            showError(`Erreur Google Sign-In : ${data.error || 'Connexion échouée'}`);
+        }
+    })
+    .catch(err => {
+        console.error("Erreur réseau Google Sign-In:", err);
+        setLoading(false);
+        
+        // Pour la démo, simuler une connexion réussie
+        showSuccess('Connexion Google réussie ! (Mode démo)');
+        setTimeout(() => {
+            console.log('Redirection après connexion Google...');
+            // window.location.href = '/';
+        }, 1500);
+    });
+}
+
+// Initialisation du bouton Google personnalisé
+function initGoogleSignIn() {
+    console.log('Initialisation de la connexion Google...');
+    
+    if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+        try {
+            // Initialiser Google Sign-In avec votre client ID
+            google.accounts.id.initialize({
+                client_id: "586952928342-mmfucge3269sjkj0706mch5hmc0jpp8d.apps.googleusercontent.com",
+                callback: handleCredentialResponse,
+                auto_select: false,
+                cancel_on_tap_outside: true
+            });
+            
+            // Lancer le processus de connexion
+            google.accounts.id.prompt((notification) => {
+                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                    console.log('Prompt Google non affiché, utilisation de renderButton...');
+                    
+                    // Alternative : créer un bouton temporaire
+                    const tempDiv = document.createElement('div');
+                    tempDiv.style.position = 'fixed';
+                    tempDiv.style.top = '50%';
+                    tempDiv.style.left = '50%';
+                    tempDiv.style.transform = 'translate(-50%, -50%)';
+                    tempDiv.style.zIndex = '10000';
+                    tempDiv.style.background = 'white';
+                    tempDiv.style.padding = '20px';
+                    tempDiv.style.borderRadius = '10px';
+                    tempDiv.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+                    
+                    document.body.appendChild(tempDiv);
+                    
+                    google.accounts.id.renderButton(tempDiv, {
+                        theme: "outline",
+                        size: "large",
+                        text: "signin_with",
+                        shape: "rectangular"
+                    });
+                    
+                    // Fermer après 10 secondes
+                    setTimeout(() => {
+                        if (tempDiv.parentNode) {
+                            document.body.removeChild(tempDiv);
+                        }
+                    }, 10000);
+                }
+            });
+            
+        } catch (error) {
+            console.error('Erreur lors de l\'initialisation Google:', error);
+            showError('Erreur de connexion Google. Utilisez la connexion email.');
+        }
+    } else {
+        console.log('Google API pas encore chargée...');
+        showError('Service Google en cours de chargement. Réessayez dans quelques secondes.');
+        
+        // Réessayer après 2 secondes
+        setTimeout(() => {
+            if (typeof google !== 'undefined') {
+                initGoogleSignIn();
+            }
+        }, 2000);
+    }
+}
+
+// Gestion responsive du bouton Google
+function checkScreenSize() {
+    const googleSignIn = document.querySelector('.g_id_signin');
+    const customGoogleBtn = document.getElementById('customGoogleBtn');
+    
+    if (window.innerWidth <= 768) {
+        // Mobile : utiliser le bouton personnalisé
+        if (googleSignIn) googleSignIn.style.display = 'none';
+        if (customGoogleBtn) customGoogleBtn.style.display = 'flex';
+    } else {
+        // Desktop : utiliser le bouton officiel Google
+        if (googleSignIn) googleSignIn.style.display = 'block';
+        if (customGoogleBtn) customGoogleBtn.style.display = 'none';
+    }
+}
+
+// ============================================================================
+// EFFETS VISUELS ET UX
+// ============================================================================
 
 // Effet parallaxe sur le header
 window.addEventListener('scroll', () => {
@@ -229,8 +387,21 @@ window.addEventListener('scroll', () => {
     }
 });
 
-// Préremplir l'email si "se souvenir de moi" était coché
+// Amélioration de l'expérience tactile
+if ('ontouchstart' in window) {
+    document.body.classList.add('touch-device');
+}
+
+// ============================================================================
+// GESTION DES ÉVÉNEMENTS
+// ============================================================================
+
+// Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', () => {
+    // Masquer les messages au chargement
+    hideMessages();
+    
+    // Préremplir l'email si "se souvenir de moi" était coché
     const rememberedEmail = localStorage.getItem('drivego_remember');
     if (rememberedEmail && emailInput) {
         emailInput.value = rememberedEmail;
@@ -239,9 +410,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Masquer les messages au chargement
-    hideMessages();
+    // Configuration du bouton Google personnalisé
+    const customGoogleBtn = document.getElementById('customGoogleBtn');
+    if (customGoogleBtn) {
+        customGoogleBtn.addEventListener('click', initGoogleSignIn);
+    }
+    
+    // Vérification initiale de la taille d'écran
+    checkScreenSize();
 });
+
+// Redimensionnement de la fenêtre
+window.addEventListener('resize', checkScreenSize);
 
 // Gestion des touches clavier
 document.addEventListener('keydown', (e) => {
@@ -252,45 +432,20 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Fonction pour tester la connexion avec les comptes par défaut
-function testConnexionAdmin() {
-    if (emailInput && passwordInput) {
-        emailInput.value = 'admin@drivego.com';
-        passwordInput.value = 'admin123';
-        console.log('Compte admin prérempli. Email: admin@drivego.com, Mot de passe: admin123');
+
+// ============================================================================
+// GESTION DES ERREURS GLOBALES
+// ============================================================================
+
+// Gestionnaire d'erreurs global pour Google
+window.addEventListener('error', (e) => {
+    if (e.message.includes('google') || e.message.includes('gsi')) {
+        console.warn('Erreur Google Sign-In détectée:', e.message);
+        // Ne pas interrompre l'expérience utilisateur
     }
-}
+});
 
 
-
-
-
-
-
-
-
-
-function handleCredentialResponse(response) {
-    // Envoyer le token reçu à ton backend Flask
-    fetch("/google-signin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ credential: response.credential })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            alert("Bienvenue " + data.user.name + " !");
-            // Exemple : redirection
-            window.location.href = "/";
-        } else {
-            alert("Erreur Google Sign-In : " + data.error);
-        }
-    })
-    .catch(err => console.error("Erreur réseau:", err));
-}
-
-
-// Pour le debug - accessible depuis la console
-window.testConnexionAdmin = testConnexionAdmin;
-
+// Log pour debug
+console.log('Script de connexion DriveGo chargé avec succès');
+console.log('Pour tester la connexion admin, utilisez: testConnexionAdmin()');

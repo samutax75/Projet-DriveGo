@@ -161,7 +161,7 @@ class DriveGoPasswordManager {
                 document.getElementById('strengthText').classList.remove('show');
                 
                 setTimeout(() => {
-                    window.location.href = '/dashboard';
+                    window.location.href = '/';
                 }, 2000);
             } else {
                 this.showMessage(result.message || 'Une erreur est survenue', 'error');
@@ -221,7 +221,7 @@ function goBack() {
     if (window.history.length > 1) {
         window.history.back();
     } else {
-        window.location.href = '/dashboard';
+        window.location.href = '/';
     }
 }
 

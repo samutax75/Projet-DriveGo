@@ -13,13 +13,13 @@
     <div class="close-button" onclick="goToHomePage()">×</div>
     
     <!-- Informations utilisateur -->
-    <div class="user-info" id="userInfo">
+    <!-- <div class="user-info" id="userInfo">
         👤 Chargement...
-    </div>
+    </div> -->
     
     <div class="container">
         <header class="header">
-            <h1>Go mission</h1>
+            <h1>Départ Mission</h1>
             <p>Gérez vos missions et consultez vos véhicules disponibles</p>
         </header>
 
@@ -31,7 +31,10 @@
                 </h2>
                 <div class="vehicle-list" id="vehicleList">
                     <!-- Les véhicules seront générés par JavaScript -->
+                
+                
                 </div>
+                
             </div>
 
             <!-- Contrôle des missions (Desktop seulement) -->
@@ -83,6 +86,7 @@
     <div class="mobile-modal" id="missionsModal">
         <div class="modal-content">
             <div class="modal-header">
+                
                 <h2>📊 Mes Missions</h2>
                 <button class="modal-close" onclick="closeMissionsModal()">×</button>
             </div>
@@ -93,8 +97,11 @@
             </div>
         </div>
     </div>
+    
 
     <script src="{{ url_for('static', filename='js/gestion_vehicules.js') }}"></script>
     
 </body>
+
 </html>
+
