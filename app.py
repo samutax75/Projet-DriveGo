@@ -298,10 +298,7 @@ def transfer_mission(mission_id):
             conn.close()
             return jsonify({'success': False, 'message': 'Nouveau conducteur requis'}), 400
         
-        # Effectuer le transfert avec l'heure
-        from datetime import datetime
-        heure_transfert = datetime.now().strftime('%H:%M')
-        
+        # Effectuer le transfert
         cursor.execute("""
             UPDATE missions 
             SET control_status = 'transferred',
@@ -309,11 +306,10 @@ def transfer_mission(mission_id):
                 transferred_to_name = ?,
                 transfer_notes = ?,
                 transferred_at = CURRENT_TIMESTAMP,
-                heure_transfert = ?,
                 can_be_ended = 1,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        """, (new_driver_id, new_driver_name, notes, heure_transfert, mission_id))
+        """, (new_driver_id, new_driver_name, notes, mission_id))
         
         conn.commit()
         conn.close()
@@ -321,7 +317,6 @@ def transfer_mission(mission_id):
         return jsonify({
             'success': True,
             'message': 'Contrôle transféré avec succès',
-            'transfer_time': heure_transfert,
             'can_resume': True,
             'can_end_mission': True
         }), 200
@@ -681,7 +676,7 @@ def adapt_user_role(fonction_base, prenom):
     else:
         return fonction_base
 # ============================================================================
-#  ROUTES Aide 
+#  ROUTES aide 
 # ============================================================================
 @app.route('/aide')
 def aide():
@@ -1218,6 +1213,7 @@ def logout():
     flash('Vous avez été déconnecté', 'info')
     return redirect(url_for('index'))
 
+
 # ============================================================================
 # 🔐 ROUTES D'AUTHENTIFICATION
 # ============================================================================
@@ -1464,40 +1460,6 @@ def api_register():
             'message': 'Erreur lors de la création du compte'
         }), 500
 
-
-@app.route('/api/users', methods=['GET'])
-@login_required
-def api_get_all_users():
-    """Récupère la liste de tous les utilisateurs existants dans la base"""
-    try:
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
-        
-        cursor.execute('SELECT id, nom, prenom, email, role FROM users ORDER BY nom, prenom')
-        users = cursor.fetchall()
-        conn.close()
-        
-        users_list = []
-        for user in users:
-            users_list.append({
-                'id': user[0],
-                'nom': f"{user[1]} {user[2]}",  # Nom complet
-                'prenom': user[2],              # Prénom seul
-                'email': user[3],
-                'role': user[4]
-            })
-        
-        return jsonify({
-            'success': True,
-            'users': users_list
-        }), 200
-        
-    except Exception as e:
-        print(f"Erreur récupération utilisateurs: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Erreur lors de la récupération des utilisateurs'
-        }), 500
 # ============================================================================
 # 🚗 ROUTES VÉHICULES
 # ============================================================================
@@ -1837,8 +1799,11 @@ def api_create_mission():
 
 @app.route('/api/user/<int:user_id>/missions', methods=['GET'])
 def api_get_user_missions(user_id):
-    """Récupérer les missions d'un utilisateur spécifique"""
+    """Récupérer les missions d'un utilisateur spécifique avec support transfert"""
     try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
         
@@ -1847,19 +1812,30 @@ def api_get_user_missions(user_id):
                 m.id, m.vehicule_id, m.user_id, m.date_mission, 
                 m.heure_debut, m.heure_fin, m.motif, m.destination, 
                 m.nb_passagers, m.km_depart, m.km_arrivee, m.notes, 
-                m.statut, m.created_at, m.updated_at,
-                v.nom as vehicule_nom, v.immatriculation
+                m.statut, m.created_at, m.updated_at, m.creneau,
+                m.conducteur2, m.carburant_depart, m.carburant_arrivee, 
+                m.plein_effectue, m.photos,
+                m.control_status, m.transferred_to_user_id, m.transferred_to_name,
+                m.transfer_notes, m.transferred_at, m.can_be_ended,
+                v.nom as vehicule_nom, v.immatriculation,
+                u.nom as user_nom, u.prenom as user_prenom
             FROM missions m
             LEFT JOIN vehicules v ON m.vehicule_id = v.id
-            WHERE m.user_id = ?
+            LEFT JOIN users u ON m.user_id = u.id
+            WHERE m.user_id = ? OR m.transferred_to_user_id = ?
             ORDER BY m.created_at DESC
-        """, (user_id,))
+        """, (user_id, user_id))
         
         missions = cursor.fetchall()
         conn.close()
         
         missions_list = []
         for mission in missions:
+            # Déterminer qui est le conducteur actuel
+            is_transferred = mission[21] == 'transferred'  # control_status
+            current_driver = mission[23] if is_transferred else f"{mission[28]} {mission[29]}"  # transferred_to_name ou nom+prenom
+            original_driver = f"{mission[28]} {mission[29]}"  # toujours le créateur original
+            
             missions_list.append({
                 'id': mission[0],
                 'vehicule_id': mission[1],
@@ -1876,8 +1852,24 @@ def api_get_user_missions(user_id):
                 'statut': mission[12],
                 'created_at': mission[13],
                 'updated_at': mission[14],
-                'vehicule_nom': mission[15],
-                'vehicule_immatriculation': mission[16]
+                'creneau': mission[15],
+                'conducteur2': mission[16],
+                'carburant_depart': mission[17],
+                'carburant_arrivee': mission[18],
+                'plein_effectue': mission[19],
+                'photos': mission[20],
+                # NOUVELLES DONNÉES DE TRANSFERT
+                'control_status': mission[21] or 'manual',
+                'transferred_to_user_id': mission[22],
+                'transferred_to_name': mission[23],
+                'transfer_notes': mission[24],
+                'transferred_at': mission[25],
+                'can_be_ended': mission[26] if mission[26] is not None else True,
+                'is_transferred': is_transferred,
+                'conducteur_actuel': current_driver,
+                'conducteur_original': original_driver,
+                'vehicule_nom': mission[27],
+                'vehicule_immatriculation': mission[28]
             })
         
         return jsonify({
@@ -1894,26 +1886,21 @@ def api_get_user_missions(user_id):
 
 @app.route('/api/missions/active', methods=['GET'])
 def api_get_active_missions():
-    """Récupérer toutes les missions actives avec info de transfert"""
+    """Récupérer toutes les missions actives"""
     try:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
         
-        # Requête corrigée avec les bons index
         cursor.execute('''
             SELECT 
                 m.id, m.vehicule_id, m.user_id, m.date_mission, 
                 m.heure_debut, m.motif, m.destination, m.nb_passagers, 
                 m.km_depart, m.notes, m.created_at,
                 u.nom as user_name, u.prenom as user_prenom,
-                v.nom as vehicule_nom, v.immatriculation,
-                m.control_status,
-                m.transferred_to_user_id, m.transferred_to_name,
-                u2.nom as transferred_user_nom, u2.prenom as transferred_user_prenom
+                v.nom as vehicule_nom, v.immatriculation
             FROM missions m
             JOIN users u ON m.user_id = u.id
             JOIN vehicules v ON m.vehicule_id = v.id
-            LEFT JOIN users u2 ON m.transferred_to_user_id = u2.id
             WHERE m.statut = 'active'
             ORDER BY m.created_at DESC
         ''', ())
@@ -1923,24 +1910,6 @@ def api_get_active_missions():
         
         missions_list = []
         for mission in missions:
-            # CORRIGER LES INDEX
-            control_status = mission[15] or 'manual'  # index 15 maintenant
-            
-            if control_status == 'transferred':
-                # Si transféré, utiliser les infos du conducteur transféré
-                if mission[16]:  # transferred_to_user_id existe (index 16)
-                    conducteur_actuel = f"{mission[18]} {mission[19]}"  # index 18,19
-                else:
-                    conducteur_actuel = mission[17] or "Conducteur transféré"  # index 17
-                
-                conducteur_original = f"{mission[11]} {mission[12]}"
-                status_text = f"Transféré à {conducteur_actuel}"
-            else:
-                # Sinon, c'est le conducteur original
-                conducteur_actuel = f"{mission[11]} {mission[12]}"
-                conducteur_original = conducteur_actuel
-                status_text = "En cours"
-            
             missions_list.append({
                 'id': mission[0],
                 'vehicule_id': mission[1],
@@ -1956,13 +1925,7 @@ def api_get_active_missions():
                 'user_name': mission[11],
                 'user_prenom': mission[12],
                 'vehicule_nom': mission[13],
-                'vehicule_immatriculation': mission[14],
-                'control_status': control_status,
-                'conducteur_actuel': conducteur_actuel,
-                'conducteur_original': conducteur_original,
-                'is_transferred': control_status == 'transferred',
-                'status_text': status_text,
-                'transferred_to_name': mission[17]
+                'vehicule_immatriculation': mission[14]
             })
         
         return jsonify({
@@ -1976,6 +1939,7 @@ def api_get_active_missions():
             'success': False,
             'message': 'Erreur lors de la récupération des missions actives'
         }), 500
+
 @app.route('/api/missions/<int:mission_id>', methods=['DELETE'])
 def api_cancel_mission(mission_id):
     """Annuler une mission"""

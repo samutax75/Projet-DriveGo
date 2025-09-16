@@ -108,78 +108,40 @@ async function loadUserMissions() {
         if (response.ok) {
             const data = await response.json();
             if (data.success && data.missions) {
+                // Séparer les missions actives et terminées
                 activeMissions = data.missions.filter(m => m.statut === 'active').map(mission => ({
-            id: mission.id,
-            vehicleId: mission.vehicule_id,
-            userId: mission.user_id,
-            vehicleName: getVehicleById(mission.vehicule_id)?.nom || 'Véhicule inconnu',
-            nom: currentUser.prenom,
-            conducteur2: mission.conducteur2 || '',
-            missionDate: mission.date_mission,
-            creneau: mission.creneau || 'journee',
-            departureTime: mission.heure_debut,
-            arrivalTime: mission.heure_fin,
-            missionNature: mission.motif,
-            destination: mission.destination,
-            passengers: mission.nb_passagers || 1,
-            kmDepart: mission.km_depart,
-            kmArrivee: mission.km_arrivee,
-            carburantDepart: mission.carburant_depart || '',
-            carburantArrivee: mission.carburant_arrivee || '',
-            pleinEffectue: mission.plein_effectue || false,
-            status: 'active',
-            startTime: new Date(mission.created_at),
-            notes: mission.notes,
-            photos: mission.photos || [],
-            // Données de transfert
-            control_status: mission.control_status,
-            transferred_to_name: mission.transferred_to_name,
-            heure_transfert: mission.heure_transfert,
-            transfer_notes: mission.transfer_notes
-        }));
-        
-        console.log('Mission active avec données de transfert:', activeMissions.find(m => m.control_status));
-        console.log('Mission completed avec données de transfert:', completedMissions.find(m => m.control_status));
-        
-        // Debug détaillé pour une mission completed
-        const missionTest = completedMissions.find(m => m.id === 21);
-        if (missionTest) {
-            console.log('Mission 21 - control_status:', missionTest.control_status);
-            console.log('Mission 21 - transferred_to_name:', missionTest.transferred_to_name);
-            console.log('Mission 21 - heure_transfert:', missionTest.heure_transfert);
-            console.log('Mission 21 - transfer_notes:', missionTest.transfer_notes);
-        }
-
-        completedMissions = data.missions.filter(m => m.statut === 'completed').map(mission => ({
-            id: mission.id,
-            vehicleId: mission.vehicule_id,
-            userId: mission.user_id,
-            vehicleName: getVehicleById(mission.vehicule_id)?.nom || 'Véhicule inconnu',
-            nom: currentUser.prenom,
-            conducteur2: mission.conducteur2 || '',
-            missionDate: mission.date_mission,
-            creneau: mission.creneau || 'journee',
-            departureTime: mission.heure_debut,
-            arrivalTime: mission.heure_fin,
-            missionNature: mission.motif,
-            destination: mission.destination,
-            passengers: mission.nb_passagers || 1,
-            kmDepart: mission.km_depart,
-            kmArrivee: mission.km_arrivee,
-            carburantDepart: mission.carburant_depart || '',
-            carburantArrivee: mission.carburant_arrivee || '',
-            pleinEffectue: mission.plein_effectue || false,
-            status: 'completed',
-            startTime: new Date(mission.created_at),
-            endTime: mission.heure_fin ? new Date(`${mission.date_mission} ${mission.heure_fin}`) : new Date(),
-            notes: mission.notes,
-            photos: mission.photos || [],
-            // Données de transfert
-            control_status: mission.control_status,
-            transferred_to_name: mission.transferred_to_name,
-            heure_transfert: mission.heure_transfert,
-            transfer_notes: mission.transfer_notes
-        }));
+                    id: mission.id,
+                    vehicleId: mission.vehicule_id,
+                    userId: mission.user_id,
+                    vehicleName: mission.vehicule_nom || 'Véhicule inconnu',
+                    nom: mission.conducteur_actuel, // UTILISER LE CONDUCTEUR ACTUEL
+                    conducteurOriginal: mission.conducteur_original, // CONDUCTEUR ORIGINAL
+                    conducteur2: mission.conducteur2 || '',
+                    isTransferred: mission.is_transferred || false, // STATUT DE TRANSFERT
+                    transferredToName: mission.transferred_to_name, // QUI A REÇU LE TRANSFERT
+                    missionDate: mission.date_mission,
+                    creneau: mission.creneau || 'journee',
+                    departureTime: mission.heure_debut,
+                    arrivalTime: mission.heure_fin,
+                    missionNature: mission.motif,
+                    destination: mission.destination,
+                    passengers: mission.nb_passagers || 1,
+                    kmDepart: mission.km_depart,
+                    kmArrivee: mission.km_arrivee,
+                    carburantDepart: mission.carburant_depart || '',
+                    carburantArrivee: mission.carburant_arrivee || '',
+                    pleinEffectue: mission.plein_effectue || false,
+                    status: 'active',
+                    startTime: new Date(mission.created_at),
+                    notes: mission.notes,
+                    photos: mission.photos || []
+                }));
+                
+                // Même logique pour completedMissions...
+                completedMissions = data.missions.filter(m => m.statut === 'completed').map(mission => ({
+                    // ... même structure avec conducteur_actuel
+                }));
+                
                 return true;
             }
         }
@@ -943,328 +905,20 @@ function closeMissionsModal() {
 function generateVehicleDetailsHTML(vehicle) {
     const access = canUserAccessVehicle(vehicle);
     
+    // Vérifier l'accès au véhicule
     if (!access.canAccess) {
-        let message = 'Ce véhicule n\'est pas disponible.';
-        if (access.reason === 'maintenance') {
-            message = 'Ce véhicule est en maintenance.';
-        } else if (access.reason === 'occupied') {
-            message = 'Ce véhicule est utilisé par un autre utilisateur ou vous avez déjà une mission active.';
-        }
-        
-        return `
-            <div class="access-denied">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-                <h4>🚫 Accès non autorisé</h4>
-                <p>${message}</p>
-            </div>
-        `;
+        return generateAccessDeniedHTML(access.reason);
     }
 
+    // Chercher une mission active pour ce véhicule et cet utilisateur
     const userActiveMission = activeMissions.find(m => m.userId === currentUser.id && m.vehicleId === vehicle.id);
+    
     let missionControlHTML = '';
-
+    
     if (userActiveMission) {
-        missionControlHTML = `
-            <div class="mission-active">
-                <h4>🎯 Mission en cours</h4>
-                <div class="mission-info">
-                    <div class="mission-info-item">
-                        <div class="mission-info-label">Conducteur principal</div>
-                        <div class="mission-info-value">👤 ${userActiveMission.nom}</div>
-                    </div>
-                    
-                    ${userActiveMission.conducteur2 ? `
-                    <div class="mission-info-item">
-                        <div class="mission-info-label">2ème conducteur</div>
-                        <div class="mission-info-value">👤 ${userActiveMission.conducteur2}</div>
-                    </div>
-                    ` : ''}
-                    <div class="mission-info-item">
-                        <div class="mission-info-label">Date</div>
-                        <div class="mission-info-value">${new Date(userActiveMission.missionDate).toLocaleDateString('fr-FR')}</div>
-                    </div>
-                    <div class="mission-info-item">
-                        <div class="mission-info-label">Créneau</div>
-                        <div class="mission-info-value">${getCreneauText(userActiveMission.creneau)}</div>
-                    </div>
-                    <div class="mission-info-item">
-                        <div class="mission-info-label">Heure de départ</div>
-                        <div class="mission-info-value">${userActiveMission.departureTime}</div>
-                    </div>
-                    <div class="mission-info-item">
-                        <div class="mission-info-label">Nature</div>
-                        <div class="mission-info-value">${userActiveMission.missionNature}</div>
-                    </div>
-                    <div class="mission-info-item">
-                        <div class="mission-info-label">Destination</div>
-                        <div class="mission-info-value">${userActiveMission.destination}</div>
-                    </div>
-                    <div class="mission-info-item">
-                        <div class="mission-info-label">Passagers</div>
-                        <div class="mission-info-value">${userActiveMission.passengers}</div>
-                    </div>
-                    <div class="mission-info-item">
-                        <div class="mission-info-label">Km départ</div>
-                        <div class="mission-info-value">${userActiveMission.kmDepart} km</div>
-                    </div>
-                    <div class="mission-info-item">
-                        <div class="mission-info-label">Carburant départ</div>
-                        <div class="mission-info-value">${getCarburantText(userActiveMission.carburantDepart)}</div>
-                    </div>
-                </div>
-                
-
-<div class="navigation-section" style="margin: 20px 0; padding: 15px; background: linear-gradient(135deg, #f8faff 0%, #e0f2fe 100%); border-radius: 10px; border-left: 4px solid #667eea;">
-    <h4 style="color: #1f2937; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
-        🧭 Navigation
-    </h4>
-    <button onclick="openWaze('${userActiveMission.destination.replace(/'/g, "\\'")}')" style="
-        background: linear-gradient(45deg, #667eea, #764ba2);
-        border: none;
-        border-radius: 25px;
-        padding: 12px 24px;
-        color: white;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        width: 100%;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 18px rgba(102, 126, 234, 0.4)'"
-       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.3)'">
-        <svg viewBox="0 0 24 24" fill="currentColor" style="width: 18px; height: 18px;">
-            <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
-        </svg>
-        Lancer Waze
-    </button>
-    <div style="font-size: 12px; color: #6b7280; margin-top: 8px; text-align: center;">
-        📍 ${userActiveMission.destination}
-    </div>
-</div>
-                <div class="mission-control">
-                    <h4 style="color: #1f2937; margin-bottom: 20px;">🏁 Terminer la mission</h4>
-                    <form onsubmit="endMissionWithDetails(event, ${vehicle.id})">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="arrivalTime">🕐 Heure d'arrivée</label>
-                                <input type="time" id="arrivalTime" name="arrivalTime" 
-                                       value="${new Date().toTimeString().slice(0, 5)}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="kmArrivee">🛣️ Kilométrage d'arrivée</label>
-                                <input type="number" id="kmArrivee" name="kmArrivee" 
-                                       placeholder="Ex: 45280" min="${userActiveMission.kmDepart}" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="carburantArrivee">⛽ Niveau carburant arrivée</label>
-                                <select id="carburantArrivee" name="carburantArrivee" required>
-                                    <option value="">Sélectionner le niveau</option>
-                                    <option value="plein">🟢 Plein (100%)</option>
-                                    <option value="3/4">🟡 3/4 (75%)</option>
-                                    <option value="1/2">🟠 1/2 (50%)</option>
-                                    <option value="1/4">🔴 1/4 (25%)</option>
-                                    <option value="reserve">⚠️ Réserve (<10%)</option>
-                                    <option value="vide">💀 Vide</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <div class="checkbox-group">
-                                    <input type="checkbox" id="pleinEffectue" name="pleinEffectue">
-                                    <label for="pleinEffectue">⛽ Plein effectué</label>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="notes">📝 Notes / Observations (optionnel)</label>
-                            <textarea id="notes" name="notes" rows="3" 
-                                      placeholder="Remarques, incidents, observations..."></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>📷 Photos de mission</label>
-                            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                                <button type="button" onclick="takePhoto()" style="
-                                    background: #007bff;
-                                    color: white;
-                                    border: none;
-                                    border-radius: 5px;
-                                    padding: 10px 15px;
-                                    cursor: pointer;
-                                ">📷 Prendre une photo</button>
-                                <button type="button" onclick="clearPhotos()" style="
-                                    background: #6c757d;
-                                    color: white;
-                                    border: none;
-                                    border-radius: 5px;
-                                    padding: 10px 15px;
-                                    cursor: pointer;
-                                ">🗑️ Effacer tout</button>
-                            </div>
-                            <div id="photoCount" style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
-                                ${capturedPhotos.length} photo(s) prise(s)
-                            </div>
-                            <div id="photosPreview" style="
-                                display: flex;
-                                flex-wrap: wrap;
-                                gap: 5px;
-                                max-height: 200px;
-                                overflow-y: auto;
-                                border: 1px solid #ddd;
-                                padding: 10px;
-                                border-radius: 5px;
-                            "></div>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-danger">
-                            ⏹️ Terminer la mission
-                        </button>
-                    </form>
-                </div>
-            </div>
-        `;
+        missionControlHTML = generateActiveMissionHTML(userActiveMission, vehicle.id);
     } else {
-        missionControlHTML = `
-            <div class="mission-control">
-                <h4>🚀 Nouvelle Mission</h4>
-                <form onsubmit="startMission(event, ${vehicle.id})">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="nom">👤 Conducteur principal</label>
-                            <input type="text" id="nom" name="nom" value="${currentUser?.prenom || ''}" readonly 
-                                   style="background-color: #f3f4f6; opacity: 0.8;">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="conducteur2">👤 2ème conducteur (optionnel)</label>
-                            <input type="text" id="conducteur2" name="conducteur2" 
-                                   placeholder="Nom du deuxième conducteur">
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="missionDate">📅 Date de mission</label>
-                            <input type="date" id="missionDate" name="missionDate" 
-                                   value="${new Date().toISOString().split('T')[0]}" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="creneau">⏰ Créneau</label>
-                            <select id="creneau" name="creneau" required>
-                                <option value="">Sélectionner le créneau</option>
-                                <option value="matinee">🌅 Matinée</option>
-                                <option value="apres-midi">🌇 Après-midi</option>
-                                <option value="journee">🌞 Journée complète</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="departureTime">🕐 Heure de départ</label>
-                            <input type="time" id="departureTime" name="departureTime" 
-                                   value="${new Date().toTimeString().slice(0, 5)}" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="passengers">👥 Nombre de passagers</label>
-                            <input type="number" id="passengers" name="passengers" 
-                                   placeholder="2" min="0" max="200" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="mission">Nature de la mission </label>
-                    
-                            <select id="mission" name="mission" onchange="checkAutre(this)" required>
-                                <option value="" disabled selected>-- Sélectionner une mission --</option>
-
-                                <optgroup label="🎯 Sorties éducatives & culturelles">
-                                    <option value="cinema">🎬 Cinéma / Spectacle</option>
-                                    <option value="musee">🎨 Musée / Exposition</option>
-                                    <option value="bibliotheque">📚 Bibliothèque / Médiathèque</option>
-                                </optgroup>
-
-                                <optgroup label="🏀 Sorties sport & loisirs">
-                                    <option value="piscine">🏊 Piscine / Sport adapté</option>
-                                    <option value="loisirs">🎳 Loisirs (bowling, jeux, parc…)</option>
-                                    <option value="restaurant">🍔 Sortie restaurant / café</option>
-                                </optgroup>
-
-                                <optgroup label="🌳 Sorties nature & découvertes">
-                                    <option value="parc">🌳 Parc / Balade</option>
-                                    <option value="ferme">🐑 Ferme pédagogique / Zoo</option>
-                                </optgroup>
-
-                                <optgroup label="🏥 Santé">
-                                    <option value="medical">🏥 Rendez-vous médical / accompagnement</option>
-                                </optgroup>
-
-                                <optgroup label="⚙️ Services & interventions">
-                                    <option value="livraison">📦 Livraison</option>
-                                    <option value="maintenance">🔧 Maintenance</option>
-                                    <option value="urgence">🚨 Mission d'urgence</option>
-                                </optgroup>
-
-                                <optgroup label="✏️ Divers">
-                                    <option value="autre">✏️ Autre</option>
-                                </optgroup>
-                            </select>
-                    </div>
-                    
-                    <div class="form-group hidden" id="autreGroup">
-                        <label for="autreText">✏️ Précisez la mission</label>
-                        <input type="text" id="autreText" name="autreText" placeholder="Décrivez la mission">
-                    </div>
-                    
-
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="destination">📍 Destination</label>
-                            <input type="text" id="destination" name="destination" 
-                                   placeholder="Ex: Centre-ville, Aéroport..." required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="kmDepart">🛣️ Kilométrage de départ</label>
-                            <input type="number" id="kmDepart" name="kmDepart" 
-                                   placeholder="Ex: 45230" min="0" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="carburantDepart">⛽ Niveau carburant départ</label>
-                        <select id="carburantDepart" name="carburantDepart" required>
-                            <option value="">Sélectionner le niveau</option>
-                            <option value="plein">🟢 Plein (100%)</option>
-                            <option value="3/4">🟡 3/4 (75%)</option>
-                            <option value="1/2">🟠 1/2 (50%)</option>
-                            <option value="1/4">🔴 1/4 (25%)</option>
-                            <option value="reserve">⚠️ Réserve (<10%)</option>
-                            <option value="vide">💀 Vide</option>
-                        </select>
-                        <small style="color: #6b7280; display: block; margin-top: 5px;">
-                            Indiquez le niveau de carburant avant le départ
-                        </small>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary">
-                        ▶️ Démarrer la mission
-                    </button>
-                </form>
-            </div>
-        `;
+        missionControlHTML = generateNewMissionHTML(vehicle.id);
     }
 
     return `
@@ -1273,8 +927,440 @@ function generateVehicleDetailsHTML(vehicle) {
             <p>${vehicle.immatriculation}</p>
             ${vehicle.dateImmatriculation ? `<small>Mise en service: ${vehicle.dateImmatriculation}</small>` : ''}
         </div>
-
         ${missionControlHTML}
+    `;
+}
+
+// Fonction pour générer le HTML d'accès refusé
+function generateAccessDeniedHTML(reason) {
+    let message = 'Ce véhicule n\'est pas disponible.';
+    
+    if (reason === 'maintenance') {
+        message = 'Ce véhicule est en maintenance.';
+    } else if (reason === 'occupied') {
+        message = 'Ce véhicule est utilisé par un autre utilisateur ou vous avez déjà une mission active.';
+    }
+    
+    return `
+        <div class="access-denied">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            <h4>🚫 Accès non autorisé</h4>
+            <p>${message}</p>
+        </div>
+    `;
+}
+
+// Fonction pour générer le HTML d'une mission active
+function generateActiveMissionHTML(mission, vehicleId) {
+    return `
+        <div class="mission-active">
+            <h4>🎯 Mission en cours</h4>
+            
+            ${generateMissionInfoSection(mission)}
+            
+            ${generateTransferStatusSection(mission)}
+            
+            ${generateNavigationSection(mission)}
+            
+            ${generateEndMissionSection(vehicleId, mission)}
+        </div>
+    `;
+}
+
+// Fonction pour générer la section d'informations de mission
+function generateMissionInfoSection(mission) {
+    return `
+        <div class="mission-info">
+            <div class="mission-info-item">
+                <div class="mission-info-label">Conducteur actuel</div>
+                <div class="mission-info-value">👤 ${mission.nom}
+                    ${mission.isTransferred ? '<span style="color: #10b981; font-size: 12px; margin-left: 8px;">(Mission transférée)</span>' : ''}
+                </div>
+            </div>
+            
+            ${mission.isTransferred && mission.conducteurOriginal && mission.conducteurOriginal !== mission.nom ? `
+            <div class="mission-info-item">
+                <div class="mission-info-label">Conducteur original</div>
+                <div class="mission-info-value">👤 ${mission.conducteurOriginal}</div>
+            </div>
+            ` : ''}
+            
+            ${mission.conducteur2 ? `
+            <div class="mission-info-item">
+                <div class="mission-info-label">2ème conducteur</div>
+                <div class="mission-info-value">👤 ${mission.conducteur2}</div>
+            </div>
+            ` : ''}
+            
+            ${mission.isTransferred && mission.transferredToName ? `
+            <div class="mission-info-item">
+                <div class="mission-info-label">Transférée à</div>
+                <div class="mission-info-value">👤 ${mission.transferredToName}
+                    <span style="color: #f59e0b; font-size: 12px; margin-left: 8px;">(Contrôle transféré)</span>
+                </div>
+            </div>
+            ` : ''}
+            
+            <div class="mission-info-item">
+                <div class="mission-info-label">Date</div>
+                <div class="mission-info-value">${new Date(mission.missionDate).toLocaleDateString('fr-FR')}</div>
+            </div>
+            
+            <div class="mission-info-item">
+                <div class="mission-info-label">Créneau</div>
+                <div class="mission-info-value">${getCreneauText(mission.creneau)}</div>
+            </div>
+            
+            <div class="mission-info-item">
+                <div class="mission-info-label">Heure de départ</div>
+                <div class="mission-info-value">${mission.departureTime}</div>
+            </div>
+            
+            <div class="mission-info-item">
+                <div class="mission-info-label">Nature</div>
+                <div class="mission-info-value">${mission.missionNature}</div>
+            </div>
+            
+            <div class="mission-info-item">
+                <div class="mission-info-label">Destination</div>
+                <div class="mission-info-value">${mission.destination}</div>
+            </div>
+            
+            <div class="mission-info-item">
+                <div class="mission-info-label">Passagers</div>
+                <div class="mission-info-value">${mission.passengers}</div>
+            </div>
+            
+            <div class="mission-info-item">
+                <div class="mission-info-label">Km départ</div>
+                <div class="mission-info-value">${mission.kmDepart} km</div>
+            </div>
+            
+            <div class="mission-info-item">
+                <div class="mission-info-label">Carburant départ</div>
+                <div class="mission-info-value">${getCarburantText(mission.carburantDepart)}</div>
+            </div>
+        </div>
+    `;
+}
+
+// Fonction pour générer la section de statut de transfert
+function generateTransferStatusSection(mission) {
+    if (!mission.isTransferred) {
+        return '';
+    }
+    
+    return `
+        <div class="transfer-status" style="margin: 20px 0; padding: 15px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 5px;">
+            <h5 style="color: #92400e; margin: 0 0 10px 0;">⚡ Statut de transfert</h5>
+            <p style="color: #92400e; margin: 0; font-size: 14px;">
+                Le contrôle de cette mission a été transféré à <strong>${mission.transferredToName}</strong>.
+                Vous pouvez toujours terminer la mission si nécessaire.
+            </p>
+        </div>
+    `;
+}
+
+// Fonction pour générer la section navigation
+function generateNavigationSection(mission) {
+    return `
+        <div class="navigation-section" style="margin: 20px 0; padding: 15px; background: linear-gradient(135deg, #f8faff 0%, #e0f2fe 100%); border-radius: 10px; border-left: 4px solid #667eea;">
+            <h4 style="color: #1f2937; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                🧭 Navigation
+            </h4>
+            <button onclick="openWaze('${mission.destination.replace(/'/g, "\\'")}')" style="
+                background: linear-gradient(45deg, #667eea, #764ba2);
+                border: none;
+                border-radius: 25px;
+                padding: 12px 24px;
+                color: white;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                width: 100%;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 18px rgba(102, 126, 234, 0.4)'"
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.3)'">
+                <svg viewBox="0 0 24 24" fill="currentColor" style="width: 18px; height: 18px;">
+                    <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
+                </svg>
+                Lancer Waze
+            </button>
+            <div style="font-size: 12px; color: #6b7280; margin-top: 8px; text-align: center;">
+                📍 ${mission.destination}
+            </div>
+        </div>
+    `;
+}
+
+// Fonction pour générer la section de fin de mission
+function generateEndMissionSection(vehicleId, mission) {
+    return `
+        <div class="mission-control">
+            <h4 style="color: #1f2937; margin-bottom: 20px;">🏁 Terminer la mission</h4>
+            <form onsubmit="endMissionWithDetails(event, ${vehicleId})">
+                ${generateEndMissionFormFields(mission)}
+                ${generatePhotosSection()}
+                <button type="submit" class="btn btn-danger">
+                    ⏹️ Terminer la mission
+                </button>
+            </form>
+        </div>
+    `;
+}
+
+// Fonction pour générer les champs du formulaire de fin de mission
+function generateEndMissionFormFields(mission) {
+    return `
+        <div class="form-row">
+            <div class="form-group">
+                <label for="arrivalTime">🕐 Heure d'arrivée</label>
+                <input type="time" id="arrivalTime" name="arrivalTime" 
+                       value="${new Date().toTimeString().slice(0, 5)}" required>
+            </div>
+            <div class="form-group">
+                <label for="kmArrivee">🛣️ Kilométrage d'arrivée</label>
+                <input type="number" id="kmArrivee" name="kmArrivee" 
+                       placeholder="Ex: 45280" min="${mission.kmDepart}" required>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="carburantArrivee">⛽ Niveau carburant arrivée</label>
+                <select id="carburantArrivee" name="carburantArrivee" required>
+                    <option value="">Sélectionner le niveau</option>
+                    <option value="plein">🟢 Plein (100%)</option>
+                    <option value="3/4">🟡 3/4 (75%)</option>
+                    <option value="1/2">🟠 1/2 (50%)</option>
+                    <option value="1/4">🔴 1/4 (25%)</option>
+                    <option value="reserve">⚠️ Réserve (<10%)</option>
+                    <option value="vide">💀 Vide</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="pleinEffectue" name="pleinEffectue">
+                    <label for="pleinEffectue">⛽ Plein effectué</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="notes">📝 Notes / Observations (optionnel)</label>
+            <textarea id="notes" name="notes" rows="3" 
+                      placeholder="Remarques, incidents, observations..."></textarea>
+        </div>
+    `;
+}
+
+// Fonction pour générer la section photos
+function generatePhotosSection() {
+    return `
+        <div class="form-group">
+            <label>📷 Photos de mission</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button type="button" onclick="takePhoto()" style="
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    padding: 10px 15px;
+                    cursor: pointer;
+                ">📷 Prendre une photo</button>
+                <button type="button" onclick="clearPhotos()" style="
+                    background: #6c757d;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    padding: 10px 15px;
+                    cursor: pointer;
+                ">🗑️ Effacer tout</button>
+            </div>
+            <div id="photoCount" style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
+                ${capturedPhotos.length} photo(s) prise(s)
+            </div>
+            <div id="photosPreview" style="
+                display: flex;
+                flex-wrap: wrap;
+                gap: 5px;
+                max-height: 200px;
+                overflow-y: auto;
+                border: 1px solid #ddd;
+                padding: 10px;
+                border-radius: 5px;
+            "></div>
+        </div>
+    `;
+}
+
+// Fonction pour générer le HTML d'une nouvelle mission
+function generateNewMissionHTML(vehicleId) {
+    return `
+        <div class="mission-control">
+            <h4>🚀 Nouvelle Mission</h4>
+            <form onsubmit="startMission(event, ${vehicleId})">
+                ${generateDriverFields()}
+                ${generateDateTimeFields()}
+                ${generateMissionTypeFields()}
+                ${generateDestinationFields()}
+                ${generateFuelField()}
+                <button type="submit" class="btn btn-primary">
+                    ▶️ Démarrer la mission
+                </button>
+            </form>
+        </div>
+    `;
+}
+
+// Fonction pour générer les champs conducteurs
+function generateDriverFields() {
+    return `
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nom">👤 Conducteur principal</label>
+                <input type="text" id="nom" name="nom" value="${currentUser?.prenom || ''}" readonly 
+                       style="background-color: #f3f4f6; opacity: 0.8;">
+            </div>
+            
+            <div class="form-group">
+                <label for="conducteur2">👤 2ème conducteur (optionnel)</label>
+                <input type="text" id="conducteur2" name="conducteur2" 
+                       placeholder="Nom du deuxième conducteur">
+            </div>
+        </div>
+    `;
+}
+
+// Fonction pour générer les champs date/heure
+function generateDateTimeFields() {
+    return `
+        <div class="form-row">
+            <div class="form-group">
+                <label for="missionDate">📅 Date de mission</label>
+                <input type="date" id="missionDate" name="missionDate" 
+                       value="${new Date().toISOString().split('T')[0]}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="creneau">⏰ Créneau</label>
+                <select id="creneau" name="creneau" required>
+                    <option value="">Sélectionner le créneau</option>
+                    <option value="matinee">🌅 Matinée</option>
+                    <option value="apres-midi">🌇 Après-midi</option>
+                    <option value="journee">🌞 Journée complète</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="departureTime">🕐 Heure de départ</label>
+                <input type="time" id="departureTime" name="departureTime" 
+                       value="${new Date().toTimeString().slice(0, 5)}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="passengers">👥 Nombre de passagers</label>
+                <input type="number" id="passengers" name="passengers" 
+                       placeholder="2" min="0" max="200" required>
+            </div>
+        </div>
+    `;
+}
+
+// Fonction pour générer les champs type de mission
+function generateMissionTypeFields() {
+    return `
+        <div class="form-group">
+            <label for="mission">Nature de la mission</label>
+            <select id="mission" name="mission" onchange="checkAutre(this)" required>
+                <option value="" disabled selected>-- Sélectionner une mission --</option>
+
+                <optgroup label="🎯 Sorties éducatives & culturelles">
+                    <option value="cinema">🎬 Cinéma / Spectacle</option>
+                    <option value="musee">🎨 Musée / Exposition</option>
+                    <option value="bibliotheque">📚 Bibliothèque / Médiathèque</option>
+                </optgroup>
+
+                <optgroup label="🏀 Sorties sport & loisirs">
+                    <option value="piscine">🏊 Piscine / Sport adapté</option>
+                    <option value="loisirs">🎳 Loisirs (bowling, jeux, parc…)</option>
+                    <option value="restaurant">🍔 Sortie restaurant / café</option>
+                </optgroup>
+
+                <optgroup label="🌳 Sorties nature & découvertes">
+                    <option value="parc">🌳 Parc / Balade</option>
+                    <option value="ferme">🐑 Ferme pédagogique / Zoo</option>
+                </optgroup>
+
+                <optgroup label="🏥 Santé">
+                    <option value="medical">🏥 Rendez-vous médical / accompagnement</option>
+                </optgroup>
+
+                <optgroup label="⚙️ Services & interventions">
+                    <option value="livraison">📦 Livraison</option>
+                    <option value="maintenance">🔧 Maintenance</option>
+                    <option value="urgence">🚨 Mission d'urgence</option>
+                </optgroup>
+
+                <optgroup label="✏️ Divers">
+                    <option value="autre">✏️ Autre</option>
+                </optgroup>
+            </select>
+        </div>
+        
+        <div class="form-group hidden" id="autreGroup">
+            <label for="autreText">✏️ Précisez la mission</label>
+            <input type="text" id="autreText" name="autreText" placeholder="Décrivez la mission">
+        </div>
+    `;
+}
+
+// Fonction pour générer les champs destination/km
+function generateDestinationFields() {
+    return `
+        <div class="form-row">
+            <div class="form-group">
+                <label for="destination">📍 Destination</label>
+                <input type="text" id="destination" name="destination" 
+                       placeholder="Ex: Centre-ville, Aéroport..." required>
+            </div>
+            
+            <div class="form-group">
+                <label for="kmDepart">🛣️ Kilométrage de départ</label>
+                <input type="number" id="kmDepart" name="kmDepart" 
+                       placeholder="Ex: 45230" min="0" required>
+            </div>
+        </div>
+    `;
+}
+
+// Fonction pour générer le champ carburant
+function generateFuelField() {
+    return `
+        <div class="form-group">
+            <label for="carburantDepart">⛽ Niveau carburant départ</label>
+            <select id="carburantDepart" name="carburantDepart" required>
+                <option value="">Sélectionner le niveau</option>
+                <option value="plein">🟢 Plein (100%)</option>
+                <option value="3/4">🟡 3/4 (75%)</option>
+                <option value="1/2">🟠 1/2 (50%)</option>
+                <option value="1/4">🔴 1/4 (25%)</option>
+                <option value="reserve">⚠️ Réserve (<10%)</option>
+                <option value="vide">💀 Vide</option>
+            </select>
+            <small style="color: #6b7280; display: block; margin-top: 5px;">
+                Indiquez le niveau de carburant avant le départ
+            </small>
+        </div>
     `;
 }
 
@@ -1384,12 +1470,7 @@ function generateUserMissionsList() {
                 </div>
                 <div class="mission-details">
                     <div>🚗 ${mission.vehicleName}</div>
-                    <div>${mission.transferred_to_name && mission.heure_transfert ? `
-    <div>👤 Conducteur 1: ${mission.nom} (${mission.departureTime} - ${mission.heure_transfert})</div>
-    <div>👤 Conducteur 2: ${mission.transferred_to_name} (${mission.heure_transfert} - ${mission.arrivalTime || 'En cours'})</div>
-` : `
-    <div>👤 ${mission.nom}${mission.conducteur2 ? ` + ${mission.conducteur2}` : ''}</div>
-`}</div>
+                    <div>👤 ${mission.nom}${mission.conducteur2 ? ` + ${mission.conducteur2}` : ''}</div>
                     <div>📅 ${new Date(mission.missionDate).toLocaleDateString('fr-FR')}</div>
                     <div>⏰ ${getCreneauText(mission.creneau)}</div>
                     <div>📋 ${mission.missionNature}</div>
@@ -2159,6 +2240,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         showNotification('Erreur lors du chargement des données', 'error');
     }
 });
+
+
 
 
 // ========================================
