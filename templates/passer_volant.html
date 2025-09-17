@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriveGo - Passer le Volant</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/passer_volant.css') }}">
-
 </head>
 <body>
     <!-- Bouton de retour -->
@@ -62,6 +61,15 @@
                             </select>
                         </div>
 
+                        <!-- NOUVEAU : Heure du transfert -->
+                        <div class="form-group">
+                            <label for="transferTime">🕐 Heure du transfert</label>
+                            <input type="time" id="transferTime" name="transferTime" required>
+                            <small style="color: #6b7280; font-size: 13px; margin-top: 5px; display: block;">
+                                Indiquez l'heure exacte où le transfert s'effectue
+                            </small>
+                        </div>
+
                         <div class="form-group">
                             <label for="transferNotes">Notes de transfert (optionnel)</label>
                             <input type="text" id="transferNotes" name="transferNotes" 
@@ -78,8 +86,5 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/passer_volant.js') }}"></script>
-
-
-    
 </body>
 </html>

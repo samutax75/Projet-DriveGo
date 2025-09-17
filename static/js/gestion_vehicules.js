@@ -108,42 +108,122 @@ async function loadUserMissions() {
         if (response.ok) {
             const data = await response.json();
             if (data.success && data.missions) {
+                console.log('Données missions reçues:', data.missions[0]); // Debug
+                
                 // Séparer les missions actives et terminées
-                activeMissions = data.missions.filter(m => m.statut === 'active').map(mission => ({
-                    id: mission.id,
-                    vehicleId: mission.vehicule_id,
-                    userId: mission.user_id,
-                    vehicleName: mission.vehicule_nom || 'Véhicule inconnu',
-                    nom: mission.conducteur_actuel, // UTILISER LE CONDUCTEUR ACTUEL
-                    conducteurOriginal: mission.conducteur_original, // CONDUCTEUR ORIGINAL
-                    conducteur2: mission.conducteur2 || '',
-                    isTransferred: mission.is_transferred || false, // STATUT DE TRANSFERT
-                    transferredToName: mission.transferred_to_name, // QUI A REÇU LE TRANSFERT
-                    missionDate: mission.date_mission,
-                    creneau: mission.creneau || 'journee',
-                    departureTime: mission.heure_debut,
-                    arrivalTime: mission.heure_fin,
-                    missionNature: mission.motif,
-                    destination: mission.destination,
-                    passengers: mission.nb_passagers || 1,
-                    kmDepart: mission.km_depart,
-                    kmArrivee: mission.km_arrivee,
-                    carburantDepart: mission.carburant_depart || '',
-                    carburantArrivee: mission.carburant_arrivee || '',
-                    pleinEffectue: mission.plein_effectue || false,
-                    status: 'active',
-                    startTime: new Date(mission.created_at),
-                    notes: mission.notes,
-                    photos: mission.photos || []
-                }));
+                activeMissions = data.missions.filter(m => m.statut === 'active').map(mission => {
+                    // Déterminer le conducteur à afficher
+                    let conducteurActuel = currentUser.prenom; // Par défaut
+                    let conducteurOriginal = currentUser.prenom;
+                    let isTransferred = false;
+                    
+                    if (mission.conducteur_actuel && mission.conducteur_actuel.trim() !== '') {
+                        conducteurActuel = mission.conducteur_actuel;
+                    }
+                    
+                    if (mission.conducteur_original && mission.conducteur_original.trim() !== '') {
+                        conducteurOriginal = mission.conducteur_original;
+                    }
+                    
+                    if (mission.is_transferred === true || mission.control_status === 'transferred') {
+                        isTransferred = true;
+                    }
+                    
+                    return {
+                        id: mission.id,
+                        vehicleId: mission.vehicule_id,
+                        userId: mission.user_id,
+                        transferredToUserId: mission.transferred_to_user_id || null, // AJOUTÉ
+                        vehicleName: mission.vehicule_nom || 'Véhicule inconnu',
+                        nom: conducteurActuel,
+                        conducteurOriginal: conducteurOriginal,
+                        conducteur2: mission.conducteur2 || '',
+                        isTransferred: isTransferred,
+                        transferredToName: mission.transferred_to_name || null,
+                        transferredAtTime: mission.transferred_at_time || null,
+                        timeSlots: mission.time_slots || [],
+                        missionDate: mission.date_mission,
+                        creneau: mission.creneau || 'journee',
+                        departureTime: mission.heure_debut,
+                        arrivalTime: mission.heure_fin,
+                        missionNature: mission.motif,
+                        destination: mission.destination,
+                        passengers: mission.nb_passagers || 1,
+                        kmDepart: mission.km_depart,
+                        kmArrivee: mission.km_arrivee,
+                        carburantDepart: mission.carburant_depart || '',
+                        carburantArrivee: mission.carburant_arrivee || '',
+                        pleinEffectue: mission.plein_effectue || false,
+                        status: 'active',
+                        startTime: new Date(mission.created_at),
+                        notes: mission.notes || '',
+                        photos: mission.photos || []
+                    };
+                });
                 
-                // Même logique pour completedMissions...
-                completedMissions = data.missions.filter(m => m.statut === 'completed').map(mission => ({
-                    // ... même structure avec conducteur_actuel
-                }));
+                completedMissions = data.missions.filter(m => m.statut === 'completed').map(mission => {
+                    // Même logique pour missions terminées
+                    let conducteurActuel = currentUser.prenom;
+                    let conducteurOriginal = currentUser.prenom;
+                    let isTransferred = false;
+                    
+                    if (mission.conducteur_actuel && mission.conducteur_actuel.trim() !== '') {
+                        conducteurActuel = mission.conducteur_actuel;
+                    }
+                    
+                    if (mission.conducteur_original && mission.conducteur_original.trim() !== '') {
+                        conducteurOriginal = mission.conducteur_original;
+                    }
+                    
+                    if (mission.is_transferred === true || mission.control_status === 'transferred') {
+                        isTransferred = true;
+                    }
+                    
+                    // Calculer la distance parcourue
+                    let distanceParcourue = 0;
+                    if (mission.km_arrivee && mission.km_depart) {
+                        distanceParcourue = mission.km_arrivee - mission.km_depart;
+                    }
+                    
+                    return {
+                        id: mission.id,
+                        vehicleId: mission.vehicule_id,
+                        userId: mission.user_id,
+                        transferredToUserId: mission.transferred_to_user_id || null, // AJOUTÉ
+                        vehicleName: mission.vehicule_nom || 'Véhicule inconnu',
+                        nom: conducteurActuel,
+                        conducteurOriginal: conducteurOriginal,
+                        conducteur2: mission.conducteur2 || '',
+                        isTransferred: isTransferred,
+                        transferredToName: mission.transferred_to_name || null,
+                        transferredAtTime: mission.transferred_at_time || null,
+                        timeSlots: mission.time_slots || [],
+                        missionDate: mission.date_mission,
+                        creneau: mission.creneau || 'journee',
+                        departureTime: mission.heure_debut,
+                        arrivalTime: mission.heure_fin,
+                        missionNature: mission.motif,
+                        destination: mission.destination,
+                        passengers: mission.nb_passagers || 1,
+                        kmDepart: mission.km_depart,
+                        kmArrivee: mission.km_arrivee,
+                        carburantDepart: mission.carburant_depart || '',
+                        carburantArrivee: mission.carburant_arrivee || '',
+                        pleinEffectue: mission.plein_effectue || false,
+                        distanceParcourue: distanceParcourue,
+                        status: 'completed',
+                        startTime: new Date(mission.created_at),
+                        endTime: mission.updated_at ? new Date(mission.updated_at) : null,
+                        notes: mission.notes || '',
+                        photos: mission.photos || []
+                    };
+                });
                 
+                console.log(`Missions chargées: ${activeMissions.length} actives, ${completedMissions.length} terminées`);
                 return true;
             }
+        } else {
+            console.error('Erreur API missions:', response.status, response.statusText);
         }
     } catch (error) {
         console.error('Erreur lors du chargement des missions:', error);
@@ -158,6 +238,39 @@ function handleAuthError() {
     }, 1500);
 }
 
+
+
+
+function generateTimeSlotsHTML(mission) {
+    if (!mission.isTransferred || !mission.timeSlots || mission.timeSlots.length === 0) {
+        return `<div>🕐 ${mission.departureTime}${mission.arrivalTime ? ' - ' + mission.arrivalTime : ''}</div>`;
+    }
+    
+    let timeSlotsHTML = '<div style="margin: 5px 0;">';
+    
+    mission.timeSlots.forEach((slot, index) => {
+        const isFirst = index === 0;
+        const icon = isFirst ? '🚗' : '🔄';
+        const style = isFirst ? 'color: #1f2937;' : 'color: #10b981;';
+        
+        timeSlotsHTML += `
+            <div style="${style} font-size: 13px; margin: 2px 0;">
+                ${icon} ${slot.driver}: ${slot.start} - ${slot.end} (${slot.duration})
+            </div>
+        `;
+        
+        if (!isFirst && index === 1) {
+            timeSlotsHTML += `
+                <div style="color: #f59e0b; font-size: 12px; margin: 2px 0 2px 10px;">
+                    → Transfert à ${slot.start}
+                </div>
+            `;
+        }
+    });
+    
+    timeSlotsHTML += '</div>';
+    return timeSlotsHTML;
+}
 // ========================================
 // FONCTIONS PHOTO
 // ========================================
@@ -1436,7 +1549,12 @@ function showVehicleDetails(vehicle) {
 
 function generateUserMissionsList() {
     const allMissions = [...activeMissions, ...completedMissions];
-    const userMissions = allMissions.filter(m => m.userId === currentUser?.id);
+    
+    // MODIFICATION PRINCIPALE : Inclure toutes les missions où l'utilisateur est impliqué
+    const userMissions = allMissions.filter(m => 
+        m.userId === currentUser?.id ||  // Missions créées par l'utilisateur
+        m.transferredToUserId === currentUser?.id  // Missions reçues par transfert
+    );
 
     if (userMissions.length === 0) {
         return `
@@ -1460,36 +1578,80 @@ function generateUserMissionsList() {
         const consommation = mission.carburantDepart && mission.carburantArrivee ? 
             calculateConsommation(mission.carburantDepart, mission.carburantArrivee, mission.pleinEffectue) : '';
         
+        // Déterminer le rôle de l'utilisateur dans cette mission
+        const isCreator = mission.userId === currentUser?.id;
+        const isTransferRecipient = mission.transferredToUserId === currentUser?.id;
+        
+        // Générer l'affichage des conducteurs avec support transfert
+        let conducteursHTML = '';
+        
+        if (mission.isTransferred) {
+            // Mission transférée - afficher les deux conducteurs
+            conducteursHTML = `
+                <div>👤 Conducteur original: ${mission.conducteurOriginal}</div>
+                <div style="color: #10b981;">🔄 Transférée à: ${mission.transferredToName || mission.nom}</div>
+            `;
+            
+            // Ajouter un badge pour indiquer le rôle de l'utilisateur actuel
+            if (isTransferRecipient) {
+                conducteursHTML += `<div style="color: #3b82f6; font-size: 12px; font-weight: bold;">💼 Vous avez reçu cette mission par transfert</div>`;
+            }
+        } else {
+            // Mission normale - afficher le conducteur principal
+            conducteursHTML = `<div>👤 ${mission.nom}</div>`;
+        }
+        
+        // Ajouter le 2ème conducteur s'il existe
+        if (mission.conducteur2) {
+            conducteursHTML += `<div>👤 2ème conducteur: ${mission.conducteur2}</div>`;
+        }
+        
+        // Générer l'affichage des horaires avec créneaux
+        const timeSlotsHTML = generateTimeSlotsHTML(mission);
+        
         return `
             <div class="mission-item ${mission.status}">
                 <div class="mission-header">
                     <div class="mission-destination">📍 ${mission.destination}</div>
                     <div class="mission-status ${mission.status}">
                         ${mission.status === 'active' ? '🟡 En cours' : '✅ Terminée'}
+                        ${mission.isTransferred ? ' <span style="font-size: 12px; color: #10b981;">(Transférée)</span>' : ''}
+                        ${isTransferRecipient ? ' <span style="font-size: 12px; color: #3b82f6;">(Reçue)</span>' : ''}
                     </div>
                 </div>
                 <div class="mission-details">
                     <div>🚗 ${mission.vehicleName}</div>
-                    <div>👤 ${mission.nom}${mission.conducteur2 ? ` + ${mission.conducteur2}` : ''}</div>
+                    ${conducteursHTML}
                     <div>📅 ${new Date(mission.missionDate).toLocaleDateString('fr-FR')}</div>
                     <div>⏰ ${getCreneauText(mission.creneau)}</div>
                     <div>📋 ${mission.missionNature}</div>
                     <div>👥 ${mission.passengers} passagers</div>
-                    <div>🕐 ${mission.departureTime}${mission.arrivalTime ? ' - ' + mission.arrivalTime : ''}</div>
-                    <div>🛣️ Départ: ${mission.kmDepart} km</div>
-                    ${mission.kmArrivee ? `<div>🏁 Arrivée: ${mission.kmArrivee} km</div>` : ''}
-                    ${mission.distanceParcourue ? `<div>📏 Distance: ${mission.distanceParcourue} km</div>` : ''}
+                    
+                    <!-- AFFICHAGE DES CRÉNEAUX HORAIRES DÉTAILLÉS -->
+                    ${timeSlotsHTML}
+                    
+                    <div>🛣️ Km départ: ${mission.kmDepart} km</div>
+                    ${mission.kmArrivee ? `<div>🏁 Km arrivée: ${mission.kmArrivee} km</div>` : ''}
+                    ${mission.distanceParcourue ? `<div>📏 Distance parcourue: ${mission.distanceParcourue} km</div>` : ''}
                     ${mission.carburantDepart ? `<div>⛽ Carburant départ: ${getCarburantText(mission.carburantDepart)}</div>` : ''}
                     ${mission.carburantArrivee ? `<div>⛽ Carburant arrivée: ${getCarburantText(mission.carburantArrivee)}</div>` : ''}
                     ${mission.pleinEffectue ? `<div>⛽ ✅ Plein effectué</div>` : ''}
                     ${consommation ? `<div>📊 ${consommation}</div>` : ''}
-                    ${mission.notes ? `<div>📝 ${mission.notes}</div>` : ''}
+                    ${mission.notes ? `<div>📝 Notes: ${mission.notes}</div>` : ''}
                     ${mission.photos && mission.photos.length > 0 ? `<div>📷 ${mission.photos.length} photo(s) jointe(s)</div>` : ''}
+                    
+                    ${mission.isTransferred ? `
+                    <div style="margin-top: 10px; padding: 10px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;">
+                        <div style="font-size: 12px; color: #15803d; font-weight: bold;">ℹ️ Informations de transfert:</div>
+                        <div style="font-size: 12px; color: #15803d;">Mission créée par ${mission.conducteurOriginal}, contrôle transféré à ${mission.transferredToName || mission.nom}${mission.transferredAtTime ? ' à ' + mission.transferredAtTime : ''}</div>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
         `;
     }).join('');
 }
+
 
 function calculateConsommation(niveauDepart, niveauArrivee, pleinEffectue) {
     const convertToPercent = (niveau) => {

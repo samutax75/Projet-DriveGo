@@ -55,7 +55,7 @@ async function fetchActiveMission() {
             if (data.success && data.missions) {
                 const missions = data.missions.filter(m => m.statut === 'active');
                 if (missions.length > 0) {
-                    activeMission = missions[0]; // Première mission active
+                    activeMission = missions[0];
                     return true;
                 }
             }
@@ -79,7 +79,6 @@ async function fetchAvailableDrivers() {
         if (response.ok) {
             const data = await response.json();
             if (data.success && data.users) {
-                // Filtrer pour exclure l'utilisateur actuel
                 availableDrivers = data.users
                     .filter(user => user.id !== currentUser.id)
                     .map(user => ({
@@ -90,10 +89,10 @@ async function fetchAvailableDrivers() {
                 return true;
             }
         }
-        return true; // Continuer même si pas d'autres conducteurs
+        return true;
     } catch (error) {
         console.error('Erreur récupération conducteurs:', error);
-        return true; // Continuer même en cas d'erreur
+        return true;
     }
 }
 
@@ -120,7 +119,7 @@ async function fetchVehicleInfo(vehicleId) {
     }
 }
 
-// Afficher les informations
+// Afficher les informations de mission SANS pré-remplir l'heure
 async function displayMissionInfo() {
     document.getElementById('currentDriver').textContent = currentUser.prenom;
     
@@ -130,6 +129,8 @@ async function displayMissionInfo() {
             `${vehicle.nom} (${vehicle.immatriculation || activeMission.vehicule_id})`;
         document.getElementById('currentDestination').textContent = activeMission.destination || '-';
         document.getElementById('currentDepartureTime').textContent = activeMission.heure_debut || '-';
+        
+        // NE PLUS PRÉ-REMPLIR AUTOMATIQUEMENT - Laisser l'utilisateur saisir l'heure réelle
     }
 }
 
@@ -145,13 +146,11 @@ function populateDriversList() {
         select.appendChild(option);
     });
 
-    // Option pour saisie manuelle
     const manualOption = document.createElement('option');
     manualOption.value = 'manual';
     manualOption.textContent = '✏️ Autre conducteur (saisie manuelle)';
     select.appendChild(manualOption);
 
-    // Gérer la saisie manuelle
     select.addEventListener('change', function() {
         const existingInput = document.getElementById('manualDriverInput');
         if (existingInput) existingInput.remove();
@@ -169,17 +168,54 @@ function populateDriversList() {
     });
 }
 
-// Transférer le volant - FONCTION MODIFIÉE
+// Mettre à jour l'heure de transfert en temps réel
+function updateTransferTimeToNow() {
+    const transferTimeInput = document.getElementById('transferTime');
+    if (transferTimeInput) {
+        const now = new Date();
+        const currentTime = now.toTimeString().slice(0, 5);
+        transferTimeInput.value = currentTime;
+        console.log(`Heure mise à jour automatiquement: ${currentTime}`);
+    }
+}
+
+// Transférer le volant avec heure dynamique
 async function transferVehicle(event) {
     event.preventDefault();
+    
+    // Mettre à jour l'heure avec l'heure actuelle si le champ est vide
+    const transferTimeInput = document.getElementById('transferTime');
+    if (!transferTimeInput.value) {
+        updateTransferTimeToNow();
+    }
     
     const formData = new FormData(event.target);
     const newDriverId = formData.get('newDriver');
     const newDriverName = formData.get('manualDriverName');
+    const transferTime = formData.get('transferTime');
     const notes = formData.get('transferNotes');
+
+    // Validation détaillée avec logs
+    console.log('Validation des données de transfert:');
+    console.log('- newDriverId:', newDriverId);
+    console.log('- newDriverName:', newDriverName);
+    console.log('- transferTime:', transferTime);
+    console.log('- notes:', notes);
 
     if (!newDriverId) {
         showError('Veuillez sélectionner un nouveau conducteur');
+        return;
+    }
+
+    if (!transferTime) {
+        showError('Veuillez indiquer l\'heure du transfert');
+        return;
+    }
+
+    // Validation du format d'heure
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(transferTime)) {
+        showError('Format d\'heure invalide. Utilisez le format HH:MM');
         return;
     }
 
@@ -191,10 +227,12 @@ async function transferVehicle(event) {
         const transferData = {
             new_driver_id: newDriverId === 'manual' ? null : newDriverId,
             new_driver_name: newDriverName || null,
+            transfer_time: transferTime,
             notes: notes
         };
 
-        // Utilise la nouvelle route de transfert
+        console.log('Données envoyées au serveur Flask:', transferData);
+
         const response = await fetch(`/api/missions/${activeMission.id}/transfer`, {
             method: 'PUT',
             credentials: 'include',
@@ -202,10 +240,15 @@ async function transferVehicle(event) {
             body: JSON.stringify(transferData)
         });
 
+        console.log('Statut réponse:', response.status);
+
         if (response.ok) {
             const data = await response.json();
+            console.log('Réponse serveur:', data);
+            
             if (data.success) {
-                // MODIFIÉ : Au lieu de rediriger, afficher les options
+                console.log(`Transfert confirmé à l'heure: ${data.transfer_time || transferTime}`);
+                alert(`✅ Mission transférée avec succès à ${data.transfer_time || transferTime} !`);
                 showTransferSuccessOptions();
                 return;
             }
@@ -222,9 +265,8 @@ async function transferVehicle(event) {
     }
 }
 
-// NOUVELLE FONCTION : Afficher les options après transfert réussi
+// Afficher les options après transfert réussi
 function showTransferSuccessOptions() {
-    // Remplacer le formulaire par les options
     const mainContent = document.getElementById('mainContent');
     
     mainContent.innerHTML = `
@@ -271,7 +313,6 @@ function showTransferSuccessOptions() {
         </div>
     `;
     
-    // Ajouter les effets hover aux boutons
     const optionBtns = document.querySelectorAll('.option-btn');
     optionBtns.forEach(btn => {
         btn.addEventListener('mouseenter', function() {
@@ -286,7 +327,7 @@ function showTransferSuccessOptions() {
     });
 }
 
-// NOUVELLE FONCTION : Reprendre le contrôle
+// Reprendre le contrôle
 async function resumeControl() {
     if (!activeMission) {
         showError('Mission introuvable');
@@ -314,7 +355,7 @@ async function resumeControl() {
     }
 }
 
-// NOUVELLE FONCTION : Aller à la page de fin de mission
+// Aller à la page de fin de mission
 function goToEndMission() {
     if (!activeMission) {
         showError('Mission introuvable');
@@ -322,11 +363,11 @@ function goToEndMission() {
     }
     
     if (confirm('Êtes-vous sûr de vouloir terminer la mission maintenant ?')) {
-        window.location.href = `/complete_mission?mission_id=${activeMission.id}`;
+        window.location.href = '/gestion_vehicules';
     }
 }
 
-// NOUVELLE FONCTION : Retourner aux véhicules
+// Retourner aux véhicules
 function goToVehicles() {
     window.location.href = '/gestion_vehicules';
 }
@@ -340,7 +381,30 @@ function showError(message) {
     }, 5000);
 }
 
-// Initialisation
+// Ajouter un bouton pour mettre à jour l'heure automatiquement
+function addUpdateTimeButton() {
+    const transferTimeInput = document.getElementById('transferTime');
+    if (transferTimeInput && !document.getElementById('updateTimeBtn')) {
+        const updateBtn = document.createElement('button');
+        updateBtn.id = 'updateTimeBtn';
+        updateBtn.type = 'button';
+        updateBtn.textContent = '🕐 Maintenant';
+        updateBtn.style.cssText = `
+            margin-left: 10px;
+            padding: 8px 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        `;
+        updateBtn.onclick = updateTransferTimeToNow;
+        transferTimeInput.parentNode.appendChild(updateBtn);
+    }
+}
+
+// Initialisation complète
 async function init() {
     try {
         const userLoaded = await fetchCurrentUser();
@@ -359,12 +423,17 @@ async function init() {
         await displayMissionInfo();
         populateDriversList();
 
+        // Ajouter le bouton pour mettre à jour l'heure
+        setTimeout(addUpdateTimeButton, 500);
+
         // Ajouter l'événement de soumission du formulaire
         document.getElementById('transferForm').addEventListener('submit', transferVehicle);
 
         // Masquer le loading et afficher le contenu
         document.getElementById('loadingState').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
+
+        console.log('Initialisation terminée. Mission active:', activeMission);
 
     } catch (error) {
         console.error('Erreur initialisation:', error);

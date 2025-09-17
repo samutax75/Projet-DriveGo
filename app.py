@@ -119,15 +119,6 @@ def init_db():
     # Migration de la table missions
     migrate_missions_table(cursor)
 
-    # Créer un utilisateur par défaut si aucun n'existe
-    cursor.execute('SELECT COUNT(*) FROM users')
-    if cursor.fetchone()[0] == 0:
-        default_password = generate_password_hash('password123')
-        cursor.execute('''
-            INSERT INTO users (email, password_hash, nom, prenom, telephone, role)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', ('user@drivego.com', default_password, 'Utilisateur', 'Test', '', 'client'))
-
     # Insérer les véhicules réels si vide
     cursor.execute('SELECT COUNT(*) FROM vehicules')
     if cursor.fetchone()[0] == 0:
@@ -146,17 +137,17 @@ def init_db():
 
     conn.commit()
     conn.close()
-
-
+    
+    # Migration de la table missions
 def migrate_missions_table(cursor):
-    """Recrée la table missions avec les bonnes colonnes"""
+    """Migration de la table missions avec les bonnes colonnes"""
     
     # Vérifier si la table missions existe
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='missions'")
     table_exists = cursor.fetchone()
 
     if not table_exists:
-        # Créer directement la table missions si elle n'existe pas
+        # Créer la table missions avec toutes les colonnes
         cursor.execute('''
             CREATE TABLE missions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -183,6 +174,7 @@ def migrate_missions_table(cursor):
                 transferred_to_name TEXT DEFAULT NULL,
                 transfer_notes TEXT DEFAULT NULL,
                 transferred_at TIMESTAMP DEFAULT NULL,
+                transferred_at_time TEXT DEFAULT NULL,
                 can_be_ended BOOLEAN DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -190,50 +182,31 @@ def migrate_missions_table(cursor):
                 FOREIGN KEY (user_id) REFERENCES users (id)
             )
         ''')
+        print("Table missions créée")
     else:
-        # Vérifier les colonnes existantes dans missions
+        # La table existe - vérifier et ajouter les colonnes manquantes
         cursor.execute("PRAGMA table_info(missions)")
         existing_columns = [col[1] for col in cursor.fetchall()]
 
-        # Colonnes obligatoires existantes
-        required_columns = [
-            ("date_mission", "DATE NOT NULL DEFAULT ''"),
-            ("heure_debut", "TEXT DEFAULT ''"),
-            ("heure_fin", "TEXT DEFAULT ''"),
-            ("motif", "TEXT DEFAULT ''"),
-            ("destination", "TEXT DEFAULT ''"),
-            ("nb_passagers", "INTEGER DEFAULT 1"),
-            ("km_depart", "INTEGER DEFAULT 0"),
-            ("km_arrivee", "INTEGER DEFAULT 0"),
-            ("carburant_depart", "TEXT DEFAULT ''"),
-            ("carburant_arrivee", "TEXT DEFAULT ''"),
-            ("plein_effectue", "BOOLEAN DEFAULT 0"),
-            ("photos", "TEXT DEFAULT ''"),
-            ("creneau", "TEXT DEFAULT 'journee'"),
-            ("conducteur2", "TEXT DEFAULT ''"),
-            ("statut", "TEXT DEFAULT 'active'"),
-            ("notes", "TEXT DEFAULT ''")
-        ]
-
-        # Ajouter les colonnes manquantes (existantes)
-        for col_name, col_def in required_columns:
-            if col_name not in existing_columns:
-                cursor.execute(f"ALTER TABLE missions ADD COLUMN {col_name} {col_def}")
-        
-        # Nouvelles colonnes pour le transfert
+        # Colonnes à ajouter si manquantes
         transfer_columns = [
             ("control_status", "TEXT DEFAULT 'manual'"),
             ("transferred_to_user_id", "INTEGER DEFAULT NULL"),
             ("transferred_to_name", "TEXT DEFAULT NULL"),
             ("transfer_notes", "TEXT DEFAULT NULL"),
             ("transferred_at", "TIMESTAMP DEFAULT NULL"),
+            ("transferred_at_time", "TEXT DEFAULT NULL"),
             ("can_be_ended", "BOOLEAN DEFAULT 1")
         ]
         
-        # Ajouter les colonnes de transfert manquantes
+        # Ajouter seulement les colonnes manquantes
         for col_name, col_def in transfer_columns:
             if col_name not in existing_columns:
-                cursor.execute(f"ALTER TABLE missions ADD COLUMN {col_name} {col_def}")
+                try:
+                    cursor.execute(f"ALTER TABLE missions ADD COLUMN {col_name} {col_def}")
+                    print(f"Colonne {col_name} ajoutée")
+                except Exception as e:
+                    print(f"Erreur ajout colonne {col_name}: {e}")
 # Initialiser la base au lancement
 init_db()
 
@@ -292,13 +265,58 @@ def transfer_mission(mission_id):
         new_driver_id = data.get('new_driver_id')
         new_driver_name = data.get('new_driver_name')
         notes = data.get('notes', '')
+        transfer_time = data.get('transfer_time')
         
-        # Validation
-        if not new_driver_id and not new_driver_name:
+        print(f"DEBUG transfert - Données reçues:")
+        print(f"  - new_driver_id: {new_driver_id}")
+        print(f"  - new_driver_name: {new_driver_name}")
+        print(f"  - transfer_time: {transfer_time}")
+        
+        # CORRECTION : Récupérer le nom si un ID utilisateur est fourni
+        if new_driver_id and new_driver_id != 'manual':
+            try:
+                cursor.execute("""
+                    SELECT nom, prenom FROM users WHERE id = ?
+                """, (new_driver_id,))
+                user_data = cursor.fetchone()
+                
+                if user_data:
+                    # Format: "Prenom Nom"
+                    new_driver_name = f"{user_data[1]} {user_data[0]}"
+                    print(f"  - Nom récupéré depuis la base: {new_driver_name}")
+                else:
+                    print(f"  - Utilisateur avec ID {new_driver_id} non trouvé")
+                    conn.close()
+                    return jsonify({'success': False, 'message': 'Utilisateur non trouvé'}), 404
+                    
+            except Exception as e:
+                print(f"Erreur récupération utilisateur: {e}")
+                conn.close()
+                return jsonify({'success': False, 'message': 'Erreur lors de la récupération de l\'utilisateur'}), 500
+        
+        # Validation finale
+        if not new_driver_name:
             conn.close()
-            return jsonify({'success': False, 'message': 'Nouveau conducteur requis'}), 400
+            return jsonify({'success': False, 'message': 'Nom du nouveau conducteur requis'}), 400
         
-        # Effectuer le transfert
+        # Gestion de l'heure de transfert
+        if not transfer_time:
+            from datetime import datetime
+            transfer_time = datetime.now().strftime('%H:%M')
+            print(f"  - Heure par défaut utilisée: {transfer_time}")
+        
+        # Vérifier que ce n'est pas un auto-transfert
+        cursor.execute("SELECT nom, prenom FROM users WHERE id = ?", (user_id,))
+        current_user_data = cursor.fetchone()
+        if current_user_data:
+            current_user_name = f"{current_user_data[1]} {current_user_data[0]}"
+            if new_driver_name.strip().lower() == current_user_name.strip().lower():
+                conn.close()
+                return jsonify({'success': False, 'message': 'Impossible de transférer à soi-même'}), 400
+        
+        print(f"  - Transfert validé vers: {new_driver_name}")
+        
+        # Effectuer le transfert avec l'heure
         cursor.execute("""
             UPDATE missions 
             SET control_status = 'transferred',
@@ -306,23 +324,30 @@ def transfer_mission(mission_id):
                 transferred_to_name = ?,
                 transfer_notes = ?,
                 transferred_at = CURRENT_TIMESTAMP,
+                transferred_at_time = ?,
                 can_be_ended = 1,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        """, (new_driver_id, new_driver_name, notes, mission_id))
+        """, (new_driver_id, new_driver_name, notes, transfer_time, mission_id))
         
         conn.commit()
         conn.close()
         
         return jsonify({
             'success': True,
-            'message': 'Contrôle transféré avec succès',
+            'message': f'Contrôle transféré avec succès à {new_driver_name}',
+            'transfer_time': transfer_time,
+            'transferred_to': new_driver_name,
             'can_resume': True,
             'can_end_mission': True
         }), 200
         
     except Exception as e:
         print(f"Erreur transfert mission: {e}")
+        import traceback
+        traceback.print_exc()
+        if 'conn' in locals():
+            conn.close()
         return jsonify({'success': False, 'message': 'Erreur lors du transfert'}), 500
 
 
@@ -1275,6 +1300,48 @@ def google_signin():
     except ValueError:
         return jsonify({'success': False, 'error': 'Token invalide'}), 400
 
+
+@app.route('/api/users', methods=['GET'])
+def api_get_users():
+    """Récupérer la liste des utilisateurs pour les transferts"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, nom, prenom, email 
+            FROM users 
+            WHERE id != ?
+            ORDER BY prenom, nom
+        """, (session['user_id'],))  # Exclure l'utilisateur connecté
+        
+        users = cursor.fetchall()
+        conn.close()
+        
+        users_list = []
+        for user in users:
+            users_list.append({
+                'id': user[0],
+                'nom': f"{user[2]} {user[1]}",  # prenom nom
+                'prenom': user[2],
+                'email': user[3]
+            })
+        
+        return jsonify({
+            'success': True,
+            'users': users_list
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur récupération utilisateurs: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la récupération des utilisateurs'
+        }), 500
+
 @app.route('/api/user/current', methods=['GET'])
 @login_required
 def api_get_current_user():
@@ -1520,7 +1587,7 @@ def api_get_vehicules():
 
 @app.route('/api/missions/<int:mission_id>/complete', methods=['PUT'])
 def complete_mission(mission_id):
-    """Terminer une mission avec support des photos prises et du transfert de contrôle"""
+    """Terminer une mission avec conservation des données de transfert"""
     try:
         # Vérifier l'authentification
         if 'user_id' not in session:
@@ -1533,7 +1600,8 @@ def complete_mission(mission_id):
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT id, user_id, vehicule_id, statut, km_depart, control_status, can_be_ended 
+            SELECT id, user_id, vehicule_id, statut, km_depart, control_status, 
+                   can_be_ended, transferred_to_name, transferred_at_time
             FROM missions 
             WHERE id = ?
         """, (mission_id,))
@@ -1549,12 +1617,12 @@ def complete_mission(mission_id):
             conn.close()
             return jsonify({'success': False, 'message': 'Accès refusé'}), 403
         
-        # MODIFIÉ : Vérifier le statut de la mission (accepter 'active' même si transférée)
+        # Vérifier le statut de la mission
         if mission[3] != 'active':
             conn.close()
             return jsonify({'success': False, 'message': 'Mission déjà terminée'}), 400
         
-        # NOUVEAU : Vérifier si la mission peut être terminée (même si transférée)
+        # Vérifier si la mission peut être terminée
         control_status = mission[5] or 'manual'
         can_be_ended = mission[6] if mission[6] is not None else True
         
@@ -1595,10 +1663,9 @@ def complete_mission(mission_id):
         
         # Traitement des photos capturées
         uploaded_photos = []
-        photos = request.files.getlist('photos[]')  # Récupérer les photos depuis FormData
+        photos = request.files.getlist('photos[]')
         
         if photos:
-            # Créer le dossier s'il n'existe pas
             os.makedirs(UPLOAD_FOLDER, exist_ok=True)
             
             for i, photo in enumerate(photos):
@@ -1630,9 +1697,8 @@ def complete_mission(mission_id):
         # Convertir les photos en JSON pour la base
         photos_json = json.dumps(uploaded_photos) if uploaded_photos else ''
         
-        # Mettre à jour la mission dans la base de données
+        # CORRECTION PRINCIPALE : Conserver les données de transfert
         try:
-            # MODIFIÉ : Inclure la remise à zéro du contrôle transféré
             update_query = """
                 UPDATE missions 
                 SET heure_fin = ?, 
@@ -1642,11 +1708,6 @@ def complete_mission(mission_id):
                     notes = ?, 
                     photos = ?,
                     statut = 'completed',
-                    control_status = 'manual',
-                    transferred_to_user_id = NULL,
-                    transferred_to_name = NULL,
-                    transfer_notes = NULL,
-                    transferred_at = NULL,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
             """
@@ -1666,21 +1727,28 @@ def complete_mission(mission_id):
             """, (vehicule_id,))
             
             conn.commit()
-            conn.close()
             
-            # Message de succès adapté selon le contexte
+            # Message de succès avec contexte de transfert
             success_message = 'Mission terminée avec succès'
             if control_status == 'transferred':
-                success_message += ' (contrôle était transféré)'
+                transferred_to = mission[7] or 'un autre conducteur'
+                success_message = f'Mission terminée avec succès (transférée à {transferred_to})'
+            
+            # Calculer les données pour la réponse
+            distance_parcourue = km_arrivee - km_depart
+            
+            conn.close()
             
             return jsonify({
                 'success': True, 
                 'message': success_message,
                 'data': {
                     'mission_id': mission_id,
-                    'distance_parcourue': km_arrivee - km_depart,
+                    'distance_parcourue': distance_parcourue,
                     'photos_count': len(uploaded_photos),
-                    'was_transferred': control_status == 'transferred'
+                    'was_transferred': control_status == 'transferred',
+                    'transferred_to': mission[7] if control_status == 'transferred' else None,
+                    'transfer_time': mission[8] if control_status == 'transferred' else None
                 }
             }), 200
             
@@ -1695,7 +1763,8 @@ def complete_mission(mission_id):
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'message': 'Erreur serveur interne'}), 500
-
+    
+    
 @app.route('/api/missions', methods=['POST'])
 def api_create_mission():
     """Créer une nouvelle mission"""
@@ -1799,7 +1868,7 @@ def api_create_mission():
 
 @app.route('/api/user/<int:user_id>/missions', methods=['GET'])
 def api_get_user_missions(user_id):
-    """Récupérer les missions d'un utilisateur spécifique avec support transfert"""
+    """Récupérer les missions d'un utilisateur spécifique avec support transfert et horaires"""
     try:
         if 'user_id' not in session:
             return jsonify({'success': False, 'message': 'Non authentifié'}), 401
@@ -1816,7 +1885,7 @@ def api_get_user_missions(user_id):
                 m.conducteur2, m.carburant_depart, m.carburant_arrivee, 
                 m.plein_effectue, m.photos,
                 m.control_status, m.transferred_to_user_id, m.transferred_to_name,
-                m.transfer_notes, m.transferred_at, m.can_be_ended,
+                m.transfer_notes, m.transferred_at, m.transferred_at_time, m.can_be_ended,
                 v.nom as vehicule_nom, v.immatriculation,
                 u.nom as user_nom, u.prenom as user_prenom
             FROM missions m
@@ -1831,10 +1900,49 @@ def api_get_user_missions(user_id):
         
         missions_list = []
         for mission in missions:
+            # DEBUG : Afficher les valeurs pour comprendre les index
+            print(f"DEBUG Mission {mission[0]}:")
+            print(f"  - transferred_at (index 25): {mission[25]}")
+            print(f"  - transferred_at_time (index 26): {mission[26]}")
+            print(f"  - can_be_ended (index 27): {mission[27]}")
+            
             # Déterminer qui est le conducteur actuel
-            is_transferred = mission[21] == 'transferred'  # control_status
-            current_driver = mission[23] if is_transferred else f"{mission[28]} {mission[29]}"  # transferred_to_name ou nom+prenom
-            original_driver = f"{mission[28]} {mission[29]}"  # toujours le créateur original
+            is_transferred = mission[21] == 'transferred' if mission[21] else False  # control_status
+            
+            # Nom complet de l'utilisateur original  
+            user_nom = mission[29] if mission[29] else ""
+            user_prenom = mission[30] if mission[30] else ""
+            original_driver = f"{user_prenom} {user_nom}".strip()
+            
+            # Conducteur actuel (transféré ou original)
+            if is_transferred and mission[23]:  # transferred_to_name
+                current_driver = mission[23]
+            else:
+                current_driver = original_driver
+            
+            # Calculer les créneaux horaires si transfert - CORRECTION DES INDEX
+            time_slots = []
+            if is_transferred and mission[26] and mission[4] and mission[5]:  # CORRIGÉ: transferred_at_time = index 26
+                transfer_time = mission[26]  # transferred_at_time (heure simple HH:MM)
+                start_time = mission[4]      # heure_debut
+                end_time = mission[5]        # heure_fin
+                
+                print(f"  - Calcul créneaux avec transfer_time: {transfer_time}")
+                
+                time_slots = [
+                    {
+                        'driver': original_driver,
+                        'start': start_time,
+                        'end': transfer_time,
+                        'duration': calculate_duration(start_time, transfer_time)
+                    },
+                    {
+                        'driver': mission[23],  # transferred_to_name
+                        'start': transfer_time,
+                        'end': end_time,
+                        'duration': calculate_duration(transfer_time, end_time)
+                    }
+                ]
             
             missions_list.append({
                 'id': mission[0],
@@ -1858,18 +1966,20 @@ def api_get_user_missions(user_id):
                 'carburant_arrivee': mission[18],
                 'plein_effectue': mission[19],
                 'photos': mission[20],
-                # NOUVELLES DONNÉES DE TRANSFERT
+                # DONNÉES DE TRANSFERT - INDEX CORRIGÉS
                 'control_status': mission[21] or 'manual',
                 'transferred_to_user_id': mission[22],
                 'transferred_to_name': mission[23],
                 'transfer_notes': mission[24],
-                'transferred_at': mission[25],
-                'can_be_ended': mission[26] if mission[26] is not None else True,
+                'transferred_at': mission[25],          # timestamp complet
+                'transferred_at_time': mission[26],     # heure simple HH:MM
+                'can_be_ended': mission[27] if mission[27] is not None else True,
                 'is_transferred': is_transferred,
                 'conducteur_actuel': current_driver,
                 'conducteur_original': original_driver,
-                'vehicule_nom': mission[27],
-                'vehicule_immatriculation': mission[28]
+                'time_slots': time_slots,
+                'vehicule_nom': mission[28],            # CORRIGÉ: index 28
+                'vehicule_immatriculation': mission[29]  # CORRIGÉ: index 29
             })
         
         return jsonify({
@@ -1879,10 +1989,122 @@ def api_get_user_missions(user_id):
         
     except Exception as e:
         print(f"Erreur lors de la récupération des missions utilisateur: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
             'message': 'Erreur lors de la récupération des missions utilisateur'
         }), 500
+
+
+def calculate_duration(start_time, end_time):
+    """Calcule la durée entre deux heures au format HH:MM"""
+    try:
+        from datetime import datetime, timedelta
+        
+        # Nettoyer les heures pour ne garder que HH:MM
+        def clean_time(time_str):
+            if not time_str:
+                return None
+            time_str = str(time_str)
+            # Si c'est un timestamp, extraire l'heure
+            if len(time_str) > 8:  # Plus long que "HH:MM:SS"
+                try:
+                    # Essayer de parser comme datetime
+                    if 'T' in time_str or ' ' in time_str:
+                        dt = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
+                        return dt.strftime('%H:%M')
+                except:
+                    pass
+                # Sinon prendre les 5 premiers caractères
+                return time_str[:5] if len(time_str) >= 5 else time_str
+            return time_str
+        
+        start_clean = clean_time(start_time)
+        end_clean = clean_time(end_time)
+        
+        print(f"DEBUG calculate_duration: '{start_time}' -> '{start_clean}', '{end_time}' -> '{end_clean}'")
+        
+        if not start_clean or not end_clean:
+            return "N/A"
+        
+        # Valider le format HH:MM
+        if ':' not in start_clean or ':' not in end_clean:
+            return "N/A"
+            
+        # Parser les heures
+        start = datetime.strptime(start_clean, '%H:%M')
+        end = datetime.strptime(end_clean, '%H:%M')
+        
+        # Gérer le cas où la fin est le jour suivant
+        if end < start:
+            end += timedelta(days=1)
+        
+        # Calculer la durée
+        duration = end - start
+        
+        # Convertir en heures et minutes
+        total_minutes = int(duration.total_seconds() / 60)
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
+        
+        if hours > 0:
+            return f"{hours}h{minutes:02d}"
+        else:
+            return f"{minutes}min"
+            
+    except Exception as e:
+        print(f"Erreur calcul durée: {e}")
+        return "N/A"
+
+def calculate_duration(start_time, end_time):
+    """Calcule la durée entre deux heures au format HH:MM"""
+    try:
+        from datetime import datetime, timedelta
+        
+        # Nettoyer les heures pour ne garder que HH:MM
+        def clean_time(time_str):
+            if not time_str:
+                return None
+            # Si c'est un timestamp, extraire l'heure
+            if len(str(time_str)) > 5:
+                try:
+                    dt = datetime.fromisoformat(str(time_str).replace('Z', '+00:00'))
+                    return dt.strftime('%H:%M')
+                except:
+                    return str(time_str)[:5]
+            return str(time_str)
+        
+        start_clean = clean_time(start_time)
+        end_clean = clean_time(end_time)
+        
+        if not start_clean or not end_clean:
+            return "N/A"
+        
+        # Parser les heures
+        start = datetime.strptime(start_clean, '%H:%M')
+        end = datetime.strptime(end_clean, '%H:%M')
+        
+        # Gérer le cas où la fin est le jour suivant
+        if end < start:
+            end += timedelta(days=1)
+        
+        # Calculer la durée
+        duration = end - start
+        
+        # Convertir en heures et minutes
+        total_minutes = int(duration.total_seconds() / 60)
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
+        
+        if hours > 0:
+            return f"{hours}h{minutes:02d}"
+        else:
+            return f"{minutes}min"
+            
+    except Exception as e:
+        print(f"Erreur calcul durée: {e}")
+        return "N/A"
 
 @app.route('/api/missions/active', methods=['GET'])
 def api_get_active_missions():
