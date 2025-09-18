@@ -10,10 +10,8 @@
 </head>
 <body>
     <!-- Bouton de retour -->
-    <div class="close-button">
-    <a href="{{ url_for('index') }}" style="text-decoration: none; color: inherit;">×</a>
-</div>
-    
+    <div class="close-button" onclick="goToHomePage()">×</div>
+         
     <div class="container">
         <header class="header">
             <h1>Parc Auto</h1>
@@ -26,7 +24,7 @@
                 <h2 class="card-title">
                     📋 Véhicules
                 </h2>
-                
+                                 
                 <div class="vehicle-list" id="vehicleList">
                     <!-- Les véhicules seront générés par JavaScript -->
                 </div>
@@ -37,7 +35,7 @@
                 <h2 class="card-title">
                     🔍 Info Véhicule
                 </h2>
-                
+                                 
                 <div class="no-selection" id="noSelection">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
@@ -61,6 +59,77 @@
             </div>
             <div class="modal-body" id="modalBody">
                 <!-- Contenu du modal -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Input fichier caché -->
+    <input type="file" id="fileInput" class="file-input" accept=".pdf,.jpg,.jpeg,.png" />
+
+    <!-- Modal d'édition des informations d'assurance -->
+    <div class="edit-modal" id="editModal">
+        <div class="edit-modal-content">
+            <div class="edit-modal-header">
+                <h2>✏️ Modifier les informations d'assurance</h2>
+                <button class="modal-close" onclick="closeEditModal()">×</button>
+            </div>
+            <div class="edit-modal-body">
+                <form id="assuranceForm">
+                    <input type="hidden" id="vehicleId" />
+                    
+                    <div class="form-group">
+                        <label for="compagnie">🏢 Compagnie d'assurance</label>
+                        <select id="compagnie" name="compagnie">
+                            <option value="">Sélectionner...</option>
+                            <option value="AXA Assurances">AXA Assurances</option>
+                            <option value="MAIF">MAIF</option>
+                            <option value="Groupama">Groupama</option>
+                            <option value="Allianz">Allianz</option>
+                            <option value="MACIF">MACIF</option>
+                            <option value="MMA">MMA</option>
+                            <option value="Matmut">Matmut</option>
+                            <option value="autre">Autre (préciser ci-dessous)</option>
+                        </select>
+                        <input type="text" id="compagnieAutre" name="compagnieAutre" placeholder="Nom de la compagnie" style="display:none;">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="numeroContrat">📋 Numéro de contrat</label>
+                        <input type="text" id="numeroContrat" name="numeroContrat" required />
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dateDebut">📅 Date de début</label>
+                            <input type="date" id="dateDebut" name="dateDebut" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="dateExpiration">⏰ Date d'expiration</label>
+                            <input type="date" id="dateExpiration" name="dateExpiration" required />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="typeCouverture">🛡️ Type de couverture</label>
+                        <select id="typeCouverture" name="typeCouverture" required>
+                            <option value="">Sélectionner...</option>
+                            <option value="Au tiers">Au tiers</option>
+                            <option value="Tiers étendu">Tiers étendu</option>
+                            <option value="Tous risques">Tous risques</option>
+                            <option value="Tous risques + PMR">Tous risques + PMR</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="montantPrime">💰 Prime annuelle (€)</label>
+                        <input type="number" id="montantPrime" name="montantPrime" step="0.01" min="0" />
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" onclick="closeEditModal()" class="btn-cancel">Annuler</button>
+                        <button type="submit" class="btn-save">💾 Sauvegarder</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
