@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion du Parc Automobile</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/fiches_vehicules.css') }}">
-
-    
 </head>
 <body>
-    <!-- Bouton de retour -->
-    <div class="close-button" onclick="goToHomePage()">×</div>
+    <!-- Bouton de retour amélioré - maintenant à droite -->
+    <div class="close-button" onclick="goToHomePage()"></div>
          
     <div class="container">
         <header class="header">
@@ -35,12 +33,29 @@
                 <h2 class="card-title">
                     🔍 Info Véhicule
                 </h2>
+                
+                <!-- Boutons de navigation pour les sections -->
+                <div class="nav-buttons" id="navButtons" style="display: none;">
+                    <button class="nav-btn general active" onclick="showSection('general')" data-section="general">
+                        <span>🔧</span>
+                        Général
+                    </button>
+                    <button class="nav-btn carte-grise" onclick="showSection('carte-grise')" data-section="carte-grise">
+                        <span>📄</span>
+                        Carte Grise
+                    </button>
+                    <button class="nav-btn assurance" onclick="showSection('assurance')" data-section="assurance">
+                        <span>🛡️</span>
+                        Assurance
+                    </button>
+                </div>
                                  
                 <div class="no-selection" id="noSelection">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
                     </svg>
-                    <p>Sélectionnez un véhicule dans la liste<br>pour voir ses détails</p>
+                    <h3>Parc Auto</h3>
+                    <p>Sélectionnez un véhicule dans la liste pour voir ses détails</p>
                 </div>
 
                 <div class="vehicle-details" id="vehicleDetails">
@@ -58,6 +73,21 @@
                 <button class="modal-close" onclick="closeMobileModal()">×</button>
             </div>
             <div class="modal-body" id="modalBody">
+                <!-- Boutons de navigation mobile -->
+                <div class="nav-buttons" id="mobileNavButtons">
+                    <button class="nav-btn general active" onclick="showMobileSection('general')" data-section="general">
+                        <span>🔧</span>
+                        Général
+                    </button>
+                    <button class="nav-btn carte-grise" onclick="showMobileSection('carte-grise')" data-section="carte-grise">
+                        <span>📄</span>
+                        Carte Grise
+                    </button>
+                    <button class="nav-btn assurance" onclick="showMobileSection('assurance')" data-section="assurance">
+                        <span>🛡️</span>
+                        Assurance
+                    </button>
+                </div>
                 <!-- Contenu du modal -->
             </div>
         </div>

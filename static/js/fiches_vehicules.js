@@ -634,6 +634,60 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
+
+
+// Fonctions pour gérer la navigation entre sections
+        function showSection(sectionName) {
+            // Retirer la classe active de tous les boutons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Ajouter la classe active au bouton cliqué
+            document.querySelector(`.nav-btn.${sectionName}`).classList.add('active');
+            
+            // Ici vous pouvez ajouter la logique pour afficher la section correspondante
+            console.log('Section sélectionnée:', sectionName);
+            
+            // Exemple: cacher/afficher des contenus selon la section
+            // showVehicleSection(sectionName);
+        }
+        
+        function showMobileSection(sectionName) {
+            // Même logique pour mobile
+            document.querySelectorAll('#mobileNavButtons .nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.querySelector(`#mobileNavButtons .nav-btn.${sectionName}`).classList.add('active');
+            
+            console.log('Section mobile sélectionnée:', sectionName);
+        }
+        
+        // Fonction pour afficher/masquer les boutons de navigation
+        function toggleNavButtons(show) {
+            const navButtons = document.getElementById('navButtons');
+            if (navButtons) {
+                navButtons.style.display = show ? 'flex' : 'none';
+            }
+        }
+        
+        // Fonction goToHomePage pour le bouton de retour
+        function goToHomePage() {
+            window.location.href = '/';
+        }
+
+
+        // Quand un véhicule est sélectionné
+   toggleNavButtons(true);
+   
+   // Quand aucun véhicule n'est sélectionné
+   toggleNavButtons(false);
+
 function goToHomePage() {
     window.location.href = '/';
 }
+
+
+
+
