@@ -73,6 +73,16 @@ UPLOAD_FOLDER = 'uploads/missions'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 
+
+# Ajouter dans la configuration
+VEHICLE_UPLOAD_FOLDER = 'static/uploads/vehicules'
+ALLOWED_VEHICLE_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png'}
+
+# Créer les dossiers
+os.makedirs(f"{VEHICLE_UPLOAD_FOLDER}/carte_grise", exist_ok=True)
+os.makedirs(f"{VEHICLE_UPLOAD_FOLDER}/assurance", exist_ok=True)
+os.makedirs(f"{VEHICLE_UPLOAD_FOLDER}/controle_technique", exist_ok=True)
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -98,7 +108,7 @@ def init_db():
         )
     ''')
 
-    # Table des véhicules
+    # Table des véhicules étendue avec toutes les nouvelles colonnes
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS vehicules (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -112,33 +122,131 @@ def init_db():
             disponible BOOLEAN DEFAULT 1,
             statut TEXT DEFAULT 'actif',
             notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            
+            -- Carte Grise
+            carte_grise_numero TEXT DEFAULT '',
+            carte_grise_date_emission TEXT DEFAULT '',
+            carte_grise_titulaire TEXT DEFAULT '',
+            carte_grise_fichier TEXT DEFAULT '',
+            
+            -- Assurance
+            assurance_compagnie TEXT DEFAULT '',
+            assurance_numero_contrat TEXT DEFAULT '',
+            assurance_date_debut TEXT DEFAULT '',
+            assurance_date_expiration TEXT DEFAULT '',
+            assurance_type_couverture TEXT DEFAULT '',
+            assurance_montant_prime REAL DEFAULT 0,
+            assurance_fichier TEXT DEFAULT '',
+            
+            -- Contrôle Technique
+            ct_date_prochain_controle TEXT DEFAULT '',
+            ct_photo TEXT DEFAULT ''
         )
     ''')
     
-    # Migration de la table missions
+    # Migration pour les tables existantes
+    migrate_vehicules_table(cursor)
     migrate_missions_table(cursor)
 
-    # Insérer les véhicules réels si vide
+    # Insérer les véhicules réels si vide (avec toutes les nouvelles données)
     cursor.execute('SELECT COUNT(*) FROM vehicules')
     if cursor.fetchone()[0] == 0:
         vehicules_reels = [
-            (1, "TRAFIC BLANC", "FV-088-JJ", "26/11/2020", "29/10/2024", "28/10/2026", "30/09/2026", "4985080", 1, "actif", ""),
-            (2, "TRAFIC PMR", "GT-176-AF", "14/12/2023", "", "14/12/2027", "30/06/2029", "8954319", 1, "actif", ""),
-            (3, "TRAFIC VERT", "EJ-374-TT", "02/02/2017", "12/03/2025", "11/03/2027", "30/09/2026", "4985081", 1, "actif", ""),
-            (4, "TRAFIC ROUGE", "CW-819-FR", "26/06/2013", "27/01/2025", "26/01/2027", "30/09/2026", "4985082", 1, "actif", ""),
-            (5, "KANGOO", "DS-429-PF", "22/06/2015", "29/01/2025", "28/01/2027", "30/09/2026", "4985084", 1, "actif", "")
+            (1, "TRAFIC BLANC", "FV-088-JJ", "26/11/2020", "29/10/2024", "28/10/2026", "30/09/2026", "4985080", 1, "actif", "",
+             # Carte Grise
+             "123456789", "26/11/2020", "Fondation Perce-Neige", "",
+             # Assurance  
+             "AXA Assurances", "POL789456", "01/01/2024", "31/12/2024", "Tous risques", 0, "",
+             # Contrôle Technique
+             "28/10/2026", ""),
+             
+            (2, "TRAFIC PMR", "GT-176-AF", "14/12/2023", "", "14/12/2027", "30/06/2029", "8954319", 1, "actif", "",
+             # Carte Grise
+             "987654321", "14/12/2023", "Fondation Perce-Neige", "",
+             # Assurance
+             "MAIF", "CON456789", "01/01/2024", "31/12/2024", "Tous risques + PMR", 0, "",
+             # Contrôle Technique
+             "14/12/2027", ""),
+             
+            (3, "TRAFIC VERT", "EJ-374-TT", "02/02/2017", "12/03/2025", "11/03/2027", "30/09/2026", "4985081", 1, "actif", "",
+             # Carte Grise
+             "456789123", "02/02/2017", "Fondation Perce-Neige", "",
+             # Assurance
+             "Groupama", "GRP123456", "01/01/2024", "31/12/2024", "Tiers étendu", 0, "",
+             # Contrôle Technique
+             "11/03/2027", ""),
+             
+            (4, "TRAFIC ROUGE", "CW-819-FR", "26/06/2013", "27/01/2025", "26/01/2027", "30/09/2026", "4985082", 1, "actif", "",
+             # Carte Grise
+             "321654987", "26/06/2013", "Fondation Perce-Neige", "",
+             # Assurance
+             "Allianz", "ALZ987654", "01/01/2024", "31/12/2024", "Tous risques", 0, "",
+             # Contrôle Technique
+             "26/01/2027", ""),
+             
+            (5, "KANGOO", "DS-429-PF", "22/06/2015", "29/01/2025", "28/01/2027", "30/09/2026", "4985084", 1, "actif", "",
+             # Carte Grise
+             "147258369", "22/06/2015", "Fondation Perce-Neige", "",
+             # Assurance
+             "MACIF", "MAC654321", "01/01/2024", "31/12/2024", "Tiers étendu", 0, "",
+             # Contrôle Technique
+             "28/01/2027", "")
         ]
         
         cursor.executemany('''
-            INSERT INTO vehicules (id, nom, immatriculation, date_immatriculation, controle, prochain_controle, fin_validite, numero_carte, disponible, statut, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO vehicules (
+                id, nom, immatriculation, date_immatriculation, controle, prochain_controle, 
+                fin_validite, numero_carte, disponible, statut, notes,
+                carte_grise_numero, carte_grise_date_emission, carte_grise_titulaire, carte_grise_fichier,
+                assurance_compagnie, assurance_numero_contrat, assurance_date_debut, assurance_date_expiration, 
+                assurance_type_couverture, assurance_montant_prime, assurance_fichier,
+                ct_date_prochain_controle, ct_photo
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', vehicules_reels)
 
     conn.commit()
     conn.close()
+
+def migrate_vehicules_table(cursor):
+    """Migration pour ajouter les nouvelles colonnes à la table vehicules existante"""
     
-    # Migration de la table missions
+    # Vérifier les colonnes existantes
+    cursor.execute("PRAGMA table_info(vehicules)")
+    existing_columns = [col[1] for col in cursor.fetchall()]
+    
+    # Colonnes à ajouter si manquantes
+    new_columns = [
+        # Carte Grise
+        ("carte_grise_numero", "TEXT DEFAULT ''"),
+        ("carte_grise_date_emission", "TEXT DEFAULT ''"),
+        ("carte_grise_titulaire", "TEXT DEFAULT ''"),
+        ("carte_grise_fichier", "TEXT DEFAULT ''"),
+        
+        # Assurance
+        ("assurance_compagnie", "TEXT DEFAULT ''"),
+        ("assurance_numero_contrat", "TEXT DEFAULT ''"),
+        ("assurance_date_debut", "TEXT DEFAULT ''"),
+        ("assurance_date_expiration", "TEXT DEFAULT ''"),
+        ("assurance_type_couverture", "TEXT DEFAULT ''"),
+        ("assurance_montant_prime", "REAL DEFAULT 0"),
+        ("assurance_fichier", "TEXT DEFAULT ''"),
+        
+        # Contrôle Technique
+        ("ct_date_prochain_controle", "TEXT DEFAULT ''"),
+        ("ct_photo", "TEXT DEFAULT ''")
+    ]
+    
+    # Ajouter seulement les colonnes manquantes
+    for col_name, col_def in new_columns:
+        if col_name not in existing_columns:
+            try:
+                cursor.execute(f"ALTER TABLE vehicules ADD COLUMN {col_name} {col_def}")
+                print(f"Colonne {col_name} ajoutée à la table vehicules")
+            except Exception as e:
+                print(f"Erreur lors de l'ajout de la colonne {col_name}: {e}")
+
 def migrate_missions_table(cursor):
     """Migration de la table missions avec les bonnes colonnes"""
     
@@ -207,9 +315,26 @@ def migrate_missions_table(cursor):
                     print(f"Colonne {col_name} ajoutée")
                 except Exception as e:
                     print(f"Erreur ajout colonne {col_name}: {e}")
-# Initialiser la base au lancement
-init_db()
 
+# Configuration pour les uploads de véhicules
+VEHICLE_UPLOAD_FOLDER = 'static/uploads/vehicules'
+ALLOWED_VEHICLE_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png'}
+
+def create_upload_directories():
+    """Créer les dossiers d'upload nécessaires"""
+    directories = [
+        f"{VEHICLE_UPLOAD_FOLDER}/carte_grise",
+        f"{VEHICLE_UPLOAD_FOLDER}/assurance", 
+        f"{VEHICLE_UPLOAD_FOLDER}/controle_technique"
+    ]
+    
+    for directory in directories:
+        os.makedirs(directory, exist_ok=True)
+        print(f"Dossier créé: {directory}")
+
+# Initialiser au démarrage
+create_upload_directories()
+init_db()
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -2262,6 +2387,460 @@ def debug_mission(mission_id):
         print(f"Erreur debug: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ============================================================================
+# ROUTES API VÉHICULES - fiches vehicules
+# ============================================================================
+
+@app.route('/api/vehicules/<int:vehicule_id>/complete', methods=['GET'])
+def api_get_vehicule_complete(vehicule_id):
+    """Récupérer toutes les informations d'un véhicule (général + carte grise + assurance + CT)"""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT 
+                id, nom, immatriculation, date_immatriculation, controle, 
+                prochain_controle, fin_validite, numero_carte, disponible, 
+                statut, notes, created_at,
+                carte_grise_numero, carte_grise_date_emission, carte_grise_titulaire, carte_grise_fichier,
+                assurance_compagnie, assurance_numero_contrat, assurance_date_debut, assurance_date_expiration,
+                assurance_type_couverture, assurance_montant_prime, assurance_fichier,
+                ct_date_prochain_controle, ct_photo
+            FROM vehicules 
+            WHERE id = ?
+        ''', (vehicule_id,))
+        
+        vehicule = cursor.fetchone()
+        conn.close()
+        
+        if not vehicule:
+            return jsonify({'success': False, 'message': 'Véhicule introuvable'}), 404
+        
+        vehicule_data = {
+            'id': vehicule[0],
+            'nom': vehicule[1],
+            'immatriculation': vehicule[2],
+            'dateImmatriculation': vehicule[3],
+            'controle': vehicule[4],
+            'prochainControle': vehicule[5],
+            'finValidite': vehicule[6],
+            'numeroCarte': vehicule[7],
+            'disponible': bool(vehicule[8]),
+            'statut': vehicule[9],
+            'notes': vehicule[10],
+            'created_at': vehicule[11],
+            
+            # Carte Grise
+            'carteGrise': {
+                'numero': vehicule[12] or '',
+                'dateEmission': vehicule[13] or '',
+                'titulaire': vehicule[14] or '',
+                'fichier': vehicule[15] or None
+            },
+            
+            # Assurance
+            'assurance': {
+                'compagnie': vehicule[16] or '',
+                'numeroContrat': vehicule[17] or '',
+                'dateDebut': vehicule[18] or '',
+                'dateExpiration': vehicule[19] or '',
+                'typeCouverture': vehicule[20] or '',
+                'montantPrime': vehicule[21] or 0,
+                'fichier': vehicule[22] or None
+            },
+            
+            # Contrôle Technique
+            'controleTechnique': {
+                'dateProchainControle': vehicule[23] or '',
+                'photoUrl': vehicule[24] or None
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'vehicule': vehicule_data
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur récupération véhicule complet: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la récupération des données'
+        }), 500
+
+@app.route('/api/vehicules/<int:vehicule_id>/assurance', methods=['PUT'])
+def api_update_vehicule_assurance(vehicule_id):
+    """Mettre à jour les informations d'assurance d'un véhicule"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        data = request.get_json()
+        
+        # Validation des données
+        required_fields = ['compagnie', 'numeroContrat', 'dateDebut', 'dateExpiration', 'typeCouverture']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({
+                    'success': False,
+                    'message': f'Le champ {field} est requis'
+                }), 400
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que le véhicule existe
+        cursor.execute('SELECT id FROM vehicules WHERE id = ?', (vehicule_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({'success': False, 'message': 'Véhicule introuvable'}), 404
+        
+        # Mettre à jour les informations d'assurance (sans montantPrime)
+        cursor.execute('''
+            UPDATE vehicules 
+            SET assurance_compagnie = ?,
+                assurance_numero_contrat = ?,
+                assurance_date_debut = ?,
+                assurance_date_expiration = ?,
+                assurance_type_couverture = ?
+            WHERE id = ?
+        ''', (
+            data['compagnie'],
+            data['numeroContrat'],
+            data['dateDebut'],
+            data['dateExpiration'],
+            data['typeCouverture'],
+            vehicule_id
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Assurance mise à jour avec succès'
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur mise à jour assurance: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la mise à jour'
+        }), 500
+@app.route('/api/vehicules/<int:vehicule_id>/controle-technique', methods=['PUT'])
+def api_update_vehicule_controle_technique(vehicule_id):
+    """Mettre à jour les informations de contrôle technique"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        # Récupérer les données du formulaire
+        date_prochain_controle = request.form.get('dateProchainControle')
+        
+        if not date_prochain_controle:
+            return jsonify({
+                'success': False,
+                'message': 'La date du prochain contrôle est requise'
+            }), 400
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que le véhicule existe
+        cursor.execute('SELECT id FROM vehicules WHERE id = ?', (vehicule_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({'success': False, 'message': 'Véhicule introuvable'}), 404
+        
+        # Gestion de l'upload de photo
+        photo_path = None
+        if 'photo' in request.files:
+            photo = request.files['photo']
+            if photo and photo.filename != '' and allowed_file_vehicle(photo.filename):
+                # Générer un nom unique
+                filename = f"ct_{vehicule_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{photo.filename.rsplit('.', 1)[1].lower()}"
+                photo_path = os.path.join(VEHICLE_UPLOAD_FOLDER, 'controle_technique', filename)
+                
+                # Sauvegarder le fichier
+                os.makedirs(os.path.dirname(photo_path), exist_ok=True)
+                photo.save(photo_path)
+                
+                # Chemin relatif pour la base de données
+                photo_path = f"/static/uploads/vehicules/controle_technique/{filename}"
+        
+        # Mettre à jour en base
+        if photo_path:
+            cursor.execute('''
+                UPDATE vehicules 
+                SET ct_date_prochain_controle = ?, ct_photo = ?
+                WHERE id = ?
+            ''', (date_prochain_controle, photo_path, vehicule_id))
+        else:
+            cursor.execute('''
+                UPDATE vehicules 
+                SET ct_date_prochain_controle = ?
+                WHERE id = ?
+            ''', (date_prochain_controle, vehicule_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Contrôle technique mis à jour avec succès',
+            'photo_url': photo_path
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur mise à jour contrôle technique: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la mise à jour'
+        }), 500
+
+@app.route('/api/vehicules/<int:vehicule_id>/documents', methods=['POST'])
+def api_upload_vehicule_document(vehicule_id):
+    """Upload de documents pour un véhicule (carte grise ou assurance)"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        if 'document' not in request.files:
+            return jsonify({'success': False, 'message': 'Aucun fichier fourni'}), 400
+        
+        document = request.files['document']
+        document_type = request.form.get('type')  # 'carte_grise' ou 'assurance'
+        
+        if document.filename == '':
+            return jsonify({'success': False, 'message': 'Aucun fichier sélectionné'}), 400
+        
+        if document_type not in ['carte_grise', 'assurance']:
+            return jsonify({'success': False, 'message': 'Type de document invalide'}), 400
+        
+        if not allowed_file_vehicle(document.filename):
+            return jsonify({'success': False, 'message': 'Type de fichier non autorisé'}), 400
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que le véhicule existe
+        cursor.execute('SELECT id FROM vehicules WHERE id = ?', (vehicule_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({'success': False, 'message': 'Véhicule introuvable'}), 404
+        
+        # Générer un nom de fichier unique
+        filename = f"{document_type}_{vehicule_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{document.filename.rsplit('.', 1)[1].lower()}"
+        file_path = os.path.join(VEHICLE_UPLOAD_FOLDER, document_type, filename)
+        
+        # Sauvegarder le fichier
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        document.save(file_path)
+        
+        # Chemin relatif pour la base de données
+        relative_path = f"/static/uploads/vehicules/{document_type}/{filename}"
+        
+        # Mettre à jour la base de données
+        if document_type == 'carte_grise':
+            cursor.execute('UPDATE vehicules SET carte_grise_fichier = ? WHERE id = ?', (relative_path, vehicule_id))
+        elif document_type == 'assurance':
+            cursor.execute('UPDATE vehicules SET assurance_fichier = ? WHERE id = ?', (relative_path, vehicule_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Document uploadé avec succès',
+            'file_url': relative_path
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur upload document: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de l\'upload'
+        }), 500
+
+@app.route('/api/vehicules/complete', methods=['GET'])
+def api_get_all_vehicules_complete():
+    """Récupérer tous les véhicules avec toutes leurs informations pour le JavaScript"""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT 
+                id, nom, immatriculation, date_immatriculation, controle, 
+                prochain_controle, fin_validite, numero_carte, disponible, 
+                statut, notes, created_at,
+                carte_grise_numero, carte_grise_date_emission, carte_grise_titulaire, carte_grise_fichier,
+                assurance_compagnie, assurance_numero_contrat, assurance_date_debut, assurance_date_expiration,
+                assurance_type_couverture, assurance_montant_prime, assurance_fichier,
+                ct_date_prochain_controle, ct_photo
+            FROM vehicules 
+            ORDER BY nom
+        ''')
+        
+        vehicules = cursor.fetchall()
+        conn.close()
+        
+        vehicules_list = []
+        for vehicule in vehicules:
+            vehicule_data = {
+                'id': vehicule[0],
+                'nom': vehicule[1],
+                'immatriculation': vehicule[2],
+                'dateImmatriculation': vehicule[3],
+                'controle': vehicule[4],
+                'prochainControle': vehicule[5],
+                'finValidite': vehicule[6],
+                'numeroCarte': vehicule[7],
+                'disponible': bool(vehicule[8]),
+                'statut': vehicule[9],
+                'notes': vehicule[10],
+                'created_at': vehicule[11],
+                
+                # Carte Grise
+                'carteGrise': {
+                    'numero': vehicule[12] or '',
+                    'dateEmission': vehicule[13] or '',
+                    'titulaire': vehicule[14] or '',
+                    'fichier': vehicule[15] or None
+                },
+                
+                # Assurance
+                'assurance': {
+                    'compagnie': vehicule[16] or '',
+                    'numeroContrat': vehicule[17] or '',
+                    'dateDebut': vehicule[18] or '',
+                    'dateExpiration': vehicule[19] or '',
+                    'typeCouverture': vehicule[20] or '',
+                    'montantPrime': vehicule[21] or 0,
+                    'fichier': vehicule[22] or None
+                },
+                
+                # Contrôle Technique
+                'controleTechnique': {
+                    'dateProchainControle': vehicule[23] or '',
+                    'photoUrl': vehicule[24] or None
+                }
+            }
+            vehicules_list.append(vehicule_data)
+        
+        return jsonify({
+            'success': True,
+            'vehicules': vehicules_list
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur récupération véhicules complets: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la récupération des véhicules'
+        }), 500
+
+@app.route('/api/vehicules/<int:vehicule_id>/carte-grise', methods=['PUT'])
+def api_update_vehicule_carte_grise(vehicule_id):
+    """Mettre à jour les informations de carte grise d'un véhicule"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        data = request.get_json()
+        
+        # Validation des données
+        required_fields = ['numero', 'dateEmission', 'titulaire']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({
+                    'success': False,
+                    'message': f'Le champ {field} est requis'
+                }), 400
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que le véhicule existe
+        cursor.execute('SELECT id FROM vehicules WHERE id = ?', (vehicule_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({'success': False, 'message': 'Véhicule introuvable'}), 404
+        
+        # Mettre à jour les informations de carte grise
+        cursor.execute('''
+            UPDATE vehicules 
+            SET carte_grise_numero = ?,
+                carte_grise_date_emission = ?,
+                carte_grise_titulaire = ?
+            WHERE id = ?
+        ''', (
+            data['numero'],
+            data['dateEmission'],
+            data['titulaire'],
+            vehicule_id
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Carte grise mise à jour avec succès'
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur mise à jour carte grise: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la mise à jour'
+        }), 500
+# ============================================================================
+# FONCTIONS UTILITAIRES
+# ============================================================================
+
+def allowed_file_vehicle(filename):
+    """Vérifier si le type de fichier est autorisé pour les véhicules"""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_VEHICLE_EXTENSIONS
+
+@app.route('/api/documents/vehicules/<path:filename>')
+def serve_vehicle_document(filename):
+    """Servir les documents de véhicules de manière sécurisée"""
+    try:
+        # Sécurité : vérifier que le chemin ne contient pas de traversée
+        if '..' in filename or filename.startswith('/'):
+            return jsonify({'error': 'Chemin non autorisé'}), 403
+        
+        file_path = os.path.join(VEHICLE_UPLOAD_FOLDER, filename)
+        
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'Fichier introuvable'}), 404
+        
+        return send_file(file_path)
+        
+    except Exception as e:
+        print(f"Erreur service document: {e}")
+        return jsonify({'error': 'Erreur serveur'}), 500
 
 # ============================================================================
 # 🚀 LANCEMENT DE L'APPLICATION

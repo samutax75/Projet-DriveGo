@@ -33,22 +33,6 @@
                 <h2 class="card-title">
                     🔍 Info Véhicule
                 </h2>
-                
-                <!-- Boutons de navigation pour les sections -->
-                <div class="nav-buttons" id="navButtons" style="display: none;">
-                    <button class="nav-btn general active" onclick="showSection('general')" data-section="general">
-                        <span>🔧</span>
-                        Général
-                    </button>
-                    <button class="nav-btn carte-grise" onclick="showSection('carte-grise')" data-section="carte-grise">
-                        <span>📄</span>
-                        Carte Grise
-                    </button>
-                    <button class="nav-btn assurance" onclick="showSection('assurance')" data-section="assurance">
-                        <span>🛡️</span>
-                        Assurance
-                    </button>
-                </div>
                                  
                 <div class="no-selection" id="noSelection">
                     <svg viewBox="0 0 24 24" fill="currentColor">
@@ -59,7 +43,7 @@
                 </div>
 
                 <div class="vehicle-details" id="vehicleDetails">
-                    <!-- Les détails seront affichés ici -->
+                    <!-- Les détails seront affichés ici avec navigation intégrée -->
                 </div>
             </div>
         </div>
@@ -73,28 +57,16 @@
                 <button class="modal-close" onclick="closeMobileModal()">×</button>
             </div>
             <div class="modal-body" id="modalBody">
-                <!-- Boutons de navigation mobile -->
-                <div class="nav-buttons" id="mobileNavButtons">
-                    <button class="nav-btn general active" onclick="showMobileSection('general')" data-section="general">
-                        <span>🔧</span>
-                        Général
-                    </button>
-                    <button class="nav-btn carte-grise" onclick="showMobileSection('carte-grise')" data-section="carte-grise">
-                        <span>📄</span>
-                        Carte Grise
-                    </button>
-                    <button class="nav-btn assurance" onclick="showMobileSection('assurance')" data-section="assurance">
-                        <span>🛡️</span>
-                        Assurance
-                    </button>
-                </div>
-                <!-- Contenu du modal -->
+                <!-- Le contenu mobile sera généré par JavaScript -->
             </div>
         </div>
     </div>
 
     <!-- Input fichier caché -->
     <input type="file" id="fileInput" class="file-input" accept=".pdf,.jpg,.jpeg,.png" />
+
+    <!-- Input fichier caché pour les photos CT -->
+    <input type="file" id="ctFileInput" class="file-input" accept=".pdf,.jpg,.jpeg,.png" />
 
     <!-- Modal d'édition des informations d'assurance -->
     <div class="edit-modal" id="editModal">
@@ -150,10 +122,7 @@
                         </select>
                     </div>
 
-                    <div class="form-group">
-                        <label for="montantPrime">💰 Prime annuelle (€)</label>
-                        <input type="number" id="montantPrime" name="montantPrime" step="0.01" min="0" />
-                    </div>
+                    
 
                     <div class="form-actions">
                         <button type="button" onclick="closeEditModal()" class="btn-cancel">Annuler</button>
@@ -164,7 +133,124 @@
         </div>
     </div>
 
+    <!-- Modal d'édition de la Carte Grise -->
+    <div class="edit-modal" id="editCarteGriseModal">
+        <div class="edit-modal-content">
+            <div class="edit-modal-header">
+                <h2>📄 Modifier les informations de carte grise</h2>
+                <button class="modal-close" onclick="closeEditCarteGriseModal()">×</button>
+            </div>
+            <div class="edit-modal-body">
+                <form id="carteGriseForm">
+                    <input type="hidden" id="vehicleIdCG" />
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="marque">🏷️ Marque</label>
+                            <select id="marque" name="marque" required>
+                                <option value="">Sélectionner...</option>
+                                <option value="Renault">Renault</option>
+                                <option value="Peugeot">Peugeot</option>
+                                <option value="Citroën">Citroën</option>
+                                <option value="Ford">Ford</option>
+                                <option value="Volkswagen">Volkswagen</option>
+                                <option value="Mercedes-Benz">Mercedes-Benz</option>
+                                <option value="BMW">BMW</option>
+                                <option value="Audi">Audi</option>
+                                <option value="Opel">Opel</option>
+                                <option value="Fiat">Fiat</option>
+                                <option value="Toyota">Toyota</option>
+                                <option value="Nissan">Nissan</option>
+                                <option value="Hyundai">Hyundai</option>
+                                <option value="Kia">Kia</option>
+                                <option value="Autre">Autre</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="modele">🚗 Modèle</label>
+                            <input type="text" id="modele" name="modele" required placeholder="ex: Trafic, Kangoo, Partner..." />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="numeroImmatriculation">📄 Numéro d'immatriculation</label>
+                        <input type="text" id="numeroImmatriculation" name="numeroImmatriculation" required placeholder="ex: AB-123-CD" style="text-transform: uppercase;" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dateImmatriculationCG">📅 Date d'immatriculation</label>
+                        <input type="date" id="dateImmatriculationCG" name="dateImmatriculationCG" required />
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="numeroCarteGrise">📋 Numéro de carte grise</label>
+                            <input type="text" id="numeroCarteGrise" name="numeroCarteGrise" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="dateEmission">📅 Date d'émission</label>
+                            <input type="date" id="dateEmission" name="dateEmission" required />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="titulaire">👤 Titulaire</label>
+                        <input type="text" id="titulaire" name="titulaire" required value="Fondation Perce-Neige" />
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" onclick="closeEditCarteGriseModal()" class="btn-cancel">Annuler</button>
+                        <button type="submit" class="btn-save">💾 Sauvegarder</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal d'édition du Contrôle Technique -->
+    <div class="edit-modal" id="editControleTechniqueModal">
+        <div class="edit-modal-content">
+            <div class="edit-modal-header">
+                <h2>🔍 Modifier le contrôle technique</h2>
+                <button class="modal-close" onclick="closeEditControleTechniqueModal()">×</button>
+            </div>
+            <div class="edit-modal-body">
+                <form id="controleTechniqueForm">
+                    <input type="hidden" id="vehicleIdCT" />
+                    
+                    <div class="form-group">
+                        <label for="dateProchainControle">📅 Date du prochain contrôle technique</label>
+                        <input type="date" id="dateProchainControle" name="dateProchainControle" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="photoCT">📷 Photo du contrôle technique</label>
+                        <div class="upload-section">
+                            <button type="button" class="upload-btn" onclick="selectControleTechniquePhoto()">
+                                📸 Choisir une photo
+                            </button>
+                            <button type="button" class="upload-btn secondary" onclick="viewControleTechniquePhoto()">
+                                👁️ Voir la photo
+                            </button>
+                            <div class="file-info" id="ctPhotoInfo">Aucune photo sélectionnée</div>
+                        </div>
+                    </div>
+
+                    <!-- Prévisualisation de la photo -->
+                    <div class="photo-preview" id="ctPhotoPreview" style="display: none;">
+                        <img id="ctPhotoImg" src="" alt="Contrôle technique" style="max-width: 100%; height: auto; border-radius: 8px; margin-top: 15px;">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" onclick="closeEditControleTechniqueModal()" class="btn-cancel">Annuler</button>
+                        <button type="submit" class="btn-save">💾 Sauvegarder</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/fiches_vehicules.js') }}"></script>
-    
+
 </body>
 </html>
