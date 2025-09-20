@@ -290,3 +290,42 @@ document.addEventListener('DOMContentLoaded', function() {
     if (errorMessage) errorMessage.style.display = 'none';
     if (successMessage) successMessage.style.display = 'none';
 });
+
+
+
+
+// Ajoutez cette fonction au début de votre inscription.js
+document.addEventListener('DOMContentLoaded', function() {
+    // Récupérer le token depuis le champ caché
+    const tokenField = document.querySelector('input[name="token"]');
+    const token = tokenField ? tokenField.value : '';
+    
+    // Si un email est pré-rempli (invitation), désactiver sa modification
+    const emailField = document.getElementById('email');
+    if (emailField.value && emailField.hasAttribute('readonly')) {
+        emailField.style.cursor = 'not-allowed';
+    }
+    
+    // Modifier votre fonction de soumission existante pour inclure le token
+    document.getElementById('signupForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Votre validation existante...
+        
+        // Ajouter le token aux données
+        const formData = new FormData(this);
+        if (token) {
+            formData.append('token', token);
+        }
+        
+        // Votre code d'envoi existant...
+        fetch('/inscription', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Votre gestion de réponse existante...
+        });
+    });
+});

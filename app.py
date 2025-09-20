@@ -107,6 +107,20 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    # table d'invitation
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS invitations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL,
+            token TEXT UNIQUE NOT NULL,
+            message TEXT,
+            invited_by INTEGER,
+            expires_at TIMESTAMP,
+            status TEXT DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (invited_by) REFERENCES conducteurs (id)
+        )
+    ''')
 
     # Table des véhicules étendue avec toutes les nouvelles colonnes
     cursor.execute('''
@@ -142,6 +156,21 @@ def init_db():
             -- Contrôle Technique
             ct_date_prochain_controle TEXT DEFAULT '',
             ct_photo TEXT DEFAULT ''
+        )
+    ''')
+    
+    # Table des tokens d'invitation
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS invitation_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL,
+            token TEXT UNIQUE NOT NULL,
+            invited_by INTEGER NOT NULL,
+            message TEXT DEFAULT '',
+            expires_at TIMESTAMP NOT NULL,
+            used BOOLEAN DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (invited_by) REFERENCES users (id)
         )
     ''')
     
@@ -335,7 +364,6 @@ def create_upload_directories():
 # Initialiser au démarrage
 create_upload_directories()
 init_db()
-
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -1002,6 +1030,13 @@ def support():
     """Page de support"""
     return render_template('support.html')
 
+@app.route('/admin')
+def admin_dashboard():
+    """Page d'administration"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    return render_template('admin_dashboard.html')
 
 @app.route("/change_password", methods=["GET", "POST"])
 def change_password():
@@ -1503,12 +1538,274 @@ def connexion():
     """Page de connexion"""
     return render_template('connexion.html')
 
-@app.route('/inscription')
-def inscription():
-    """Page d'inscription"""
+
+
+
+
+
+
+
+
+def generate_invitation_token():
+    """Générer un token d'invitation sécurisé"""
+    return secrets.token_urlsafe(32)
+
+def send_invitation_email(email, token, message='', invited_by_name=''):
+    """Envoyer l'email d'invitation"""
+    try:
+        # URL d'inscription avec token
+        registration_url = f"http://localhost:5000/inscription?token={token}"
+        
+        # Template HTML de l'email
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
+                .content {{ background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; }}
+                .button {{ display: inline-block; background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }}
+                .footer {{ text-align: center; margin-top: 30px; color: #666; font-size: 14px; }}
+                .logo {{ font-size: 24px; font-weight: bold; margin-bottom: 10px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <div class="logo">DriveGo</div>
+                    <h1>Invitation à rejoindre notre équipe</h1>
+                    <p>Fondation Perce-Neige</p>
+                </div>
+                <div class="content">
+                    <h2>Bonjour !</h2>
+                    
+                    <p><strong>{invited_by_name}</strong> vous invite à rejoindre DriveGo, notre système de gestion du parc automobile de la Fondation Perce-Neige.</p>
+                    
+                    {f'<div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin: 20px 0;"><em>"{message}"</em></div>' if message else ''}
+                    
+                    <p>Avec DriveGo, vous pourrez :</p>
+                    <ul>
+                        <li>Créer et gérer vos missions de conduite</li>
+                        <li>Consulter les informations des véhicules</li>
+                        <li>Suivre vos activités de conduite</li>
+                        <li>Accéder à l'application depuis n'importe quel appareil</li>
+                    </ul>
+                    
+                    <p>Pour commencer, cliquez sur le bouton ci-dessous pour créer votre compte :</p>
+                    
+                    <div style="text-align: center;">
+                        <a href="{registration_url}" class="button">Créer mon compte</a>
+                    </div>
+                    
+                    <p><small>Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
+                    <a href="{registration_url}">{registration_url}</a></small></p>
+                    
+                    <p><strong>Important :</strong> Cette invitation expire dans 48 heures.</p>
+                </div>
+                <div class="footer">
+                    <p>Cet email a été envoyé par DriveGo - Fondation Perce-Neige<br>
+                    Si vous avez reçu cet email par erreur, vous pouvez l'ignorer.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Créer et envoyer l'email
+        msg = Message(
+            subject='Invitation à rejoindre DriveGo - Fondation Perce-Neige',
+            recipients=[email],
+            html=html_content
+        )
+        
+        mail.send(msg)
+        return True
+        
+    except Exception as e:
+        print(f"Erreur envoi email: {e}")
+        return False
+
+# ============================================================================
+# ROUTES POUR LE SYSTÈME D'INVITATION
+# ============================================================================
+
+# @app.route('/api/admin/send-invitation', methods=['POST'])
+# def api_admin_send_invitation():
+#     """Envoyer une invitation par email"""
+#     try:
+#         if 'user_id' not in session:
+#             return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+#         data = request.get_json()
+#         email = data.get('email')
+#         message = data.get('message', '')
+        
+#         if not email or '@' not in email:
+#             return jsonify({
+#                 'success': False,
+#                 'message': 'Adresse email invalide'
+#             }), 400
+        
+#         conn = sqlite3.connect(DATABASE)
+#         cursor = conn.cursor()
+        
+#         # Vérifier que l'email n'existe pas déjà
+#         cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
+#         if cursor.fetchone():
+#             conn.close()
+#             return jsonify({
+#                 'success': False,
+#                 'message': 'Cette adresse email est déjà enregistrée'
+#             }), 400
+        
+#         # Vérifier s'il y a déjà une invitation non utilisée
+#         cursor.execute('''
+#             SELECT id FROM invitation_tokens 
+#             WHERE email = ? AND used = 0 AND expires_at > datetime('now')
+#         ''', (email,))
+#         if cursor.fetchone():
+#             conn.close()
+#             return jsonify({
+#                 'success': False,
+#                 'message': 'Une invitation est déjà en cours pour cette adresse email'
+#             }), 400
+        
+#         # Récupérer le nom de l'utilisateur qui invite
+#         cursor.execute('SELECT nom, prenom FROM users WHERE id = ?', (session['user_id'],))
+#         user = cursor.fetchone()
+#         invited_by_name = f"{user[1]} {user[0]}" if user else "L'équipe"
+        
+#         # Générer le token
+#         token = generate_invitation_token()
+#         expires_at = datetime.now() + timedelta(hours=48)
+        
+#         # Sauvegarder l'invitation
+#         cursor.execute('''
+#             INSERT INTO invitation_tokens (email, token, invited_by, message, expires_at)
+#             VALUES (?, ?, ?, ?, ?)
+#         ''', (email, token, session['user_id'], message, expires_at))
+        
+#         conn.commit()
+#         conn.close()
+        
+#         # Envoyer l'email
+#         if send_invitation_email(email, token, message, invited_by_name):
+#             return jsonify({
+#                 'success': True,
+#                 'message': f'Invitation envoyée avec succès à {email}'
+#             }), 200
+#         else:
+#             return jsonify({
+#                 'success': False,
+#                 'message': 'Erreur lors de l\'envoi de l\'email'
+#             }), 500
+        
+#     except Exception as e:
+#         print(f"Erreur envoi invitation: {e}")
+#         return jsonify({
+#             'success': False,
+#             'message': 'Erreur lors de l\'envoi de l\'invitation'
+#         }), 500
+
+# ============================================================================
+# MODIFICATION DE VOS ROUTES EXISTANTES
+# ============================================================================
+
+# REMPLACEZ votre route inscription existante par celle-ci :
+# @app.route('/inscription')
+# def inscription():
+    """Page d'inscription avec support des invitations"""
     if 'user_id' in session:
         return redirect(url_for('index'))
-    return render_template('inscription.html')
+    
+    # Récupérer le token d'invitation s'il existe
+    token = request.args.get('token')
+    email = ''
+    
+    if token:
+        # Vérifier le token d'invitation
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT email FROM invitation_tokens 
+            WHERE token = ? AND used = 0 AND expires_at > datetime('now')
+        ''', (token,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            email = result[0]
+        else:
+            flash('Lien d\'invitation invalide ou expiré.', 'error')
+            return redirect(url_for('connexion'))
+    
+    return render_template('inscription.html', email=email, token=token)
+
+@app.route('/inscription')
+def inscription():
+    """Page d'inscription - modifiée pour gérer les tokens d'invitation"""
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+    
+    # Récupérer le token d'invitation s'il existe
+    token = request.args.get('token')
+    email = ''
+    
+    if token:
+        # Vérifier le token d'invitation
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT email FROM invitation_tokens 
+            WHERE token = ? AND used = 0 AND expires_at > datetime('now')
+        ''', (token,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            email = result[0]
+        else:
+            flash('Lien d\'invitation invalide ou expiré.', 'error')
+            return redirect(url_for('connexion'))
+    
+    return render_template('inscription.html', email=email, token=token)
+
+@app.route('/inscription', methods=['POST'])
+
+def handle_inscription():
+    """Gérer l'inscription avec support des invitations"""
+    try:
+        token = request.form.get('token')
+        
+        # Votre code de validation existant...
+        
+        # Si token fourni, vérifier et marquer comme utilisé
+        if token:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT email FROM invitation_tokens 
+                WHERE token = ? AND used = 0 AND expires_at > datetime('now')
+            ''', (token,))
+            invitation = cursor.fetchone()
+            
+            if invitation:
+                # Marquer le token comme utilisé
+                cursor.execute('UPDATE invitation_tokens SET used = 1 WHERE token = ?', (token,))
+                conn.commit()
+            else:
+                conn.close()
+                return jsonify({'success': False, 'message': 'Invitation invalide ou expirée'})
+            conn.close()
+        
+        # Votre code de création d'utilisateur existant...
+        
+    except Exception as e:
+        print(f"Erreur inscription: {e}")
+        return jsonify({'success': False, 'message': 'Erreur lors de la création du compte'})
 
 @app.route('/login/<int:user_id>')
 def login(user_id):
@@ -2388,23 +2685,6 @@ def debug_mission(mission_id):
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # ============================================================================
 # ROUTES API VÉHICULES - fiches vehicules
 # ============================================================================
@@ -2842,6 +3122,664 @@ def serve_vehicle_document(filename):
         print(f"Erreur service document: {e}")
         return jsonify({'error': 'Erreur serveur'}), 500
 
+# ============================================================================
+# ROUTES API ADMINISTRATION
+# ============================================================================
+
+@app.route('/api/admin/dashboard/stats', methods=['GET'])
+def api_admin_dashboard_stats():
+    """Récupérer les statistiques du dashboard admin"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        # Vérifier que l'utilisateur est admin (vous pouvez ajouter cette vérification)
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Compter les véhicules par statut
+        cursor.execute('SELECT COUNT(*) FROM vehicules WHERE statut = "actif"')
+        total_vehicles = cursor.fetchone()[0]
+        
+        cursor.execute('SELECT COUNT(*) FROM vehicules WHERE disponible = 1 AND statut = "actif"')
+        available_vehicles = cursor.fetchone()[0]
+        
+        # Compter les utilisateurs actifs
+        cursor.execute('SELECT COUNT(*) FROM users WHERE role = "client"')
+        total_users = cursor.fetchone()[0]
+        
+        # Compter les alertes (contrôles techniques à renouveler dans les 30 jours)
+        cursor.execute('''
+            SELECT COUNT(*) FROM vehicules 
+            WHERE ct_date_prochain_controle != "" 
+            AND DATE(ct_date_prochain_controle) <= DATE('now', '+30 days')
+            AND DATE(ct_date_prochain_controle) >= DATE('now')
+        ''')
+        alerts_count = cursor.fetchone()[0]
+        
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'stats': {
+                'totalVehicles': total_vehicles,
+                'availableVehicles': available_vehicles,
+                'totalUsers': total_users,
+                'alertsCount': alerts_count
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur stats dashboard: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la récupération des statistiques'
+        }), 500
+
+@app.route('/api/admin/vehicles', methods=['GET'])
+def api_admin_get_vehicles():
+    """Récupérer tous les véhicules pour l'admin"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT 
+                id, nom, immatriculation, date_immatriculation, 
+                statut, disponible, numero_carte, controle, prochain_controle,
+                carte_grise_numero, carte_grise_date_emission, carte_grise_titulaire,
+                assurance_compagnie, assurance_date_expiration,
+                ct_date_prochain_controle
+            FROM vehicules 
+            ORDER BY nom
+        ''')
+        
+        vehicles = cursor.fetchall()
+        conn.close()
+        
+        vehicles_list = []
+        for vehicle in vehicles:
+            vehicle_data = {
+                'id': vehicle[0],
+                'nom': vehicle[1],
+                'immatriculation': vehicle[2],
+                'dateImmatriculation': vehicle[3],
+                'statut': vehicle[4] or 'actif',
+                'disponible': bool(vehicle[5]),
+                'numeroCarte': vehicle[6],
+                'controle': vehicle[7],
+                'prochainControle': vehicle[8],
+                'carteGrise': {
+                    'numero': vehicle[9],
+                    'dateEmission': vehicle[10],
+                    'titulaire': vehicle[11]
+                },
+                'assurance': {
+                    'compagnie': vehicle[12],
+                    'dateExpiration': vehicle[13]
+                },
+                'controleTechnique': {
+                    'dateProchainControle': vehicle[14]
+                }
+            }
+            vehicles_list.append(vehicle_data)
+        
+        return jsonify({
+            'success': True,
+            'vehicles': vehicles_list
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur récupération véhicules admin: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la récupération des véhicules'
+        }), 500
+
+@app.route('/api/admin/vehicles', methods=['POST'])
+def api_admin_add_vehicle():
+    """Ajouter un nouveau véhicule"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        data = request.get_json()
+        
+        # Validation des données
+        required_fields = ['nom', 'immatriculation', 'dateImmatriculation']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({
+                    'success': False,
+                    'message': f'Le champ {field} est requis'
+                }), 400
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que l'immatriculation n'existe pas déjà
+        cursor.execute('SELECT id FROM vehicules WHERE immatriculation = ?', (data['immatriculation'],))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Cette immatriculation existe déjà'
+            }), 400
+        
+        # Insérer le nouveau véhicule
+        cursor.execute('''
+            INSERT INTO vehicules (
+                nom, immatriculation, date_immatriculation, statut, disponible,
+                carte_grise_numero, carte_grise_date_emission, carte_grise_titulaire
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            data['nom'],
+            data['immatriculation'],
+            data['dateImmatriculation'],
+            'actif',
+            1,
+            data.get('numeroCarteGrise', ''),
+            data.get('dateEmission', data['dateImmatriculation']),
+            data.get('titulaire', 'Fondation Perce-Neige')
+        ))
+        
+        vehicle_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Véhicule ajouté avec succès',
+            'vehicle_id': vehicle_id
+        }), 201
+        
+    except Exception as e:
+        print(f"Erreur ajout véhicule: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de l\'ajout du véhicule'
+        }), 500
+
+@app.route('/api/admin/vehicles/<int:vehicle_id>', methods=['PUT'])
+def api_admin_update_vehicle(vehicle_id):
+    """Modifier un véhicule"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        data = request.get_json()
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que le véhicule existe
+        cursor.execute('SELECT id FROM vehicules WHERE id = ?', (vehicle_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({'success': False, 'message': 'Véhicule introuvable'}), 404
+        
+        # Mettre à jour le véhicule
+        cursor.execute('''
+            UPDATE vehicules 
+            SET nom = ?, immatriculation = ?, date_immatriculation = ?,
+                carte_grise_numero = ?, carte_grise_date_emission = ?, carte_grise_titulaire = ?
+            WHERE id = ?
+        ''', (
+            data.get('nom'),
+            data.get('immatriculation'),
+            data.get('dateImmatriculation'),
+            data.get('numeroCarteGrise', ''),
+            data.get('dateEmission', ''),
+            data.get('titulaire', 'Fondation Perce-Neige'),
+            vehicle_id
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Véhicule mis à jour avec succès'
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur modification véhicule: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la modification'
+        }), 500
+
+@app.route('/api/admin/vehicles/<int:vehicle_id>', methods=['DELETE'])
+def api_admin_delete_vehicle(vehicle_id):
+    """Supprimer un véhicule"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que le véhicule existe
+        cursor.execute('SELECT nom FROM vehicules WHERE id = ?', (vehicle_id,))
+        vehicle = cursor.fetchone()
+        if not vehicle:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Véhicule introuvable'}), 404
+        
+        # Vérifier qu'il n'y a pas de missions actives
+        cursor.execute('SELECT COUNT(*) FROM missions WHERE vehicule_id = ? AND statut = "active"', (vehicle_id,))
+        active_missions = cursor.fetchone()[0]
+        
+        if active_missions > 0:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Impossible de supprimer un véhicule avec des missions actives'
+            }), 400
+        
+        # Supprimer le véhicule
+        cursor.execute('DELETE FROM vehicules WHERE id = ?', (vehicle_id,))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Véhicule "{vehicle[0]}" supprimé avec succès'
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur suppression véhicule: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la suppression'
+        }), 500
+
+@app.route('/api/admin/users', methods=['GET'])
+def api_admin_get_users():
+    """Récupérer tous les utilisateurs pour l'admin"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT 
+                id, email, nom, prenom, telephone, role, created_at
+            FROM users 
+            WHERE role = "client"
+            ORDER BY nom, prenom
+        ''')
+        
+        users = cursor.fetchall()
+        conn.close()
+        
+        users_list = []
+        for user in users:
+            user_data = {
+                'id': user[0],
+                'email': user[1],
+                'nom': user[2],
+                'prenom': user[3],
+                'telephone': user[4],
+                'role': user[5],
+                'statut': 'actif',  # Vous pouvez ajouter un champ statut à votre table users
+                'created_at': user[6]
+            }
+            users_list.append(user_data)
+        
+        return jsonify({
+            'success': True,
+            'users': users_list
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur récupération utilisateurs admin: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la récupération des utilisateurs'
+        }), 500
+
+@app.route('/api/admin/users', methods=['POST'])
+def api_admin_add_user():
+    """Ajouter un nouveau conducteur"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        data = request.get_json()
+        
+        # Validation des données
+        required_fields = ['prenom', 'nom', 'email']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({
+                    'success': False,
+                    'message': f'Le champ {field} est requis'
+                }), 400
+        
+        # Validation de l'email
+        if not '@' in data['email']:
+            return jsonify({
+                'success': False,
+                'message': 'Format d\'email invalide'
+            }), 400
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que l'email n'existe pas déjà
+        cursor.execute('SELECT id FROM users WHERE email = ?', (data['email'],))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Cette adresse email existe déjà'
+            }), 400
+        
+        # Générer un mot de passe temporaire
+        import secrets
+        import string
+        temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+        password_hash = generate_password_hash(temp_password)
+        
+        # Insérer le nouvel utilisateur
+        cursor.execute('''
+            INSERT INTO users (email, password_hash, nom, prenom, telephone, role)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (
+            data['email'],
+            password_hash,
+            data['nom'],
+            data['prenom'],
+            data.get('telephone', ''),
+            'client'
+        ))
+        
+        user_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        # TODO: Envoyer un email avec le mot de passe temporaire
+        # send_welcome_email(data['email'], temp_password)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Conducteur ajouté avec succès',
+            'user_id': user_id,
+            'temp_password': temp_password  # À supprimer en production
+        }), 201
+        
+    except Exception as e:
+        print(f"Erreur ajout utilisateur: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de l\'ajout du conducteur'
+        }), 500
+
+@app.route('/api/admin/users/<int:user_id>', methods=['PUT'])
+def api_admin_update_user(user_id):
+    """Modifier un utilisateur"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        data = request.get_json()
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que l'utilisateur existe
+        cursor.execute('SELECT id FROM users WHERE id = ? AND role = "client"', (user_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({'success': False, 'message': 'Utilisateur introuvable'}), 404
+        
+        # Mettre à jour l'utilisateur
+        cursor.execute('''
+            UPDATE users 
+            SET nom = ?, prenom = ?, email = ?, telephone = ?
+            WHERE id = ?
+        ''', (
+            data.get('nom'),
+            data.get('prenom'),
+            data.get('email'),
+            data.get('telephone', ''),
+            user_id
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Conducteur mis à jour avec succès'
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur modification utilisateur: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la modification'
+        }), 500
+
+@app.route('/api/admin/users/<int:user_id>/suspend', methods=['PUT'])
+def api_admin_suspend_user(user_id):
+    """Suspendre un utilisateur"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que l'utilisateur existe
+        cursor.execute('SELECT nom, prenom FROM users WHERE id = ? AND role = "client"', (user_id,))
+        user = cursor.fetchone()
+        if not user:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Utilisateur introuvable'}), 404
+        
+        # TODO: Ajouter un champ statut à la table users et l'utiliser ici
+        # Pour l'instant, on peut utiliser un commentaire dans le champ notes ou créer une table séparée
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Utilisateur {user[0]} {user[1]} suspendu'
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur suspension utilisateur: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la suspension'
+        }), 500
+
+@app.route('/api/admin/users/<int:user_id>/activate', methods=['PUT'])
+def api_admin_activate_user(user_id):
+    """Réactiver un utilisateur"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que l'utilisateur existe
+        cursor.execute('SELECT nom, prenom FROM users WHERE id = ? AND role = "client"', (user_id,))
+        user = cursor.fetchone()
+        if not user:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Utilisateur introuvable'}), 404
+        
+        # TODO: Réactiver l'utilisateur
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Utilisateur {user[0]} {user[1]} réactivé'
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur réactivation utilisateur: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la réactivation'
+        }), 500
+
+@app.route('/api/admin/send-invitation', methods=['POST'])
+def api_admin_send_invitation():
+    """Envoyer une invitation par email"""
+    try:
+        print("=== DEBUG INVITATION ===")
+        print(f"Session user_id: {session.get('user_id')}")
+        print(f"Request method: {request.method}")
+        print(f"Content-Type: {request.content_type}")
+        print(f"Request data: {request.get_data()}")
+        
+        if 'user_id' not in session:
+            print("ERREUR: Non authentifié")
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        data = request.get_json()
+        print(f"JSON data: {data}")
+        
+        if not data:
+            print("ERREUR: Pas de données JSON")
+            return jsonify({'success': False, 'message': 'Aucune donnée reçue'}), 400
+        
+        email = data.get('email')
+        message = data.get('message', '')
+        
+        print(f"Email: {email}")
+        print(f"Message: {message}")
+        
+        if not email or '@' not in email:
+            print("ERREUR: Email invalide")
+            return jsonify({
+                'success': False,
+                'message': 'Adresse email invalide'
+            }), 400
+        
+        # Connexion à votre base de données
+        db = sqlite3.connect(DATABASE)  # Utilise votre variable DATABASE
+        db.row_factory = sqlite3.Row
+        cursor = db.cursor()
+        
+        try:
+            # 1. Générer un token d'invitation unique
+            import secrets
+            token = secrets.token_urlsafe(32)
+            
+            # 2. Obtenir le nom de l'utilisateur qui invite
+            cursor.execute("SELECT nom, prenom FROM conducteurs WHERE id = ?", (session['user_id'],))
+            user_info = cursor.fetchone()
+            invited_by_name = f"{user_info['prenom']} {user_info['nom']}" if user_info else "Un administrateur"
+            
+            # 3. Sauvegarder l'invitation en base de données
+            from datetime import datetime, timedelta
+            expires_at = datetime.now() + timedelta(hours=48)
+            
+            cursor.execute("""
+                INSERT INTO invitations (email, token, message, invited_by, expires_at, status, created_at)
+                VALUES (?, ?, ?, ?, ?, 'pending', ?)
+            """, (email, token, message, session['user_id'], expires_at, datetime.now()))
+            
+            db.commit()
+            
+            # 4. Envoyer l'email d'invitation
+            email_sent = send_invitation_email(email, token, message, invited_by_name)
+            
+            if not email_sent:
+                print("ERREUR: Impossible d'envoyer l'email")
+                return jsonify({
+                    'success': False,
+                    'message': 'Erreur lors de l\'envoi de l\'email'
+                }), 500
+            
+            # 5. Mettre à jour le statut en base
+            cursor.execute("UPDATE invitations SET status = 'sent' WHERE token = ?", (token,))
+            db.commit()
+            
+            print(f"Invitation envoyée avec succès à {email}")
+            return jsonify({
+                'success': True,
+                'message': f'Invitation envoyée avec succès à {email}'
+            }), 200
+            
+        finally:
+            db.close()
+        
+    except Exception as e:
+        print(f"ERREUR EXCEPTION: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Erreur: {str(e)}'
+        }), 500
+        
+        
+@app.route('/api/admin/alerts', methods=['GET'])
+def api_admin_get_alerts():
+    """Récupérer les alertes importantes"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Récupérer les véhicules avec contrôle technique proche
+        cursor.execute('''
+            SELECT nom, immatriculation, ct_date_prochain_controle,
+                   CAST((JULIANDAY(ct_date_prochain_controle) - JULIANDAY('now')) AS INTEGER) as days_remaining
+            FROM vehicules 
+            WHERE ct_date_prochain_controle != "" 
+            AND DATE(ct_date_prochain_controle) <= DATE('now', '+30 days')
+            AND DATE(ct_date_prochain_controle) >= DATE('now')
+            ORDER BY ct_date_prochain_controle
+        ''')
+        
+        ct_alerts = cursor.fetchall()
+        
+        # TODO: Ajouter d'autres types d'alertes (assurance, etc.)
+        
+        conn.close()
+        
+        alerts = []
+        for alert in ct_alerts:
+            alert_type = 'urgent' if alert[3] <= 7 else 'warning'
+            alerts.append({
+                'type': alert_type,
+                'title': 'Contrôle technique à renouveler',
+                'description': f'{alert[0]} ({alert[1]}) - Échéance : {alert[2]}',
+                'vehicle_name': alert[0],
+                'vehicle_plate': alert[1],
+                'due_date': alert[2],
+                'days_remaining': alert[3]
+            })
+        
+        return jsonify({
+            'success': True,
+            'alerts': alerts
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur récupération alertes: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la récupération des alertes'
+        }), 500
 # ============================================================================
 # 🚀 LANCEMENT DE L'APPLICATION
 # ============================================================================

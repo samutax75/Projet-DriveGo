@@ -1,185 +1,201 @@
-// Données des véhicules avec informations étendues pour carte grise
-const vehicles = [
-    {
-        id: 1,
-        nom: "TRAFIC BLANC",
-        immatriculation: "FV-088-JJ",
-        dateImmatriculation: "26/11/2020",
-        controle: "29/10/2024",
-        prochainControle: "28/10/2026",
-        finValidite: "30/09/2026",
-        numeroCarte: "4985080",
-        carteGrise: {
-            numero: "123456789",
-            dateEmission: "26/11/2020",
-            dateExpiration: "",
-            titulaire: "Fondation Perce-Neige",
-            marque: "Renault",
-            modele: "Trafic",
-            numeroImmatriculation: "FV-088-JJ",
-            dateImmatriculation: "26/11/2020",
-            fichier: null
-        },
-        assurance: {
-            compagnie: "AXA Assurances",
-            numeroContrat: "POL789456",
-            dateDebut: "01/01/2024",
-            dateExpiration: "31/12/2024",
-            typeCouverture: "Tous risques",
-            montantPrime: 1250.00,
-            fichier: null
-        },
-        controleTechnique: {
-            dateProchainControle: "28/10/2026",
-            photoUrl: null
-        }
-    },
-    {
-        id: 2,
-        nom: "TRAFIC PMR",
-        immatriculation: "GT-176-AF",
-        dateImmatriculation: "14/12/2023",
-        controle: "",
-        prochainControle: "14/12/2027",
-        finValidite: "30/06/2029",
-        numeroCarte: "8954319",
-        carteGrise: {
-            numero: "987654321",
-            dateEmission: "14/12/2023",
-            dateExpiration: "",
-            titulaire: "Fondation Perce-Neige",
-            marque: "Renault",
-            modele: "Trafic PMR",
-            numeroImmatriculation: "GT-176-AF",
-            dateImmatriculation: "14/12/2023",
-            fichier: null
-        },
-        assurance: {
-            compagnie: "MAIF",
-            numeroContrat: "CON456789",
-            dateDebut: "01/01/2024",
-            dateExpiration: "31/12/2024",
-            typeCouverture: "Tous risques + PMR",
-            montantPrime: 1450.00,
-            fichier: null
-        },
-        controleTechnique: {
-            dateProchainControle: "14/12/2027",
-            photoUrl: null
-        }
-    },
-    {
-        id: 3,
-        nom: "TRAFIC VERT",
-        immatriculation: "EJ-374-TT",
-        dateImmatriculation: "02/02/2017",
-        controle: "12/03/2025",
-        prochainControle: "11/03/2027",
-        finValidite: "30/09/2026",
-        numeroCarte: "4985081",
-        carteGrise: {
-            numero: "456789123",
-            dateEmission: "02/02/2017",
-            dateExpiration: "",
-            titulaire: "Fondation Perce-Neige",
-            marque: "Renault",
-            modele: "Trafic",
-            numeroImmatriculation: "EJ-374-TT",
-            dateImmatriculation: "02/02/2017",
-            fichier: null
-        },
-        assurance: {
-            compagnie: "Groupama",
-            numeroContrat: "GRP123456",
-            dateDebut: "01/01/2024",
-            dateExpiration: "31/12/2024",
-            typeCouverture: "Tiers étendu",
-            montantPrime: 980.00,
-            fichier: null
-        },
-        controleTechnique: {
-            dateProchainControle: "11/03/2027",
-            photoUrl: null
-        }
-    },
-    {
-        id: 4,
-        nom: "TRAFIC ROUGE",
-        immatriculation: "CW-819-FR",
-        dateImmatriculation: "26/06/2013",
-        controle: "27/01/2025",
-        prochainControle: "26/01/2027",
-        finValidite: "30/09/2026",
-        numeroCarte: "4985082",
-        carteGrise: {
-            numero: "321654987",
-            dateEmission: "26/06/2013",
-            dateExpiration: "",
-            titulaire: "Fondation Perce-Neige",
-            marque: "Renault",
-            modele: "Trafic",
-            numeroImmatriculation: "CW-819-FR",
-            dateImmatriculation: "26/06/2013",
-            fichier: null
-        },
-        assurance: {
-            compagnie: "Allianz",
-            numeroContrat: "ALZ987654",
-            dateDebut: "01/01/2024",
-            dateExpiration: "31/12/2024",
-            typeCouverture: "Tous risques",
-            montantPrime: 1180.00,
-            fichier: null
-        },
-        controleTechnique: {
-            dateProchainControle: "26/01/2027",
-            photoUrl: null
-        }
-    },
-    {
-        id: 5,
-        nom: "KANGOO",
-        immatriculation: "DS-429-PF",
-        dateImmatriculation: "22/06/2015",
-        controle: "29/01/2025",
-        prochainControle: "28/01/2027",
-        finValidite: "30/09/2026",
-        numeroCarte: "4985084",
-        carteGrise: {
-            numero: "147258369",
-            dateEmission: "22/06/2015",
-            dateExpiration: "",
-            titulaire: "Fondation Perce-Neige",
-            marque: "Renault",
-            modele: "Kangoo",
-            numeroImmatriculation: "DS-429-PF",
-            dateImmatriculation: "22/06/2015",
-            fichier: null
-        },
-        assurance: {
-            compagnie: "MACIF",
-            numeroContrat: "MAC654321",
-            dateDebut: "01/01/2024",
-            dateExpiration: "31/12/2024",
-            typeCouverture: "Tiers étendu",
-            montantPrime: 850.00,
-            fichier: null
-        },
-        controleTechnique: {
-            dateProchainControle: "28/01/2027",
-            photoUrl: null
-        }
-    }
-];
-
 // Variables globales
+let vehicles = []; // Maintenant chargé via API
 let selectedVehicle = null;
 let currentUploadType = null;
 let currentVehicleId = null;
 let ctPhotoFile = null;
 let ctPhotoUrl = null;
 
-// Fonctions utilitaires
+// ===============================
+// FONCTIONS API
+// ===============================
+
+async function loadVehicles() {
+    
+    try {
+        const response = await fetch('/api/vehicules/complete');
+        const data = await response.json();
+        
+        if (data.success) {
+            vehicles = data.vehicules;
+            generateVehicleList();
+            console.log('Véhicules chargés:', vehicles.length);
+        } else {
+            console.error('Erreur chargement véhicules:', data.message);
+            alert('Erreur lors du chargement des véhicules');
+        }
+    } catch (error) {
+        console.error('Erreur API:', error);
+        alert('Erreur de connexion au serveur');
+    }
+}
+
+async function saveAssuranceToAPI(vehicleId, assuranceData) {
+    
+    try {
+        const response = await fetch(`/api/vehicules/${vehicleId}/assurance`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(assuranceData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Recharger les données
+            await loadVehicles();
+            
+            // Rafraîchir l'affichage si le véhicule sélectionné
+            if (selectedVehicle && selectedVehicle.id === vehicleId) {
+                const updatedVehicle = vehicles.find(v => v.id === vehicleId);
+                selectedVehicle = updatedVehicle;
+                
+                if (window.innerWidth <= 1024) {
+                    openMobileModal(updatedVehicle);
+                } else {
+                    showVehicleDetails(updatedVehicle);
+                }
+            }
+            
+            return true;
+        } else {
+            alert('Erreur: ' + data.message);
+            return false;
+        }
+    } catch (error) {
+        console.error('Erreur API assurance:', error);
+        alert('Erreur de connexion au serveur');
+        return false;
+    }
+}
+
+async function saveCarteGriseToAPI(vehicleId, carteGriseData) {
+    
+    try {
+        const response = await fetch(`/api/vehicules/${vehicleId}/carte-grise`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(carteGriseData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Recharger les données
+            await loadVehicles();
+            
+            // Rafraîchir l'affichage
+            if (selectedVehicle && selectedVehicle.id === vehicleId) {
+                const updatedVehicle = vehicles.find(v => v.id === vehicleId);
+                selectedVehicle = updatedVehicle;
+                
+                if (window.innerWidth <= 1024) {
+                    openMobileModal(updatedVehicle);
+                } else {
+                    showVehicleDetails(updatedVehicle);
+                }
+            }
+            
+            return true;
+        } else {
+            alert('Erreur: ' + data.message);
+            return false;
+        }
+    } catch (error) {
+        console.error('Erreur API carte grise:', error);
+        alert('Erreur de connexion au serveur');
+        return false;
+    }
+}
+
+async function saveControleTechniqueToAPI(vehicleId, formData) {
+    
+    try {
+        const response = await fetch(`/api/vehicules/${vehicleId}/controle-technique`, {
+            method: 'PUT',
+            body: formData // FormData pour gérer l'upload de fichier
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Recharger les données
+            await loadVehicles();
+            
+            // Rafraîchir l'affichage
+            if (selectedVehicle && selectedVehicle.id === vehicleId) {
+                const updatedVehicle = vehicles.find(v => v.id === vehicleId);
+                selectedVehicle = updatedVehicle;
+                
+                if (window.innerWidth <= 1024) {
+                    openMobileModal(updatedVehicle);
+                } else {
+                    showVehicleDetails(updatedVehicle);
+                }
+            }
+            
+            return true;
+        } else {
+            alert('Erreur: ' + data.message);
+            return false;
+        }
+    } catch (error) {
+        console.error('Erreur API contrôle technique:', error);
+        alert('Erreur de connexion au serveur');
+        return false;
+    }
+}
+
+async function uploadDocumentToAPI(vehicleId, docType, file) {
+    
+    try {
+        const formData = new FormData();
+        formData.append('document', file);
+        formData.append('type', docType);
+        
+        const response = await fetch(`/api/vehicules/${vehicleId}/documents`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Recharger les données
+            await loadVehicles();
+            
+            // Rafraîchir l'affichage
+            if (selectedVehicle && selectedVehicle.id === vehicleId) {
+                const updatedVehicle = vehicles.find(v => v.id === vehicleId);
+                selectedVehicle = updatedVehicle;
+                
+                if (window.innerWidth <= 1024) {
+                    openMobileModal(updatedVehicle);
+                } else {
+                    showVehicleDetails(updatedVehicle);
+                }
+            }
+            
+            return true;
+        } else {
+            alert('Erreur: ' + data.message);
+            return false;
+        }
+    } catch (error) {
+        console.error('Erreur API upload:', error);
+        alert('Erreur de connexion au serveur');
+        return false;
+    }
+}
+
+// ===============================
+// FONCTIONS UTILITAIRES (gardées identiques)
+// ===============================
+
 function parseDate(dateStr) {
     if (!dateStr) return null;
     const parts = dateStr.split('/');
@@ -233,7 +249,23 @@ function getMostUrgentStatus(vehicle) {
     return controleStatus;
 }
 
-// Génération de la liste des véhicules
+function formatDateForInput(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return '';
+    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+}
+
+function formatDateFromInput(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+}
+
+// ===============================
+// GÉNÉRATION DE L'INTERFACE
+// ===============================
+
 function generateVehicleList() {
     const vehicleList = document.getElementById('vehicleList');
     vehicleList.innerHTML = '';
@@ -264,105 +296,6 @@ function generateVehicleList() {
     });
 }
 
-// Sélection d'un véhicule
-function selectVehicle(vehicle) {
-    selectedVehicle = vehicle;
-    
-    // Mise à jour de l'affichage de la liste
-    const vehicleItems = document.querySelectorAll('.vehicle-item');
-    vehicleItems.forEach((item, index) => {
-        if (index === vehicle.id - 1) {
-            item.classList.add('selected');
-        } else {
-            item.classList.remove('selected');
-        }
-    });
-
-    // Sur mobile, ouvrir la modal
-    if (window.innerWidth <= 1024) {
-        openMobileModal(vehicle);
-    } else {
-        // Sur desktop, afficher dans le panneau de droite
-        showVehicleDetails(vehicle);
-    }
-}
-
-// Modal mobile
-function openMobileModal(vehicle) {
-    const modal = document.getElementById('mobileModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    
-    modalTitle.textContent = vehicle.nom;
-    modalBody.innerHTML = generateVehicleDetailsHTML(vehicle);
-    
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
-}
-
-function closeMobileModal() {
-    const modal = document.getElementById('mobileModal');
-    modal.style.display = 'none';
-    document.body.style.overflow = 'auto';
-}
-
-// Navigation entre sections
-function showSection(sectionName) {
-    // Masquer tous les contenus d'onglets
-    const tabContents = document.querySelectorAll('.tab-content');
-    tabContents.forEach(content => {
-        content.classList.remove('active');
-    });
-    
-    // Retirer la classe active de tous les boutons desktop
-    const navButtons = document.querySelectorAll('#navButtons .nav-btn');
-    navButtons.forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Afficher le contenu de l'onglet sélectionné
-    const selectedContent = document.getElementById(sectionName.replace('-', '_'));
-    if (selectedContent) {
-        selectedContent.classList.add('active');
-    }
-    
-    // Activer le bouton correspondant
-    const selectedButton = document.querySelector(`#navButtons [data-section="${sectionName}"]`);
-    if (selectedButton) {
-        selectedButton.classList.add('active');
-        
-        // Animation de feedback tactile
-        selectedButton.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-            selectedButton.style.transform = '';
-        }, 100);
-    }
-}
-
-function showMobileSection(sectionName) {
-    // Retirer la classe active de tous les boutons mobile
-    const mobileNavButtons = document.querySelectorAll('#mobileNavButtons .nav-btn');
-    mobileNavButtons.forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Activer le bouton correspondant
-    const selectedButton = document.querySelector(`#mobileNavButtons [data-section="${sectionName}"]`);
-    if (selectedButton) {
-        selectedButton.classList.add('active');
-        
-        // Animation de feedback tactile
-        selectedButton.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-            selectedButton.style.transform = '';
-        }, 100);
-    }
-    
-    // Gérer le contenu mobile
-    showSection(sectionName);
-}
-
-// Génération du HTML des détails du véhicule
 function generateVehicleDetailsHTML(vehicle) {
     const statuses = getMultipleStatuses(vehicle);
 
@@ -431,27 +364,7 @@ function generateVehicleDetailsHTML(vehicle) {
                 <div class="document-section">
                     <div class="details-grid">
                         <div class="detail-item">
-                            <div class="detail-label">🏷️ Marque</div>
-                            <div class="detail-value">${vehicle.carteGrise ? vehicle.carteGrise.marque : 'Non renseigné'}</div>
-                        </div>
-
-                        <div class="detail-item">
-                            <div class="detail-label">🚗 Modèle</div>
-                            <div class="detail-value">${vehicle.carteGrise ? vehicle.carteGrise.modele : 'Non renseigné'}</div>
-                        </div>
-
-                        <div class="detail-item">
                             <div class="detail-label">📄 Numéro d'immatriculation</div>
-                            <div class="detail-value">${vehicle.carteGrise ? vehicle.carteGrise.numeroImmatriculation : 'Non renseigné'}</div>
-                        </div>
-
-                        <div class="detail-item">
-                            <div class="detail-label">📅 Date d'immatriculation</div>
-                            <div class="detail-value">${vehicle.carteGrise ? vehicle.carteGrise.dateImmatriculation : 'Non renseigné'}</div>
-                        </div>
-
-                        <div class="detail-item">
-                            <div class="detail-label">📋 Numéro de carte grise</div>
                             <div class="detail-value">${vehicle.carteGrise ? vehicle.carteGrise.numero : 'Non renseigné'}</div>
                         </div>
 
@@ -474,19 +387,13 @@ function generateVehicleDetailsHTML(vehicle) {
                     </div>
                     
                     <div class="upload-section">
-                        <button onclick="editCarteGrise(${vehicle.id})" class="upload-btn">
-                            ✏️ Modifier les informations
-                        </button>
-                        <button onclick="uploadDocument(${vehicle.id}, 'carte_grise')" class="upload-btn">
-                            📎 ${vehicle.carteGrise && vehicle.carteGrise.fichier ? 'Modifier' : 'Ajouter'} le document
-                        </button>
                         ${vehicle.carteGrise && vehicle.carteGrise.fichier ? `
-                            <button onclick="viewDocument(${vehicle.id}, 'carte_grise')" class="upload-btn secondary">
+                            <button onclick="viewDocument('${vehicle.carteGrise.fichier}')" class="upload-btn secondary">
                                 👁️ Voir le document
                             </button>
                         ` : ''}
                         <div class="file-info">
-                            ${vehicle.carteGrise && vehicle.carteGrise.fichier ? `Document: ${vehicle.carteGrise.fichier}` : 'Aucun document ajouté'}
+                            ${vehicle.carteGrise && vehicle.carteGrise.fichier ? `Document de carte grise disponible` : 'Aucun document de carte grise'}
                         </div>
                     </div>
                 </div>
@@ -524,24 +431,16 @@ function generateVehicleDetailsHTML(vehicle) {
                             <div class="detail-label">🛡️ Type de couverture</div>
                             <div class="detail-value">${vehicle.assurance ? vehicle.assurance.typeCouverture : 'Non renseigné'}</div>
                         </div>
-
-                        
                     </div>
                     
                     <div class="upload-section">
-                        <button onclick="editAssurance(${vehicle.id})" class="upload-btn">
-                            ✏️ Modifier les informations
-                        </button>
-                        <button onclick="uploadDocument(${vehicle.id}, 'assurance')" class="upload-btn">
-                            📎 ${vehicle.assurance && vehicle.assurance.fichier ? 'Modifier' : 'Ajouter'} le document
-                        </button>
                         ${vehicle.assurance && vehicle.assurance.fichier ? `
-                            <button onclick="viewDocument(${vehicle.id}, 'assurance')" class="upload-btn secondary">
+                            <button onclick="viewDocument('${vehicle.assurance.fichier}')" class="upload-btn secondary">
                                 👁️ Voir le document
                             </button>
                         ` : ''}
                         <div class="file-info">
-                            ${vehicle.assurance && vehicle.assurance.fichier ? `Document: ${vehicle.assurance.fichier}` : 'Aucun document ajouté'}
+                            ${vehicle.assurance && vehicle.assurance.fichier ? `Document d'assurance disponible` : 'Aucun document d\'assurance'}
                         </div>
                     </div>
                 </div>
@@ -569,16 +468,13 @@ function generateVehicleDetailsHTML(vehicle) {
                     </div>
                     
                     <div class="upload-section">
-                        <button onclick="openEditControleTechniqueModal(${vehicle.id})" class="upload-btn">
-                            ✏️ Modifier le contrôle technique
-                        </button>
                         ${vehicle.controleTechnique?.photoUrl ? `
-                            <button onclick="viewControleTechniquePhoto(${vehicle.id})" class="upload-btn secondary">
+                            <button onclick="viewDocument('${vehicle.controleTechnique.photoUrl}')" class="upload-btn secondary">
                                 👁️ Voir la photo
                             </button>
                         ` : ''}
                         <div class="file-info">
-                            ${vehicle.controleTechnique?.photoUrl ? 'Photo du contrôle technique disponible' : 'Aucune photo ajoutée'}
+                            ${vehicle.controleTechnique?.photoUrl ? 'Photo du contrôle technique disponible' : 'Aucune photo de contrôle technique'}
                         </div>
                     </div>
                 </div>
@@ -587,16 +483,57 @@ function generateVehicleDetailsHTML(vehicle) {
     `;
 }
 
-// Fonction pour les onglets (compatible avec l'ancien système)
+// ===============================
+// GESTION DE L'INTERFACE
+// ===============================
+
+function selectVehicle(vehicle) {
+    selectedVehicle = vehicle;
+    
+    // Mise à jour de l'affichage de la liste
+    const vehicleItems = document.querySelectorAll('.vehicle-item');
+    vehicleItems.forEach((item, index) => {
+        if (index === vehicle.id - 1) {
+            item.classList.add('selected');
+        } else {
+            item.classList.remove('selected');
+        }
+    });
+
+    // Sur mobile, ouvrir la modal
+    if (window.innerWidth <= 1024) {
+        openMobileModal(vehicle);
+    } else {
+        // Sur desktop, afficher dans le panneau de droite
+        showVehicleDetails(vehicle);
+    }
+}
+
+function openMobileModal(vehicle) {
+    const modal = document.getElementById('mobileModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    
+    modalTitle.textContent = vehicle.nom;
+    modalBody.innerHTML = generateVehicleDetailsHTML(vehicle);
+    
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeMobileModal() {
+    const modal = document.getElementById('mobileModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
 function showTab(tabName) {
-    // Masquer tous les onglets
     const tabs = document.querySelectorAll('.nav-btn');
     const tabContents = document.querySelectorAll('.tab-content');
     
     tabs.forEach(tab => tab.classList.remove('active'));
     tabContents.forEach(content => content.classList.remove('active'));
     
-    // Afficher l'onglet sélectionné
     document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
     document.getElementById(tabName).classList.add('active');
 }
@@ -607,14 +544,10 @@ function showVehicleDetails(vehicle) {
     document.getElementById('vehicleDetails').innerHTML = generateVehicleDetailsHTML(vehicle);
 }
 
-function toggleNavButtons(show) {
-    const navButtons = document.getElementById('navButtons');
-    if (navButtons) {
-        navButtons.style.display = show ? 'flex' : 'none';
-    }
-}
+// ===============================
+// GESTION DES DOCUMENTS
+// ===============================
 
-// Gestion des documents
 function uploadDocument(vehicleId, docType) {
     currentVehicleId = vehicleId;
     currentUploadType = docType;
@@ -623,22 +556,7 @@ function uploadDocument(vehicleId, docType) {
     fileInput.click();
 }
 
-function viewDocument(vehicleId, docType) {
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    let fileName = '';
-    
-    if (docType === 'carte_grise' && vehicle.carteGrise && vehicle.carteGrise.fichier) {
-        fileName = vehicle.carteGrise.fichier;
-    } else if (docType === 'assurance' && vehicle.assurance && vehicle.assurance.fichier) {
-        fileName = vehicle.assurance.fichier;
-    }
-    
-    if (fileName) {
-        alert(`Ouverture du document: ${fileName}\n\nEn production, ceci ouvrirait le document dans un nouvel onglet.`);
-    }
-}
-
-function handleFileUpload(event) {
+async function handleFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -655,27 +573,12 @@ function handleFileUpload(event) {
         return;
     }
 
-    // Simulation de l'upload
-    const fileName = `${currentUploadType}_${currentVehicleId}_${file.name}`;
+    // Upload via API
+    const success = await uploadDocumentToAPI(currentVehicleId, currentUploadType, file);
     
-    // Mise à jour des données
-    const vehicle = vehicles.find(v => v.id === currentVehicleId);
-    if (currentUploadType === 'carte_grise') {
-        vehicle.carteGrise.fichier = fileName;
-    } else if (currentUploadType === 'assurance') {
-        vehicle.assurance.fichier = fileName;
+    if (success) {
+        alert(`Document "${file.name}" uploadé avec succès!`);
     }
-
-    // Actualiser l'affichage
-    if (selectedVehicle && selectedVehicle.id === currentVehicleId) {
-        if (window.innerWidth <= 1024) {
-            openMobileModal(vehicle);
-        } else {
-            showVehicleDetails(vehicle);
-        }
-    }
-
-    alert(`Document "${file.name}" uploadé avec succès!`);
     
     // Réinitialiser
     event.target.value = '';
@@ -683,91 +586,16 @@ function handleFileUpload(event) {
     currentUploadType = null;
 }
 
+function viewDocument(filePath) {
+    if (filePath) {
+        window.open(filePath, '_blank');
+    }
+}
+
 // ===============================
-// GESTION DE LA CARTE GRISE
+// GESTION DE L'ASSURANCE
 // ===============================
 
-function editCarteGrise(vehicleId) {
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    if (!vehicle) return;
-
-    document.getElementById('vehicleIdCG').value = vehicleId;
-    
-    if (vehicle.carteGrise) {
-        document.getElementById('marque').value = vehicle.carteGrise.marque || '';
-        document.getElementById('modele').value = vehicle.carteGrise.modele || '';
-        document.getElementById('numeroImmatriculation').value = vehicle.carteGrise.numeroImmatriculation || '';
-        document.getElementById('dateImmatriculationCG').value = formatDateForInput(vehicle.carteGrise.dateImmatriculation) || '';
-        document.getElementById('numeroCarteGrise').value = vehicle.carteGrise.numero || '';
-        document.getElementById('dateEmission').value = formatDateForInput(vehicle.carteGrise.dateEmission) || '';
-        document.getElementById('titulaire').value = vehicle.carteGrise.titulaire || '';
-    } else {
-        document.getElementById('carteGriseForm').reset();
-        document.getElementById('vehicleIdCG').value = vehicleId;
-    }
-
-    document.getElementById('editCarteGriseModal').style.display = 'block';
-    document.body.style.overflow = 'hidden';
-}
-
-function closeEditCarteGriseModal() {
-    document.getElementById('editCarteGriseModal').style.display = 'none';
-    document.body.style.overflow = 'auto';
-}
-
-function saveCarteGrise(event) {
-    event.preventDefault();
-    
-    const vehicleId = parseInt(document.getElementById('vehicleIdCG').value);
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    
-    if (!vehicle) return;
-
-    const carteGriseData = {
-        marque: document.getElementById('marque').value,
-        modele: document.getElementById('modele').value,
-        numeroImmatriculation: document.getElementById('numeroImmatriculation').value,
-        dateImmatriculation: formatDateFromInput(document.getElementById('dateImmatriculationCG').value),
-        numero: document.getElementById('numeroCarteGrise').value,
-        dateEmission: formatDateFromInput(document.getElementById('dateEmission').value),
-        titulaire: document.getElementById('titulaire').value,
-        dateExpiration: "",
-        fichier: vehicle.carteGrise ? vehicle.carteGrise.fichier : null
-    };
-
-    // Mise à jour des données principales du véhicule
-    vehicle.carteGrise = carteGriseData;
-    vehicle.immatriculation = carteGriseData.numeroImmatriculation;
-    vehicle.dateImmatriculation = carteGriseData.dateImmatriculation;
-    
-    // Mise à jour du nom du véhicule si modèle change
-    if (carteGriseData.marque && carteGriseData.modele) {
-        // Garder la couleur/nom existant mais utiliser le nouveau modèle si nécessaire
-        const currentName = vehicle.nom;
-        const colorMatch = currentName.match(/(BLANC|VERT|ROUGE|PMR|KANGOO)/);
-        if (colorMatch && carteGriseData.modele.toUpperCase() !== 'KANGOO') {
-            vehicle.nom = `${carteGriseData.modele.toUpperCase()} ${colorMatch[1]}`;
-        } else if (carteGriseData.modele.toUpperCase() === 'KANGOO') {
-            vehicle.nom = 'KANGOO';
-        }
-    }
-
-    generateVehicleList();
-    
-    if (selectedVehicle && selectedVehicle.id === vehicleId) {
-        selectedVehicle = vehicle;
-        if (window.innerWidth <= 1024) {
-            openMobileModal(vehicle);
-        } else {
-            showVehicleDetails(vehicle);
-        }
-    }
-
-    closeEditCarteGriseModal();
-    alert(`Informations de carte grise mises à jour pour ${vehicle.nom}!`);
-}
-
-// Gestion de l'assurance
 function editAssurance(vehicleId) {
     const vehicle = vehicles.find(v => v.id === vehicleId);
     if (!vehicle) return;
@@ -780,7 +608,7 @@ function editAssurance(vehicleId) {
         document.getElementById('dateDebut').value = formatDateForInput(vehicle.assurance.dateDebut);
         document.getElementById('dateExpiration').value = formatDateForInput(vehicle.assurance.dateExpiration);
         document.getElementById('typeCouverture').value = vehicle.assurance.typeCouverture;
-        
+        document.getElementById('montantPrime').value = vehicle.assurance.montantPrime;
     } else {
         document.getElementById('assuranceForm').reset();
         document.getElementById('vehicleId').value = vehicleId;
@@ -798,27 +626,11 @@ function closeEditModal() {
     document.getElementById('compagnieAutre').value = '';
 }
 
-function formatDateForInput(dateStr) {
-    if (!dateStr) return '';
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) return '';
-    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-}
-
-function formatDateFromInput(dateStr) {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
-}
-
-function saveAssurance(event) {
+async function saveAssurance(event) {
     event.preventDefault();
     
     const vehicleId = parseInt(document.getElementById('vehicleId').value);
-    const vehicle = vehicles.find(v => v.id === vehicleId);
     
-    if (!vehicle) return;
-
     const compagnie = document.getElementById('compagnie').value === 'autre' ? 
         document.getElementById('compagnieAutre').value : 
         document.getElementById('compagnie').value;
@@ -829,7 +641,7 @@ function saveAssurance(event) {
         dateDebut: formatDateFromInput(document.getElementById('dateDebut').value),
         dateExpiration: formatDateFromInput(document.getElementById('dateExpiration').value),
         typeCouverture: document.getElementById('typeCouverture').value,
-        fichier: vehicle.assurance ? vehicle.assurance.fichier : null
+        montantPrime: parseFloat(document.getElementById('montantPrime').value) || 0
     };
 
     const dateDebut = new Date(document.getElementById('dateDebut').value);
@@ -840,21 +652,61 @@ function saveAssurance(event) {
         return;
     }
 
-    vehicle.assurance = assuranceData;
-
-    generateVehicleList();
+    const success = await saveAssuranceToAPI(vehicleId, assuranceData);
     
-    if (selectedVehicle && selectedVehicle.id === vehicleId) {
-        selectedVehicle = vehicle;
-        if (window.innerWidth <= 1024) {
-            openMobileModal(vehicle);
-        } else {
-            showVehicleDetails(vehicle);
-        }
+    if (success) {
+        closeEditModal();
+        const vehicleName = vehicles.find(v => v.id === vehicleId)?.nom || 'le véhicule';
+        alert(`Informations d'assurance mises à jour pour ${vehicleName}!`);
+    }
+}
+
+// ===============================
+// GESTION DE LA CARTE GRISE
+// ===============================
+
+function editCarteGrise(vehicleId) {
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    if (!vehicle) return;
+
+    document.getElementById('vehicleIdCG').value = vehicleId;
+    
+    if (vehicle.carteGrise) {
+        document.getElementById('numeroCarteGrise').value = vehicle.carteGrise.numero || '';
+        document.getElementById('dateEmission').value = formatDateForInput(vehicle.carteGrise.dateEmission) || '';
+        document.getElementById('titulaire').value = vehicle.carteGrise.titulaire || '';
+    } else {
+        document.getElementById('carteGriseForm').reset();
+        document.getElementById('vehicleIdCG').value = vehicleId;
     }
 
-    closeEditModal();
-    alert(`Informations d'assurance mises à jour pour ${vehicle.nom}!`);
+    document.getElementById('editCarteGriseModal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeEditCarteGriseModal() {
+    document.getElementById('editCarteGriseModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+async function saveCarteGrise(event) {
+    event.preventDefault();
+    
+    const vehicleId = parseInt(document.getElementById('vehicleIdCG').value);
+    
+    const carteGriseData = {
+        numero: document.getElementById('numeroCarteGrise').value,
+        dateEmission: formatDateFromInput(document.getElementById('dateEmission').value),
+        titulaire: document.getElementById('titulaire').value
+    };
+
+    const success = await saveCarteGriseToAPI(vehicleId, carteGriseData);
+    
+    if (success) {
+        closeEditCarteGriseModal();
+        const vehicleName = vehicles.find(v => v.id === vehicleId)?.nom || 'le véhicule';
+        alert(`Informations de carte grise mises à jour pour ${vehicleName}!`);
+    }
 }
 
 // ===============================
@@ -919,47 +771,33 @@ function resetControleTechniqueForm() {
     document.getElementById('ctPhotoPreview').style.display = 'none';
 }
 
-function saveControleTechnique(event) {
+async function saveControleTechnique(event) {
     event.preventDefault();
     
     const vehicleId = parseInt(document.getElementById('vehicleIdCT').value);
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    
-    if (!vehicle) return;
-
     const dateProchainControle = formatDateFromInput(document.getElementById('dateProchainControle').value);
     
-    // Mise à jour des données
-    if (!vehicle.controleTechnique) {
-        vehicle.controleTechnique = {};
-    }
+    // Préparer FormData pour l'API
+    const formData = new FormData();
+    formData.append('dateProchainControle', dateProchainControle);
     
-    vehicle.controleTechnique.dateProchainControle = dateProchainControle;
-    
-    // Gestion de la photo
     if (ctPhotoFile) {
-        const photoFileName = `ct_${vehicleId}_${ctPhotoFile.name}`;
-        vehicle.controleTechnique.photoUrl = photoFileName;
-        console.log('Photo à sauvegarder:', photoFileName);
+        formData.append('photo', ctPhotoFile);
     }
 
-    // Actualiser l'affichage
-    generateVehicleList();
+    const success = await saveControleTechniqueToAPI(vehicleId, formData);
     
-    if (selectedVehicle && selectedVehicle.id === vehicleId) {
-        selectedVehicle = vehicle;
-        if (window.innerWidth <= 1024) {
-            openMobileModal(vehicle);
-        } else {
-            showVehicleDetails(vehicle);
-        }
+    if (success) {
+        closeEditControleTechniqueModal();
+        const vehicleName = vehicles.find(v => v.id === vehicleId)?.nom || 'le véhicule';
+        alert(`Contrôle technique mis à jour pour ${vehicleName}!`);
     }
-
-    closeEditControleTechniqueModal();
-    alert(`Contrôle technique mis à jour pour ${vehicle.nom}!`);
 }
 
-// Navigation et utilitaires
+// ===============================
+// NAVIGATION ET UTILITAIRES
+// ===============================
+
 function goToHomePage() {
     window.location.href = '/';
 }
@@ -978,9 +816,9 @@ window.addEventListener('resize', () => {
 // GESTIONNAIRES D'ÉVÉNEMENTS
 // ===============================
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialisation
-    generateVehicleList();
+document.addEventListener('DOMContentLoaded', async function() {
+    // Chargement initial des données depuis l'API
+    await loadVehicles();
     
     // Gestionnaire de fichier pour les documents généraux
     document.getElementById('fileInput').addEventListener('change', handleFileUpload);
@@ -1114,5 +952,3 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.head.appendChild(rippleStyle);
 });
-
-

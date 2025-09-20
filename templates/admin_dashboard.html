@@ -4,321 +4,318 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administration - DriveGo</title>
-    <link rel="stylesheet" href="../static/CSS/admin_dashboard.css">
-    <!-- Bibliothèques pour l'export PDF -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/admin_dashboard.css') }}">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
     <div class="admin-container">
-        <div class="header">
+        <!-- Header simplifié -->
+        <header class="header">
             <div class="header-content">
-                <div class="nav-container">
-               <a href="{{ url_for('index') }}" class="logo">
-        <img src="../static/images/logo perce-neige.PNG"
-             alt="Logo Fondation Perce-Neige" class="logo-image"></a>
-                <h1>DriveGo Admin</h1>
-                <p>Tableau de bord administrateur - Gestion complète des réservations, véhicules et utilisateurs</p>
-            </div>
-        </div>
-
-        <div class="invite-section">
-            <form id="invitationForm" class="invite-form" onsubmit="sendInvitation(event)">
-                <label for="inviteEmail">✉️ Inviter un conducteur :</label>
-                <input type="email" id="inviteEmail" placeholder="Adresse email du nouveau conducteur" required />
-                <button type="submit" class="btn btn-success">Envoyer l'invitation</button>
-            </form>
-            <div id="inviteMessage"></div>
-        </div>
-
-        <div class="nav-tabs">
-            <button class="nav-tab active" onclick="showSection('dashboard')">📊 Dashboard</button>
-            <button class="nav-tab" onclick="showSection('reservations')">📅 Réservations</button>
-            <button class="nav-tab" onclick="showSection('vehicles')">🚗 Véhicules</button>
-            <button class="nav-tab" onclick="showSection('users')">👥 Utilisateurs</button>
-        </div>
-
-        <!-- Tableau de bord -->
-        <div id="dashboard" class="content-section active">
-            <h2 class="section-title">📊 Tableau de bord</h2>
-            
-            <div class="export-section">
-                <div class="export-buttons">
-                    <h3>📤 Exporter les statistiques :</h3>
-                    <button class="btn-export csv" onclick="exportDashboardCSV()">
-                        📊 Export CSV
-                    </button>
-                    <button class="btn-export pdf" onclick="exportDashboardPDF()">
-                        📄 Export PDF
+                <div class="logo-section">
+                    <a href="{{ url_for('index') }}" class="logo">
+                        <img src="../static/images/logo perce-neige.PNG" alt="Logo Fondation Perce-Neige" class="logo-image">
+                    </a>
+                    <div class="header-text">
+                        <h1>Administration DriveGo</h1>
+                        <p>Gestion du parc automobile et des utilisateurs</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-outline" onclick="showModal('inviteUserModal')">
+                        <span class="icon">✉️</span>
+                        Inviter un conducteur
                     </button>
                 </div>
-                <div id="dashboardExportStatus" class="export-status"></div>
             </div>
-            
+        </header>
+
+        <!-- Navigation principale -->
+        <nav class="main-nav">
+            <button class="nav-tab active" onclick="showSection('dashboard')" data-section="dashboard">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">Tableau de bord</span>
+            </button>
+            <button class="nav-tab" onclick="showSection('vehicles')" data-section="vehicles">
+                <span class="nav-icon">🚗</span>
+                <span class="nav-text">Parc automobile</span>
+            </button>
+            <button class="nav-tab" onclick="showSection('users')" data-section="users">
+                <span class="nav-icon">👥</span>
+                <span class="nav-text">Conducteurs</span>
+            </button>
+            <button class="nav-tab" onclick="showSection('maintenance')" data-section="maintenance">
+                <span class="nav-icon">🔧</span>
+                <span class="nav-text">Maintenance</span>
+            </button>
+        </nav>
+
+        <!-- Dashboard -->
+        <section id="dashboard" class="content-section active">
+            <div class="section-header">
+                <h2 class="section-title">Vue d'ensemble</h2>
+                <div class="section-actions">
+                    <button class="btn btn-export" onclick="exportDashboardCSV()">
+                        <span class="icon">📊</span>
+                        Exporter CSV
+                    </button>
+                    <button class="btn btn-export" onclick="exportDashboardPDF()">
+                        <span class="icon">📄</span>
+                        Exporter PDF
+                    </button>
+                </div>
+            </div>
+
             <div class="stats-grid">
                 <div class="stat-card">
-                    <h3 id="totalReservations">12</h3>
-                    <p>Réservations totales</p>
+                    <div class="stat-icon">🚗</div>
+                    <div class="stat-content">
+                        <h3 id="totalVehicles">5</h3>
+                        <p>Véhicules actifs</p>
+                        <small class="stat-detail">Tous statuts confondus</small>
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <h3 id="totalVehicles">8</h3>
-                    <p>Véhicules disponibles</p>
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <h3 id="availableVehicles">3</h3>
+                        <p>Véhicules disponibles</p>
+                        <small class="stat-detail">Prêts à l'utilisation</small>
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <h3 id="totalUsers">25</h3>
-                    <p>Utilisateurs actifs</p>
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-content">
+                        <h3 id="totalUsers">12</h3>
+                        <p>Conducteurs actifs</p>
+                        <small class="stat-detail">Comptes validés</small>
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <h3 id="pendingReservations">3</h3>
-                    <p>Réservations en attente</p>
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-content">
+                        <h3 id="alertsCount">2</h3>
+                        <p>Alertes actives</p>
+                        <small class="stat-detail">Contrôles techniques</small>
+                    </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Gestion des réservations -->
-        <div id="reservations" class="content-section">
-            <h2 class="section-title">📅 Gestion des Réservations</h2>
-            
-            <div class="export-section">
-                <div class="export-buttons">
-                    <h3>📤 Exporter les réservations :</h3>
-                    <button class="btn-export csv" onclick="exportReservationsCSV()">
-                        📊 Export CSV
-                    </button>
-                    <button class="btn-export pdf" onclick="exportReservationsPDF()">
-                        📄 Export PDF
-                    </button>
-                </div>
-                <div id="reservationsExportStatus" class="export-status"></div>
-            </div>
-            
-            <div class="search-filter">
-                <input type="text" id="searchReservation" placeholder="🔍 Rechercher par nom ou email...">
-                <select id="filterStatus">
-                    <option value="">Tous les statuts</option>
-                    <option value="confirmed">Confirmée</option>
-                    <option value="pending">En attente</option>
-                    <option value="cancelled">Annulée</option>
-                </select>
-                <button class="btn btn-primary" onclick="filterReservations()">Filtrer</button>
             </div>
 
-            <div class="table-container">
-                <table id="reservationsTable">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Utilisateur</th>
-                            <th>Véhicule</th>
-                            <th>Date début</th>
-                            <th>Date fin</th>
-                            <th>Statut</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reservationsTableBody">
-                        <tr>
-                            <td>#001</td>
-                            <td>Jean Dupont<br><small>jean.dupont@email.com</small></td>
-                            <td>BMW Serie 3<br><small>AB-123-CD</small></td>
-                            <td>15/01/2025</td>
-                            <td>20/01/2025</td>
-                            <td><span class="status confirmed">Confirmée</span></td>
-                            <td>
-                                <button class="btn btn-warning" style="padding: 6px 12px; font-size: 14px;">Modifier</button>
-                                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 14px;">Annuler</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#002</td>
-                            <td>Marie Martin<br><small>marie.martin@email.com</small></td>
-                            <td>Audi A4<br><small>EF-456-GH</small></td>
-                            <td>22/01/2025</td>
-                            <td>25/01/2025</td>
-                            <td><span class="status pending">En attente</span></td>
-                            <td>
-                                <button class="btn btn-success" style="padding: 6px 12px; font-size: 14px;">Confirmer</button>
-                                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 14px;">Refuser</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- Alertes et notifications -->
+            <div class="alerts-section">
+                <h3>Alertes importantes</h3>
+                <div class="alert-list">
+                    <div class="alert-item warning">
+                        <div class="alert-icon">⚠️</div>
+                        <div class="alert-content">
+                            <strong>Contrôle technique à renouveler</strong>
+                            <p>TRAFIC VERT (EJ-374-TT) - Échéance : 12/03/2025</p>
+                        </div>
+                        <div class="alert-actions">
+                            <button class="btn btn-sm">Voir détails</button>
+                        </div>
+                    </div>
+                    <div class="alert-item warning">
+                        <div class="alert-icon">⚠️</div>
+                        <div class="alert-content">
+                            <strong>Contrôle technique à renouveler</strong>
+                            <p>TRAFIC ROUGE (CW-819-FR) - Échéance : 27/01/2025</p>
+                        </div>
+                        <div class="alert-actions">
+                            <button class="btn btn-sm">Voir détails</button>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+        </section>
 
         <!-- Gestion des véhicules -->
-        <div id="vehicles" class="content-section">
-            <h2 class="section-title">🚗 Gestion des Véhicules</h2>
-            
-            <div class="export-section">
-                <div class="export-buttons">
-                    <h3>📤 Exporter les véhicules :</h3>
-                    <button class="btn-export csv" onclick="exportVehiclesCSV()">
-                        📊 Export CSV
+        <section id="vehicles" class="content-section">
+            <div class="section-header">
+                <h2 class="section-title">Parc automobile</h2>
+                <div class="section-actions">
+                    <button class="btn btn-primary" onclick="showModal('addVehicleModal')">
+                        <span class="icon">➕</span>
+                        Ajouter un véhicule
                     </button>
-                    <button class="btn-export pdf" onclick="exportVehiclesPDF()">
-                        📄 Export PDF
+                    <button class="btn btn-export" onclick="exportVehiclesCSV()">
+                        <span class="icon">📊</span>
+                        Exporter
                     </button>
                 </div>
-                <div id="vehiclesExportStatus" class="export-status"></div>
             </div>
-            
-            <button class="btn btn-success" onclick="showModal('addVehicleModal')">➕ Ajouter un véhicule</button>
-            
-            <div class="table-container">
-                <table id="vehiclesTable">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Marque</th>
-                            <th>Modèle</th>
-                            <th>Immatriculation</th>
-                            <th>Kilométrage</th>
-                            <th>Contrôle technique</th>
-                            <th>Statut</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="vehiclesTableBody">
-                        <tr>
-                            <td>#V001</td>
-                            <td>BMW</td>
-                            <td>Serie 3</td>
-                            <td>AB-123-CD</td>
-                            <td>45,000 km</td>
-                            <td>15/12/2025</td>
-                            <td><span class="status available">Disponible</span></td>
-                            <td>
-                                <button class="btn btn-warning" style="padding: 6px 12px; font-size: 14px;">Modifier</button>
-                                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 14px;">Supprimer</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#V002</td>
-                            <td>Audi</td>
-                            <td>A4</td>
-                            <td>EF-456-GH</td>
-                            <td>62,000 km</td>
-                            <td>08/03/2025</td>
-                            <td><span class="status maintenance">Maintenance</span></td>
-                            <td>
-                                <button class="btn btn-warning" style="padding: 6px 12px; font-size: 14px;">Modifier</button>
-                                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 14px;">Supprimer</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#V003</td>
-                            <td>Mercedes</td>
-                            <td>Classe C</td>
-                            <td>IJ-789-KL</td>
-                            <td>28,500 km</td>
-                            <td>22/08/2025</td>
-                            <td><span class="status reserved">Réservé</span></td>
-                            <td>
-                                <button class="btn btn-warning" style="padding: 6px 12px; font-size: 14px;">Modifier</button>
-                                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 14px;">Supprimer</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+
+            <div class="filters-section">
+                <div class="search-bar">
+                    <input type="text" id="vehicleSearch" placeholder="Rechercher par nom, immatriculation...">
+                    <button class="search-btn">🔍</button>
+                </div>
+                <div class="filter-controls">
+                    <select id="statusFilter">
+                        <option value="">Tous les statuts</option>
+                        <option value="actif">Actif</option>
+                        <option value="maintenance">En maintenance</option>
+                        <option value="hors-service">Hors service</option>
+                    </select>
+                </div>
             </div>
-        </div>
+
+            <div class="vehicles-grid" id="vehiclesGrid">
+                <!-- Les véhicules seront chargés dynamiquement -->
+            </div>
+        </section>
 
         <!-- Gestion des utilisateurs -->
-        <div id="users" class="content-section">  
-            <h2 class="section-title">👥 Gestion des Utilisateurs</h2>
-            
-            <div class="export-section">
-                <div class="export-buttons">
-                    <h3>📤 Exporter les utilisateurs :</h3>
-                    <button class="btn-export csv" onclick="exportUsersCSV()">
-                        📊 Export CSV
+        <section id="users" class="content-section">
+            <div class="section-header">
+                <h2 class="section-title">Conducteurs</h2>
+                <div class="section-actions">
+                    <button class="btn btn-primary" onclick="showModal('addUserModal')">
+                        <span class="icon">➕</span>
+                        Ajouter un conducteur
                     </button>
-                    <button class="btn-export pdf" onclick="exportUsersPDF()">
-                        📄 Export PDF
+                    <button class="btn btn-export" onclick="exportUsersCSV()">
+                        <span class="icon">📊</span>
+                        Exporter
                     </button>
                 </div>
-                <div id="usersExportStatus" class="export-status"></div>
             </div>
-            
-            <button class="btn btn-success" onclick="showModal('addUserModal')">➕ Ajouter un utilisateur</button>
-            
-            <div class="table-container">
-                <table id="usersTable">
+
+            <div class="filters-section">
+                <div class="search-bar">
+                    <input type="text" id="userSearch" placeholder="Rechercher par nom, email...">
+                    <button class="search-btn">🔍</button>
+                </div>
+                <div class="filter-controls">
+                    <select id="userStatusFilter">
+                        <option value="">Tous les statuts</option>
+                        <option value="actif">Actif</option>
+                        <option value="suspendu">Suspendu</option>
+                        <option value="en-attente">En attente</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="users-table-container">
+                <table class="modern-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Nom</th>
-                            <th>Email</th>
-                            <th>Téléphone</th>
+                            <th>Conducteur</th>
+                            <th>Contact</th>
                             <th>Statut</th>
-                            <th>Date inscription</th>
+                            <th>Dernière activité</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="usersTableBody">
-                        <tr>
-                            <td>#U001</td>
-                            <td>Jean Dupont</td>
-                            <td>jean.dupont@email.com</td>
-                            <td>06.12.34.56.78</td>
-                            <td><span class="status available">Actif</span></td>
-                            <td>10/01/2025</td>
-                            <td>
-                                <button class="btn btn-warning" style="padding: 6px 12px; font-size: 14px;">Modifier</button>
-                                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 14px;">Suspendre</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#U002</td>
-                            <td>Marie Martin</td>
-                            <td>marie.martin@email.com</td>
-                            <td>06.98.76.54.32</td>
-                            <td><span class="status available">Actif</span></td>
-                            <td>12/01/2025</td>
-                            <td>
-                                <button class="btn btn-warning" style="padding: 6px 12px; font-size: 14px;">Modifier</button>
-                                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 14px;">Suspendre</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#U003</td>
-                            <td>Pierre Dubois</td>
-                            <td>pierre.dubois@email.com</td>
-                            <td>06.11.22.33.44</td>
-                            <td><span class="status cancelled">Suspendu</span></td>
-                            <td>08/01/2025</td>
-                            <td>
-                                <button class="btn btn-success" style="padding: 6px 12px; font-size: 14px;">Réactiver</button>
-                                <button class="btn btn-warning" style="padding: 6px 12px; font-size: 14px;">Modifier</button>
-                            </td>
-                        </tr>
+                        <!-- Les utilisateurs seront chargés dynamiquement -->
                     </tbody>
                 </table>
             </div>
+        </section>
+
+        <!-- Section maintenance -->
+        <section id="maintenance" class="content-section">
+            <div class="section-header">
+                <h2 class="section-title">Maintenance et contrôles</h2>
+                <div class="section-actions">
+                    <button class="btn btn-primary" onclick="showModal('addMaintenanceModal')">
+                        <span class="icon">🔧</span>
+                        Programmer une maintenance
+                    </button>
+                </div>
+            </div>
+
+            <div class="maintenance-overview">
+                <div class="maintenance-stats">
+                    <div class="maintenance-stat">
+                        <h4>2</h4>
+                        <p>Contrôles techniques à renouveler</p>
+                    </div>
+                    <div class="maintenance-stat">
+                        <h4>1</h4>
+                        <p>Véhicule en maintenance</p>
+                    </div>
+                    <div class="maintenance-stat">
+                        <h4>0</h4>
+                        <p>Assurances à renouveler</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="maintenance-calendar">
+                <h3>Prochaines échéances</h3>
+                <div class="calendar-items">
+                    <div class="calendar-item urgent">
+                        <div class="calendar-date">
+                            <span class="day">27</span>
+                            <span class="month">Jan</span>
+                        </div>
+                        <div class="calendar-content">
+                            <strong>Contrôle technique - TRAFIC ROUGE</strong>
+                            <p>CW-819-FR • Urgent</p>
+                        </div>
+                        <div class="calendar-actions">
+                            <button class="btn btn-sm btn-primary">Planifier</button>
+                        </div>
+                    </div>
+                    <div class="calendar-item warning">
+                        <div class="calendar-date">
+                            <span class="day">12</span>
+                            <span class="month">Mar</span>
+                        </div>
+                        <div class="calendar-content">
+                            <strong>Contrôle technique - TRAFIC VERT</strong>
+                            <p>EJ-374-TT • À prévoir</p>
+                        </div>
+                        <div class="calendar-actions">
+                            <button class="btn btn-sm btn-primary">Planifier</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal d'invitation -->
+    <div id="inviteUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Inviter un nouveau conducteur</h2>
+                <button class="modal-close" onclick="closeModal('inviteUserModal')">×</button>
+            </div>
+            <form id="invitationForm" onsubmit="sendInvitation(event)">
+                <div class="form-group">
+                    <label for="inviteEmail">Adresse email</label>
+                    <input type="email" id="inviteEmail" placeholder="conducteur@fondation-perceneige.org" required>
+                </div>
+                <div class="form-group">
+                    <label for="inviteMessage">Message personnalisé (optionnel)</label>
+                    <textarea id="inviteMessage" rows="3" placeholder="Message d'accueil pour le nouveau conducteur..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('inviteUserModal')">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Envoyer l'invitation</button>
+                </div>
+            </form>
+            <div id="inviteResult" class="form-result"></div>
         </div>
     </div>
 
-    <!-- Modal pour ajouter/modifier un véhicule -->
+    <!-- Modal véhicule -->
     <div id="addVehicleModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('addVehicleModal')">&times;</span>
-            <h2 style="color: #f8fafc; margin-bottom: 25px; font-size: 1.8rem;">🚗 Ajouter un véhicule</h2>
+            <div class="modal-header">
+                <h2>Ajouter un véhicule</h2>
+                <button class="modal-close" onclick="closeModal('addVehicleModal')">×</button>
+            </div>
             <form id="vehicleForm">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="vehicleBrand">Marque</label>
-                        <input type="text" id="vehicleBrand" placeholder="ex: BMW, Audi, Mercedes..." required>
-                    </div>
-                    <div class="form-group">
-                        <label for="vehicleModel">Modèle</label>
-                        <input type="text" id="vehicleModel" placeholder="ex: Serie 3, A4, Classe C..." required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="vehicleYear">Année</label>
-                        <input type="number" id="vehicleYear" min="1990" max="2025" placeholder="2023" required>
+                        <label for="vehicleName">Nom du véhicule</label>
+                        <input type="text" id="vehicleName" placeholder="ex: TRAFIC BLANC" required>
                     </div>
                     <div class="form-group">
                         <label for="vehiclePlate">Immatriculation</label>
@@ -327,66 +324,69 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="vehicleKm">Kilométrage (km)</label>
-                        <input type="number" id="vehicleKm" min="0" placeholder="50000" required>
+                        <label for="vehicleBrand">Marque</label>
+                        <select id="vehicleBrand" required>
+                            <option value="">Sélectionner...</option>
+                            <option value="Renault">Renault</option>
+                            <option value="Peugeot">Peugeot</option>
+                            <option value="Citroën">Citroën</option>
+                            <option value="Ford">Ford</option>
+                            <option value="Mercedes">Mercedes</option>
+                            <option value="Volkswagen">Volkswagen</option>
+                        </select>
                     </div>
                     <div class="form-group">
-                        <label for="vehicleControl">Contrôle technique</label>
-                        <input type="date" id="vehicleControl" required>
+                        <label for="vehicleModel">Modèle</label>
+                        <input type="text" id="vehicleModel" placeholder="ex: Trafic, Kangoo" required>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="vehicleStatus">Statut</label>
-                    <select id="vehicleStatus" required>
-                        <option value="available">Disponible</option>
-                        <option value="maintenance">En maintenance</option>
-                        <option value="reserved">Réservé</option>
-                    </select>
+                    <label for="vehicleRegistrationDate">Date d'immatriculation</label>
+                    <input type="date" id="vehicleRegistrationDate" required>
                 </div>
-                <div style="text-align: right; margin-top: 30px;">
-                    <button type="button" class="btn btn-danger" onclick="closeModal('addVehicleModal')">Annuler</button>
-                    <button type="submit" class="btn btn-success">💾 Enregistrer</button>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addVehicleModal')">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter le véhicule</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal pour ajouter/modifier un utilisateur -->
+    <!-- Modal utilisateur -->
     <div id="addUserModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('addUserModal')">&times;</span>
-            <h2 style="color: #f8fafc; margin-bottom: 25px; font-size: 1.8rem;">👥 Ajouter un utilisateur</h2>
+            <div class="modal-header">
+                <h2>Ajouter un conducteur</h2>
+                <button class="modal-close" onclick="closeModal('addUserModal')">×</button>
+            </div>
             <form id="userForm">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="userName">Nom complet</label>
-                        <input type="text" id="userName" placeholder="Jean Dupont" required>
+                        <label for="userFirstName">Prénom</label>
+                        <input type="text" id="userFirstName" placeholder="Jean" required>
                     </div>
                     <div class="form-group">
-                        <label for="userEmail">Email</label>
-                        <input type="email" id="userEmail" placeholder="jean.dupont@email.com" required>
+                        <label for="userLastName">Nom</label>
+                        <input type="text" id="userLastName" placeholder="Dupont" required>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="userPhone">Téléphone</label>
-                        <input type="tel" id="userPhone" placeholder="06.12.34.56.78" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="userStatus">Statut</label>
-                        <select id="userStatus" required>
-                            <option value="active">Actif</option>
-                            <option value="inactive">Inactif</option>
-                        </select>
-                    </div>
+                <div class="form-group">
+                    <label for="userEmail">Email</label>
+                    <input type="email" id="userEmail" placeholder="jean.dupont@fondation-perceneige.org" required>
                 </div>
-                <div style="text-align: right; margin-top: 30px;">
-                    <button type="button" class="btn btn-danger" onclick="closeModal('addUserModal')">Annuler</button>
-                    <button type="submit" class="btn btn-success">💾 Enregistrer</button>
+                <div class="form-group">
+                    <label for="userPhone">Téléphone</label>
+                    <input type="tel" id="userPhone" placeholder="06 12 34 56 78">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addUserModal')">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter le conducteur</button>
                 </div>
             </form>
         </div>
     </div>
-<script src="../static/js/admin_dashboard.js"></script>
+
+    <script src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
+    
 </body>
 </html>

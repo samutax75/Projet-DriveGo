@@ -23,8 +23,21 @@
         <div class="signup-container">
             <div class="signup-header">
                 <h1 class="floating">Créer un compte</h1>
-                <p>Rejoignez DriveGo et gérer vos missions facilement</p>
+                <p>Rejoignez DriveGo et gérez vos missions facilement</p>
             </div>
+
+            <!-- Message d'invitation si l'utilisateur arrive via un token -->
+            {% if email %}
+            <div style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); color: #2e7d32; padding: 20px; border-radius: 12px; margin-bottom: 25px; border-left: 5px solid #4caf50; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 24px;">🎉</span>
+                    <div>
+                        <strong style="font-size: 18px;">Invitation reçue !</strong><br>
+                        <span style="font-size: 14px; opacity: 0.9;">Vous avez été invité(e) à rejoindre DriveGo avec l'adresse : <strong>{{ email }}</strong></span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
 
             <div class="error-message" id="errorMessage">
                 Une erreur s'est produite. Veuillez réessayer.
@@ -35,6 +48,9 @@
             </div>
 
             <form id="signupForm">
+                <!-- Champ caché pour le token d'invitation -->
+                <input type="hidden" name="token" value="{{ token if token else '' }}">
+                
                 <div class="form-row">
                     <div class="form-group">
                         <label for="firstName">Prénom *</label>
@@ -50,8 +66,17 @@
 
                 <div class="form-group">
                     <label for="email">Email *</label>
-                    <input type="email" id="email" name="email" placeholder="votre.email@exemple.com" required>
+                    <input type="email" id="email" name="email" 
+                           placeholder="votre.email@exemple.com" 
+                           value="{{ email if email else '' }}"
+                           {% if email %}readonly style="background-color: #f8f9fa; border-color: #4caf50; cursor: not-allowed; box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);"{% endif %}
+                           required>
                     <div class="validation-message" id="emailValidation"></div>
+                    {% if email %}
+                    <small style="color: #4caf50; font-size: 12px; margin-top: 4px; display: block;">
+                        📧 Email fourni par l'invitation - non modifiable
+                    </small>
+                    {% endif %}
                 </div>
 
                 <div class="form-group">
@@ -103,13 +128,18 @@
 
                 <button type="submit" class="btn btn-primary" id="submitBtn">
                     <span class="loading-spinner" id="loadingSpinner"></span>
-                    <span id="submitText">Créer mon compte</span>
+                    <span id="submitText">
+                        {% if email %}
+                        Finaliser mon inscription
+                        {% else %}
+                        Créer mon compte
+                        {% endif %}
+                    </span>
                 </button>
             </form>
 
             <div class="login-link">
                 <p>Déjà un compte ? <a href="{{ url_for('connexion') }}">Se connecter</a></p>
-
             </div>
         </div>
     </main>
@@ -121,6 +151,117 @@
         </div>
     </footer>
 
+    <script>
+        // JavaScript intégré pour gérer le système d'invitation
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailField = document.getElementById('email');
+            const form = document.getElementById('signupForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const submitText = document.getElementById('submitText');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            // Gestion spéciale pour les emails d'invitation
+            if (emailField.hasAttribute('readonly')) {
+                emailField.title = 'Email fourni par l\'invitation - non modifiable';
+            }
+            
+            // Gestionnaire de soumission du formulaire
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Validation simple
+                const firstName = document.getElementById('firstName').value.trim();
+                const lastName = document.getElementById('lastName').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                const terms = document.getElementById('terms').checked;
+                
+                // Réinitialiser les messages
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+                
+                // Validations
+                if (!firstName || !lastName || !email || !phone || !password || !confirmPassword) {
+                    showError('Tous les champs obligatoires doivent être remplis.');
+                    return;
+                }
+                
+                if (password !== confirmPassword) {
+                    showError('Les mots de passe ne correspondent pas.');
+                    return;
+                }
+                
+                if (password.length < 8) {
+                    showError('Le mot de passe doit contenir au moins 8 caractères.');
+                    return;
+                }
+                
+                if (!terms) {
+                    showError('Vous devez accepter les conditions d\'utilisation.');
+                    return;
+                }
+                
+                // Afficher le spinner de chargement
+                showLoading(true);
+                
+                try {
+                    // Préparer les données du formulaire
+                    const formData = new FormData(form);
+                    
+                    // Envoyer la requête
+                    const response = await fetch('/inscription', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showSuccess('Compte créé avec succès ! Redirection en cours...');
+                        setTimeout(() => {
+                            window.location.href = '/connexion';
+                        }, 2000);
+                    } else {
+                        showError(data.message || 'Une erreur est survenue lors de la création du compte.');
+                    }
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    showError('Erreur de connexion. Veuillez réessayer.');
+                } finally {
+                    showLoading(false);
+                }
+            });
+            
+            function showLoading(show) {
+                if (show) {
+                    loadingSpinner.style.display = 'inline-block';
+                    submitText.style.opacity = '0.7';
+                    submitBtn.disabled = true;
+                } else {
+                    loadingSpinner.style.display = 'none';
+                    submitText.style.opacity = '1';
+                    submitBtn.disabled = false;
+                }
+            }
+            
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+                errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            function showSuccess(message) {
+                successMessage.textContent = message;
+                successMessage.style.display = 'block';
+                successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    </script>
+    
     <script src="{{ url_for('static', filename='js/inscription.js') }}"></script>
     
 </body>
