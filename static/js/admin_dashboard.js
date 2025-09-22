@@ -3,8 +3,10 @@
 // ===============================
 let currentVehicleId = null;
 let currentUserId = null;
+let currentMaintenanceId = null;
 let vehicles = [];
 let users = [];
+let maintenances = [];
 
 // ===============================
 // GESTION DE LA NAVIGATION
@@ -39,6 +41,10 @@ function showSection(sectionId) {
             break;
         case 'users':
             loadUsers();
+            break;
+        case 'maintenance':
+            loadMaintenances();
+            populateVehicleSelect();
             break;
         case 'dashboard':
             loadDashboardStats();
@@ -90,6 +96,14 @@ function resetModalVariables(modalId) {
         currentUserId = null;
         const title = document.querySelector('#addUserModal .modal-header h2');
         if (title) title.textContent = 'Ajouter un conducteur';
+    } else if (modalId === 'addMaintenanceModal') {
+        currentMaintenanceId = null;
+        const title = document.querySelector('#addMaintenanceModal .modal-header h2');
+        if (title) title.textContent = 'Programmer une maintenance';
+        // Réinitialiser la checkbox
+        const checkbox = document.getElementById('maintenanceImmediateBlock');
+        if (checkbox) checkbox.checked = false;
+        toggleImmediateBlock();
     }
 }
 
@@ -272,7 +286,7 @@ function displayAlerts(alerts) {
                 <p>${alert.description}</p>
             </div>
             <div class="alert-actions">
-                <button class="btn btn-sm" onclick="viewVehicleDetails(${getVehicleIdByPlate(alert.vehicle_plate)})">Voir détails</button>
+                <button class="btn btn-sm" onclick="showSection('vehicles')">Voir véhicules</button>
             </div>
         </div>
     `).join('');
@@ -283,6 +297,9 @@ function getVehicleIdByPlate(plate) {
     return vehicle ? vehicle.id : 1;
 }
 
+// ===============================
+// GESTION DES VÉHICULES
+// ===============================
 async function loadVehicles() {
     try {
         const response = await fetch('/api/admin/vehicles');
@@ -343,15 +360,23 @@ function displayVehicles(vehiclesList) {
                     <span class="vehicle-detail-value">${vehicle.numeroCarte || 'Non renseigné'}</span>
                 </div>
             </div>
-            <div class="vehicle-actions">
-                <button class="btn btn-sm btn-primary" onclick="viewVehicleDetails(${vehicle.id})">
-                    <span class="icon">👁️</span>
-                    Voir détails
-                </button>
+            <div class="vehicle-actions vehicle-actions-three">
                 <button class="btn btn-sm btn-secondary" onclick="editVehicle(${vehicle.id})">
                     <span class="icon">✏️</span>
                     Modifier
                 </button>
+                
+                ${vehicle.statut === 'maintenance' ? 
+                    `<button class="btn btn-sm btn-success" onclick="endMaintenance(${vehicle.id})">
+                        <span class="icon">✅</span>
+                        Fin maintenance
+                    </button>` :
+                    `<button class="btn btn-sm btn-warning" onclick="startMaintenance(${vehicle.id})">
+                        <span class="icon">🔧</span>
+                        Maintenance
+                    </button>`
+                }
+                
                 <button class="btn btn-sm btn-danger" onclick="deleteVehicle(${vehicle.id})">
                     <span class="icon">🗑️</span>
                     Supprimer
@@ -370,6 +395,372 @@ function getStatusText(status) {
     return statusMap[status] || 'Actif';
 }
 
+async function startMaintenance(vehicleId) {
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    if (!vehicle) return;
+
+    if (confirm(`Mettre le véhicule "${vehicle.nom}" en maintenance ?\n\nIl ne sera plus disponible pour les missions.`)) {
+        try {
+            const response = await fetch(`/api/admin/vehicles/${vehicleId}/maintenance`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    statut: 'maintenance',
+                    action: 'start',
+                    date_debut: new Date().toISOString(),
+                    type_maintenance: 'maintenance_programmee',
+                    commentaires: 'Maintenance programmée depuis l\'interface admin'
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification(`${vehicle.nom} mis en maintenance avec succès`);
+                loadVehicles();
+                loadDashboardStats();
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            console.error('Erreur mise en maintenance:', error);
+            showNotification(error.message || 'Erreur lors de la mise en maintenance', 'error');
+        }
+    }
+}
+
+async function endMaintenance(vehicleId) {
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    if (!vehicle) return;
+
+    if (confirm(`Terminer la maintenance du véhicule "${vehicle.nom}" ?\n\nIl redeviendra disponible pour les missions.`)) {
+        try {
+            const response = await fetch(`/api/admin/vehicles/${vehicleId}/maintenance`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    statut: 'actif',
+                    action: 'end',
+                    date_fin: new Date().toISOString()
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification(`Maintenance de ${vehicle.nom} terminée avec succès`);
+                loadVehicles();
+                loadDashboardStats();
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            console.error('Erreur fin de maintenance:', error);
+            showNotification(error.message || 'Erreur lors de la fin de maintenance', 'error');
+        }
+    }
+}
+
+// Fonction viewVehicleDetails supprimée car non utilisée
+
+function editVehicle(vehicleId) {
+    currentVehicleId = vehicleId;
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+
+    if (!vehicle) {
+        showNotification('Véhicule introuvable', 'error');
+        return;
+    }
+
+    // Pré-remplir le formulaire
+    document.getElementById('vehicleName').value = vehicle.nom || '';
+    document.getElementById('vehiclePlate').value = vehicle.immatriculation || '';
+    document.getElementById('vehicleBrand').value = vehicle.carteGrise?.marque || '';
+    document.getElementById('vehicleModel').value = vehicle.carteGrise?.modele || '';
+    document.getElementById('vehicleRegistrationDate').value = formatDateForInput(vehicle.dateImmatriculation);
+
+    // Changer le titre du modal
+    const title = document.querySelector('#addVehicleModal .modal-header h2');
+    if (title) title.textContent = 'Modifier le véhicule';
+
+    showModal('addVehicleModal');
+}
+
+async function deleteVehicle(vehicleId) {
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    if (!vehicle) return;
+
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le véhicule "${vehicle.nom}" ?`)) {
+        try {
+            const response = await fetch(`/api/admin/vehicles/${vehicleId}`, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification(data.message);
+                loadVehicles();
+                loadDashboardStats();
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            console.error('Erreur suppression véhicule:', error);
+            showNotification(error.message || 'Erreur lors de la suppression', 'error');
+        }
+    }
+}
+
+// ===============================
+// GESTION DE LA MAINTENANCE
+// ===============================
+async function loadMaintenances() {
+    try {
+        const response = await fetch('/api/admin/maintenances');
+        const data = await response.json();
+
+        if (data.success) {
+            maintenances = data.maintenances;
+            displayMaintenances(maintenances);
+            updateMaintenanceStats(data.stats);
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        console.error('Erreur chargement maintenances:', error);
+        showNotification('Erreur lors du chargement des maintenances', 'error');
+        displayMaintenances([]);
+    }
+}
+
+function displayMaintenances(maintenancesList) {
+    const container = document.getElementById('maintenanceList');
+    if (!container) return;
+
+    if (maintenancesList.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">🔧</div>
+                <h3>Aucune maintenance programmée</h3>
+                <p>Planifiez vos maintenances pour assurer le bon fonctionnement de votre flotte.</p>
+                <button class="btn btn-primary" onclick="showModal('addMaintenanceModal')">
+                    <span class="icon">➕</span>
+                    Programmer une maintenance
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = maintenancesList.map(maintenance => `
+        <div class="maintenance-card ${maintenance.statut}">
+            <div class="maintenance-header">
+                <div class="maintenance-info">
+                    <h4>${maintenance.vehicule_nom}</h4>
+                    <span class="maintenance-plate">${maintenance.vehicule_immatriculation}</span>
+                </div>
+                <div class="maintenance-status ${maintenance.statut}">
+                    ${getMaintenanceStatusText(maintenance.statut)}
+                </div>
+            </div>
+            
+            <div class="maintenance-details">
+                <div class="maintenance-type">
+                    <strong>Type:</strong> ${getMaintenanceTypeText(maintenance.type_maintenance)}
+                </div>
+                <div class="maintenance-dates">
+                    <strong>Période:</strong> 
+                    ${formatDateTime(maintenance.date_debut)} 
+                    ${maintenance.date_fin ? ' → ' + formatDateTime(maintenance.date_fin) : ''}
+                </div>
+                ${maintenance.garage ? `
+                    <div class="maintenance-garage">
+                        <strong>Prestataire:</strong> ${maintenance.garage}
+                    </div>
+                ` : ''}
+                ${maintenance.commentaires ? `
+                    <div class="maintenance-comments">
+                        <strong>Commentaires:</strong> ${maintenance.commentaires}
+                    </div>
+                ` : ''}
+            </div>
+            
+            <div class="maintenance-actions">
+                ${maintenance.statut === 'planifiee' ? `
+                    <button class="btn btn-sm btn-primary" onclick="startMaintenanceFromPlanned(${maintenance.id})">
+                        Démarrer
+                    </button>
+                ` : ''}
+                ${maintenance.statut === 'en_cours' ? `
+                    <button class="btn btn-sm btn-success" onclick="completeMaintenance(${maintenance.id})">
+                        Terminer
+                    </button>
+                ` : ''}
+                <button class="btn btn-sm btn-secondary" onclick="editMaintenance(${maintenance.id})">
+                    Modifier
+                </button>
+                ${maintenance.statut !== 'en_cours' ? `
+                    <button class="btn btn-sm btn-danger" onclick="deleteMaintenance(${maintenance.id})">
+                        Supprimer
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateMaintenanceStats(stats) {
+    if (stats) {
+        const maintenanceEnCours = document.getElementById('maintenanceEnCours');
+        const controlesTechniques = document.getElementById('controlesTechniques');
+        const assurancesExpirees = document.getElementById('assurancesExpirees');
+
+        if (maintenanceEnCours) maintenanceEnCours.textContent = stats.en_cours || 0;
+        if (controlesTechniques) controlesTechniques.textContent = stats.controles_techniques || 0;
+        if (assurancesExpirees) assurancesExpirees.textContent = stats.assurances_expirees || 0;
+    }
+}
+
+function getMaintenanceStatusText(status) {
+    const statusMap = {
+        'planifiee': 'Planifiée',
+        'en_cours': 'En cours',
+        'terminee': 'Terminée'
+    };
+    return statusMap[status] || status;
+}
+
+function getMaintenanceTypeText(type) {
+    const typeMap = {
+        'preventive': 'Maintenance préventive',
+        'corrective': 'Maintenance corrective',
+        'controle_technique': 'Contrôle technique',
+        'revision': 'Révision complète',
+        'pneus': 'Changement pneus',
+        'vidange': 'Vidange',
+        'autre': 'Autre'
+    };
+    return typeMap[type] || type;
+}
+
+function formatDateTime(dateString) {
+    if (!dateString) return 'Non défini';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+}
+
+function populateVehicleSelect() {
+    const select = document.getElementById('maintenanceVehicle');
+    if (!select || !vehicles) return;
+    
+    // Ne montrer que les véhicules actifs
+    const availableVehicles = vehicles.filter(v => v.statut === 'actif' || !v.statut);
+    
+    select.innerHTML = '<option value="">Sélectionner un véhicule...</option>' +
+        availableVehicles.map(vehicle => 
+            `<option value="${vehicle.id}">${vehicle.nom} (${vehicle.immatriculation})</option>`
+        ).join('');
+}
+
+function toggleImmediateBlock() {
+    const checkbox = document.getElementById('maintenanceImmediateBlock');
+    const dateDebut = document.getElementById('maintenanceDateDebut');
+    
+    if (checkbox && dateDebut) {
+        if (checkbox.checked) {
+            // Si coché, définir la date de début à maintenant
+            const now = new Date();
+            const formattedNow = now.toISOString().slice(0, 16); // Format pour datetime-local
+            dateDebut.value = formattedNow;
+            dateDebut.disabled = true;
+        } else {
+            dateDebut.disabled = false;
+        }
+    }
+}
+
+async function startMaintenanceFromPlanned(maintenanceId) {
+    if (confirm('Démarrer cette maintenance maintenant ?')) {
+        try {
+            const response = await fetch(`/api/admin/maintenances/${maintenanceId}/start`, {
+                method: 'PUT'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification('Maintenance démarrée');
+                loadMaintenances();
+                loadVehicles();
+                loadDashboardStats();
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            console.error('Erreur démarrage maintenance:', error);
+            showNotification(error.message || 'Erreur lors du démarrage', 'error');
+        }
+    }
+}
+
+async function completeMaintenance(maintenanceId) {
+    if (confirm('Marquer cette maintenance comme terminée ?')) {
+        try {
+            const response = await fetch(`/api/admin/maintenances/${maintenanceId}/complete`, {
+                method: 'PUT'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification('Maintenance terminée');
+                loadMaintenances();
+                loadVehicles();
+                loadDashboardStats();
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            console.error('Erreur fin maintenance:', error);
+            showNotification(error.message || 'Erreur lors de la finalisation', 'error');
+        }
+    }
+}
+
+function editMaintenance(maintenanceId) {
+    // TODO: Implémenter l'édition de maintenance
+    showNotification('Fonction d\'édition en cours de développement', 'info');
+}
+
+async function deleteMaintenance(maintenanceId) {
+    if (confirm('Supprimer cette maintenance ?')) {
+        try {
+            const response = await fetch(`/api/admin/maintenances/${maintenanceId}`, {
+                method: 'DELETE'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification('Maintenance supprimée');
+                loadMaintenances();
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            console.error('Erreur suppression maintenance:', error);
+            showNotification(error.message || 'Erreur lors de la suppression', 'error');
+        }
+    }
+}
+
+// ===============================
+// GESTION DES UTILISATEURS
+// ===============================
 async function loadUsers() {
     try {
         const response = await fetch('/api/admin/users');
@@ -443,64 +834,6 @@ function formatDate(dateString) {
     return new Date(dateString).toLocaleDateString('fr-FR');
 }
 
-// ===============================
-// GESTION DES VÉHICULES
-// ===============================
-function viewVehicleDetails(vehicleId) {
-    window.location.href = `/vehicules/${vehicleId}`;
-}
-
-function editVehicle(vehicleId) {
-    currentVehicleId = vehicleId;
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-
-    if (!vehicle) {
-        showNotification('Véhicule introuvable', 'error');
-        return;
-    }
-
-    // Pré-remplir le formulaire
-    document.getElementById('vehicleName').value = vehicle.nom || '';
-    document.getElementById('vehiclePlate').value = vehicle.immatriculation || '';
-    document.getElementById('vehicleBrand').value = vehicle.carteGrise?.marque || '';
-    document.getElementById('vehicleModel').value = vehicle.carteGrise?.modele || '';
-    document.getElementById('vehicleRegistrationDate').value = formatDateForInput(vehicle.dateImmatriculation);
-
-    // Changer le titre du modal
-    const title = document.querySelector('#addVehicleModal .modal-header h2');
-    if (title) title.textContent = 'Modifier le véhicule';
-
-    showModal('addVehicleModal');
-}
-
-async function deleteVehicle(vehicleId) {
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    if (!vehicle) return;
-
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le véhicule "${vehicle.nom}" ?`)) {
-        try {
-            const response = await fetch(`/api/admin/vehicles/${vehicleId}`, {
-                method: 'DELETE'
-            });
-            const data = await response.json();
-            
-            if (data.success) {
-                showNotification(data.message);
-                loadVehicles();
-                loadDashboardStats();
-            } else {
-                throw new Error(data.message);
-            }
-        } catch (error) {
-            console.error('Erreur suppression véhicule:', error);
-            showNotification(error.message || 'Erreur lors de la suppression', 'error');
-        }
-    }
-}
-
-// ===============================
-// GESTION DES UTILISATEURS
-// ===============================
 function editUser(userId) {
     currentUserId = userId;
     const user = users.find(u => u.id === userId);
@@ -662,18 +995,51 @@ async function handleUserForm(event) {
     }
 }
 
-// ===============================
-// FONCTION D'INVITATION (CORRIGÉE)
-// ===============================
+async function handleMaintenanceForm(event) {
+    event.preventDefault();
+
+    const formData = {
+        vehicule_id: document.getElementById('maintenanceVehicle').value,
+        type_maintenance: document.getElementById('maintenanceType').value,
+        priorite: document.getElementById('maintenanceUrgency').value,
+        date_debut: document.getElementById('maintenanceDateDebut').value,
+        date_fin: document.getElementById('maintenanceDateFin').value || null,
+        garage: document.getElementById('maintenanceGarage').value || null,
+        commentaires: document.getElementById('maintenanceDescription').value || null,
+        bloquer_immediatement: document.getElementById('maintenanceImmediateBlock').checked
+    };
+
+    try {
+        const response = await fetch('/api/admin/maintenances', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showNotification('Maintenance programmée avec succès');
+            closeModal('addMaintenanceModal');
+            loadMaintenances();
+            loadVehicles(); // Rafraîchir la liste des véhicules
+            loadDashboardStats();
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        console.error('Erreur programmation maintenance:', error);
+        showFormError('maintenanceForm', error.message || 'Erreur lors de la programmation');
+    }
+}
+
 async function sendInvitation(event) {
     event.preventDefault();
 
     const email = document.getElementById('inviteEmail').value;
     const message = document.getElementById('inviteMessage').value;
-    
-    console.log('=== DEBUG INVITATION ===');
-    console.log('Email:', email);
-    console.log('Message:', message);
     
     if (!email || !email.includes('@')) {
         showFormError('invitationForm', 'Veuillez saisir une adresse email valide');
@@ -688,8 +1054,6 @@ async function sendInvitation(event) {
     }
 
     try {
-        console.log('Envoi de la requête...');
-        
         const response = await fetch('/api/admin/send-invitation', {
             method: 'POST',
             headers: {
@@ -699,7 +1063,6 @@ async function sendInvitation(event) {
         });
 
         const data = await response.json();
-        console.log('Réponse reçue:', data);
 
         if (data.success) {
             showFormSuccess('invitationForm', data.message);
@@ -822,6 +1185,34 @@ function exportUsersCSV() {
     showNotification('Conducteurs exportés en CSV avec succès');
 }
 
+function exportMaintenanceCSV() {
+    if (maintenances.length === 0) {
+        showNotification('Aucune maintenance à exporter', 'warning');
+        return;
+    }
+
+    const headers = ['Véhicule', 'Type', 'Statut', 'Date début', 'Date fin', 'Garage', 'Commentaires'];
+    const data = [headers];
+
+    maintenances.forEach(maintenance => {
+        data.push([
+            maintenance.vehicule_nom,
+            getMaintenanceTypeText(maintenance.type_maintenance),
+            getMaintenanceStatusText(maintenance.statut),
+            formatDateTime(maintenance.date_debut),
+            formatDateTime(maintenance.date_fin),
+            maintenance.garage || '',
+            maintenance.commentaires || ''
+        ]);
+    });
+
+    const csvContent = data.map(row => row.join(',')).join('\n');
+    const filename = `maintenances_drivego_${new Date().toISOString().split('T')[0]}.csv`;
+
+    downloadCSV(filename, csvContent);
+    showNotification('Maintenances exportées en CSV avec succès');
+}
+
 function downloadCSV(filename, csvContent) {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -856,7 +1247,7 @@ function debounce(func, wait) {
     };
 }
 
-// Fonction de recherche avec debounce
+// Fonctions de recherche avec debounce
 const debouncedVehicleSearch = debounce((searchTerm) => {
     const filtered = vehicles.filter(vehicle =>
         vehicle.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -871,6 +1262,15 @@ const debouncedUserSearch = debounce((searchTerm) => {
         user.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
     displayUsers(filtered);
+}, 300);
+
+const debouncedMaintenanceSearch = debounce((searchTerm) => {
+    const filtered = maintenances.filter(maintenance =>
+        maintenance.vehicule_nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        maintenance.vehicule_immatriculation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getMaintenanceTypeText(maintenance.type_maintenance).toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    displayMaintenances(filtered);
 }, 300);
 
 // ===============================
@@ -896,6 +1296,11 @@ document.addEventListener('DOMContentLoaded', function () {
         invitationForm.addEventListener('submit', sendInvitation);
     }
 
+    const maintenanceForm = document.getElementById('maintenanceForm');
+    if (maintenanceForm) {
+        maintenanceForm.addEventListener('submit', handleMaintenanceForm);
+    }
+
     // Gestionnaires de recherche
     const vehicleSearch = document.getElementById('vehicleSearch');
     if (vehicleSearch) {
@@ -908,6 +1313,13 @@ document.addEventListener('DOMContentLoaded', function () {
     if (userSearch) {
         userSearch.addEventListener('input', (e) => {
             debouncedUserSearch(e.target.value);
+        });
+    }
+
+    const maintenanceSearch = document.getElementById('maintenanceSearch');
+    if (maintenanceSearch) {
+        maintenanceSearch.addEventListener('input', (e) => {
+            debouncedMaintenanceSearch(e.target.value);
         });
     }
 

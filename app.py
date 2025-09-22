@@ -86,6 +86,9 @@ os.makedirs(f"{VEHICLE_UPLOAD_FOLDER}/controle_technique", exist_ok=True)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+import sqlite3
+import os
+
 DATABASE = 'drivego.db'
 
 def init_db():
@@ -158,6 +161,28 @@ def init_db():
         )
     ''')
     
+    # Table des maintenances - NOUVELLE
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS maintenances (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            vehicule_id INTEGER NOT NULL,
+            type_maintenance TEXT NOT NULL,
+            statut TEXT DEFAULT 'planifiee',
+            priorite TEXT DEFAULT 'normale',
+            date_debut DATETIME,
+            date_fin DATETIME,
+            garage TEXT,
+            commentaires TEXT,
+            cout REAL DEFAULT 0,
+            facture_fichier TEXT DEFAULT '',
+            created_by INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (vehicule_id) REFERENCES vehicules (id),
+            FOREIGN KEY (created_by) REFERENCES users (id)
+        )
+    ''')
+    
     # Table des tokens d'invitation
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS invitation_tokens (
@@ -176,6 +201,7 @@ def init_db():
     # Migration pour les tables existantes
     migrate_vehicules_table(cursor)
     migrate_missions_table(cursor)
+    migrate_maintenance_table(cursor)  # NOUVELLE MIGRATION
 
     # Insérer les véhicules réels si vide (avec toutes les nouvelles données)
     cursor.execute('SELECT COUNT(*) FROM vehicules')
@@ -246,6 +272,9 @@ def migrate_vehicules_table(cursor):
     
     # Colonnes à ajouter si manquantes
     new_columns = [
+        # Statut pour maintenance (si pas déjà présent)
+        ("statut", "TEXT DEFAULT 'actif'"),
+        
         # Carte Grise
         ("carte_grise_numero", "TEXT DEFAULT ''"),
         ("carte_grise_date_emission", "TEXT DEFAULT ''"),
@@ -274,6 +303,55 @@ def migrate_vehicules_table(cursor):
                 print(f"Colonne {col_name} ajoutée à la table vehicules")
             except Exception as e:
                 print(f"Erreur lors de l'ajout de la colonne {col_name}: {e}")
+
+def migrate_maintenance_table(cursor):
+    """Migration pour créer/mettre à jour la table maintenances"""
+    
+    # Vérifier si la table maintenances existe
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='maintenances'")
+    table_exists = cursor.fetchone()
+
+    if not table_exists:
+        # Créer la table maintenances
+        cursor.execute('''
+            CREATE TABLE maintenances (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                vehicule_id INTEGER NOT NULL,
+                type_maintenance TEXT NOT NULL,
+                statut TEXT DEFAULT 'planifiee',
+                priorite TEXT DEFAULT 'normale',
+                date_debut DATETIME,
+                date_fin DATETIME,
+                garage TEXT,
+                commentaires TEXT,
+                cout REAL DEFAULT 0,
+                facture_fichier TEXT DEFAULT '',
+                created_by INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (vehicule_id) REFERENCES vehicules (id),
+                FOREIGN KEY (created_by) REFERENCES users (id)
+            )
+        ''')
+        print("Table maintenances créée")
+        
+        # Insérer quelques données d'exemple
+        sample_maintenances = [
+            (1, 'controle_technique', 'terminee', 'normale', '2024-10-29 09:00:00', '2024-10-29 11:00:00', 'Garage Renault', 'Contrôle technique OK', 75.0, '', 1),
+            (3, 'controle_technique', 'planifiee', 'haute', '2025-03-12 08:00:00', None, 'Auto Sécurité', 'Contrôle technique à renouveler', 0, '', 1),
+            (4, 'controle_technique', 'planifiee', 'urgente', '2025-01-27 08:30:00', None, 'Contrôle Tech Plus', 'Contrôle technique urgent', 0, '', 1)
+        ]
+        
+        cursor.executemany('''
+            INSERT INTO maintenances (
+                vehicule_id, type_maintenance, statut, priorite, date_debut, date_fin, 
+                garage, commentaires, cout, facture_fichier, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', sample_maintenances)
+        
+        print("Données d'exemple ajoutées à la table maintenances")
+    else:
+        print("Table maintenances existe déjà")
 
 def migrate_missions_table(cursor):
     """Migration de la table missions avec les bonnes colonnes"""
@@ -353,7 +431,8 @@ def create_upload_directories():
     directories = [
         f"{VEHICLE_UPLOAD_FOLDER}/carte_grise",
         f"{VEHICLE_UPLOAD_FOLDER}/assurance", 
-        f"{VEHICLE_UPLOAD_FOLDER}/controle_technique"
+        f"{VEHICLE_UPLOAD_FOLDER}/controle_technique",
+        f"{VEHICLE_UPLOAD_FOLDER}/maintenances"  # NOUVEAU DOSSIER
     ]
     
     for directory in directories:
@@ -363,9 +442,10 @@ def create_upload_directories():
 # Initialiser au démarrage
 create_upload_directories()
 init_db()
+
 def allowed_file(filename):
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_VEHICLE_EXTENSIONS
 
 
 
@@ -3850,9 +3930,98 @@ def api_admin_send_invitation():
             'message': f'Erreur: {str(e)}'
         }), 500
         
-@app.route('/api/admin/alerts', methods=['GET'])
-def api_admin_get_alerts():
-    """Récupérer les alertes importantes"""
+
+# ============================================================================
+# ROUTES API Maintenance ADMINISTRATION
+# ============================================================================
+# Routes API pour la gestion de la maintenance
+
+
+# ============================================================================
+# 🚀 LANCEMENT DE L'APPLICATION
+# ============================================================================
+
+# Routes API pour la gestion de la maintenance
+
+@app.route('/api/admin/vehicles/<int:vehicle_id>/maintenance', methods=['PUT'])
+def api_admin_vehicle_maintenance(vehicle_id):
+    """Changer le statut de maintenance d'un véhicule"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        data = request.get_json()
+        action = data.get('action')  # 'start' ou 'end'
+        new_status = data.get('statut')  # 'maintenance' ou 'actif'
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que le véhicule existe
+        cursor.execute('SELECT nom, statut FROM vehicules WHERE id = ?', (vehicle_id,))
+        vehicle = cursor.fetchone()
+        if not vehicle:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Véhicule introuvable'}), 404
+        
+        vehicle_name, current_status = vehicle
+        
+        if action == 'start':
+            # Passer le véhicule en maintenance
+            cursor.execute('UPDATE vehicules SET statut = ? WHERE id = ?', ('maintenance', vehicle_id))
+            
+            # Créer un enregistrement de maintenance
+            cursor.execute('''
+                INSERT INTO maintenances (
+                    vehicule_id, type_maintenance, statut, date_debut, 
+                    commentaires, created_by
+                ) VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                vehicle_id,
+                data.get('type_maintenance', 'maintenance_programmee'),
+                'en_cours',
+                data.get('date_debut'),
+                data.get('commentaires', ''),
+                session['user_id']
+            ))
+            
+            message = f'Véhicule {vehicle_name} mis en maintenance'
+            
+        elif action == 'end':
+            # Remettre le véhicule en service
+            cursor.execute('UPDATE vehicules SET statut = ? WHERE id = ?', ('actif', vehicle_id))
+            
+            # Terminer la maintenance en cours
+            cursor.execute('''
+                UPDATE maintenances 
+                SET statut = 'terminee', date_fin = ? 
+                WHERE vehicule_id = ? AND statut = 'en_cours'
+            ''', (data.get('date_fin'), vehicle_id))
+            
+            message = f'Maintenance de {vehicle_name} terminée'
+        
+        else:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Action invalide'}), 400
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': message
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur gestion maintenance véhicule: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la gestion de la maintenance'
+        }), 500
+
+@app.route('/api/admin/maintenances', methods=['GET'])
+def api_admin_get_maintenances():
+    """Récupérer toutes les maintenances"""
     try:
         if 'user_id' not in session:
             return jsonify({'success': False, 'message': 'Non authentifié'}), 401
@@ -3860,35 +4029,364 @@ def api_admin_get_alerts():
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
         
-        # Récupérer les véhicules avec contrôle technique proche
+        # Récupérer les maintenances avec les infos véhicules
         cursor.execute('''
-            SELECT nom, immatriculation, ct_date_prochain_controle,
-                   CAST((JULIANDAY(ct_date_prochain_controle) - JULIANDAY('now')) AS INTEGER) as days_remaining
+            SELECT 
+                m.id, m.vehicule_id, m.type_maintenance, m.statut, m.priorite,
+                m.date_debut, m.date_fin, m.garage, m.commentaires, m.cout,
+                m.created_at,
+                v.nom as vehicule_nom, v.immatriculation as vehicule_immatriculation
+            FROM maintenances m
+            JOIN vehicules v ON m.vehicule_id = v.id
+            ORDER BY m.date_debut DESC, m.created_at DESC
+        ''')
+        
+        maintenances = cursor.fetchall()
+        
+        # Calculer les statistiques
+        cursor.execute('''
+            SELECT 
+                COUNT(CASE WHEN m.statut = 'en_cours' THEN 1 END) as en_cours,
+                COUNT(CASE WHEN m.type_maintenance = 'controle_technique' 
+                      AND m.statut = 'planifiee' 
+                      AND DATE(m.date_debut) <= DATE('now', '+30 days') THEN 1 END) as controles_techniques,
+                COUNT(CASE WHEN v.assurance_date_expiration != '' 
+                      AND DATE(v.assurance_date_expiration) <= DATE('now', '+30 days') THEN 1 END) as assurances_expirees
+            FROM maintenances m
+            JOIN vehicules v ON m.vehicule_id = v.id
+        ''')
+        stats_row = cursor.fetchone()
+        
+        conn.close()
+        
+        maintenances_list = []
+        for maintenance in maintenances:
+            maintenance_data = {
+                'id': maintenance[0],
+                'vehicule_id': maintenance[1],
+                'type_maintenance': maintenance[2],
+                'statut': maintenance[3],
+                'priorite': maintenance[4],
+                'date_debut': maintenance[5],
+                'date_fin': maintenance[6],
+                'garage': maintenance[7],
+                'commentaires': maintenance[8],
+                'cout': maintenance[9],
+                'created_at': maintenance[10],
+                'vehicule_nom': maintenance[11],
+                'vehicule_immatriculation': maintenance[12]
+            }
+            maintenances_list.append(maintenance_data)
+        
+        stats = {
+            'en_cours': stats_row[0] if stats_row else 0,
+            'controles_techniques': stats_row[1] if stats_row else 0,
+            'assurances_expirees': stats_row[2] if stats_row else 0
+        }
+        
+        return jsonify({
+            'success': True,
+            'maintenances': maintenances_list,
+            'stats': stats
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur récupération maintenances: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la récupération des maintenances'
+        }), 500
+
+@app.route('/api/admin/maintenances', methods=['POST'])
+def api_admin_add_maintenance():
+    """Programmer une nouvelle maintenance"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        data = request.get_json()
+        
+        # Validation des données
+        required_fields = ['vehicule_id', 'type_maintenance', 'date_debut']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({
+                    'success': False,
+                    'message': f'Le champ {field} est requis'
+                }), 400
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que le véhicule existe
+        cursor.execute('SELECT nom, statut FROM vehicules WHERE id = ?', (data['vehicule_id'],))
+        vehicle = cursor.fetchone()
+        if not vehicle:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Véhicule introuvable'}), 404
+        
+        vehicle_name, vehicle_status = vehicle
+        
+        # Déterminer le statut initial de la maintenance
+        maintenance_status = 'planifiee'
+        if data.get('bloquer_immediatement'):
+            maintenance_status = 'en_cours'
+            # Mettre le véhicule en maintenance immédiatement
+            cursor.execute('UPDATE vehicules SET statut = ? WHERE id = ?', ('maintenance', data['vehicule_id']))
+        
+        # Insérer la maintenance
+        cursor.execute('''
+            INSERT INTO maintenances (
+                vehicule_id, type_maintenance, statut, priorite, date_debut, 
+                date_fin, garage, commentaires, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            data['vehicule_id'],
+            data['type_maintenance'],
+            maintenance_status,
+            data.get('priorite', 'normale'),
+            data['date_debut'],
+            data.get('date_fin'),
+            data.get('garage'),
+            data.get('commentaires'),
+            session['user_id']
+        ))
+        
+        maintenance_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        action_msg = "et véhicule bloqué" if data.get('bloquer_immediatement') else ""
+        
+        return jsonify({
+            'success': True,
+            'message': f'Maintenance programmée avec succès pour {vehicle_name} {action_msg}',
+            'maintenance_id': maintenance_id
+        }), 201
+        
+    except Exception as e:
+        print(f"Erreur programmation maintenance: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la programmation de la maintenance'
+        }), 500
+
+@app.route('/api/admin/maintenances/<int:maintenance_id>/start', methods=['PUT'])
+def api_admin_start_maintenance(maintenance_id):
+    """Démarrer une maintenance planifiée"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que la maintenance existe et est planifiée
+        cursor.execute('''
+            SELECT m.vehicule_id, m.statut, v.nom
+            FROM maintenances m
+            JOIN vehicules v ON m.vehicule_id = v.id
+            WHERE m.id = ? AND m.statut = 'planifiee'
+        ''', (maintenance_id,))
+        
+        maintenance = cursor.fetchone()
+        if not maintenance:
+            conn.close()
+            return jsonify({
+                'success': False, 
+                'message': 'Maintenance introuvable ou déjà démarrée'
+            }), 404
+        
+        vehicule_id, status, vehicle_name = maintenance
+        
+        # Démarrer la maintenance
+        from datetime import datetime
+        cursor.execute('''
+            UPDATE maintenances 
+            SET statut = 'en_cours', date_debut = ?
+            WHERE id = ?
+        ''', (datetime.now().isoformat(), maintenance_id))
+        
+        # Mettre le véhicule en maintenance
+        cursor.execute('UPDATE vehicules SET statut = ? WHERE id = ?', ('maintenance', vehicule_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Maintenance de {vehicle_name} démarrée'
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur démarrage maintenance: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors du démarrage de la maintenance'
+        }), 500
+
+@app.route('/api/admin/maintenances/<int:maintenance_id>/complete', methods=['PUT'])
+def api_admin_complete_maintenance(maintenance_id):
+    """Terminer une maintenance en cours"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que la maintenance existe et est en cours
+        cursor.execute('''
+            SELECT m.vehicule_id, m.statut, v.nom
+            FROM maintenances m
+            JOIN vehicules v ON m.vehicule_id = v.id
+            WHERE m.id = ? AND m.statut = 'en_cours'
+        ''', (maintenance_id,))
+        
+        maintenance = cursor.fetchone()
+        if not maintenance:
+            conn.close()
+            return jsonify({
+                'success': False, 
+                'message': 'Maintenance introuvable ou pas en cours'
+            }), 404
+        
+        vehicule_id, status, vehicle_name = maintenance
+        
+        # Terminer la maintenance
+        from datetime import datetime
+        cursor.execute('''
+            UPDATE maintenances 
+            SET statut = 'terminee', date_fin = ?
+            WHERE id = ?
+        ''', (datetime.now().isoformat(), maintenance_id))
+        
+        # Remettre le véhicule en service
+        cursor.execute('UPDATE vehicules SET statut = ? WHERE id = ?', ('actif', vehicule_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Maintenance de {vehicle_name} terminée'
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur finalisation maintenance: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la finalisation de la maintenance'
+        }), 500
+
+@app.route('/api/admin/maintenances/<int:maintenance_id>', methods=['DELETE'])
+def api_admin_delete_maintenance(maintenance_id):
+    """Supprimer une maintenance"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier que la maintenance existe et n'est pas en cours
+        cursor.execute('''
+            SELECT m.vehicule_id, m.statut, v.nom
+            FROM maintenances m
+            JOIN vehicules v ON m.vehicule_id = v.id
+            WHERE m.id = ?
+        ''', (maintenance_id,))
+        
+        maintenance = cursor.fetchone()
+        if not maintenance:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Maintenance introuvable'}), 404
+        
+        vehicule_id, status, vehicle_name = maintenance
+        
+        if status == 'en_cours':
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Impossible de supprimer une maintenance en cours'
+            }), 400
+        
+        # Supprimer la maintenance
+        cursor.execute('DELETE FROM maintenances WHERE id = ?', (maintenance_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Maintenance supprimée avec succès'
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur suppression maintenance: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de la suppression'
+        }), 500
+
+# Mise à jour de la route des alertes pour inclure les maintenances
+@app.route('/api/admin/alerts', methods=['GET'])
+def api_admin_get_alerts():
+    """Récupérer les alertes pour le dashboard admin"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        alerts = []
+        
+        # Alertes contrôles techniques
+        cursor.execute('''
+            SELECT nom, immatriculation, ct_date_prochain_controle
             FROM vehicules 
             WHERE ct_date_prochain_controle != "" 
             AND DATE(ct_date_prochain_controle) <= DATE('now', '+30 days')
             AND DATE(ct_date_prochain_controle) >= DATE('now')
-            ORDER BY ct_date_prochain_controle
+            ORDER BY DATE(ct_date_prochain_controle)
         ''')
         
         ct_alerts = cursor.fetchall()
+        for vehicle in ct_alerts:
+            urgency = 'urgent' if cursor.execute(
+                'SELECT DATE(?) <= DATE("now", "+7 days")', 
+                (vehicle[2],)
+            ).fetchone()[0] else 'warning'
+            
+            alerts.append({
+                'type': urgency,
+                'title': 'Contrôle technique à renouveler',
+                'description': f'{vehicle[0]} ({vehicle[1]}) - Échéance : {vehicle[2]}',
+                'vehicle_plate': vehicle[1]
+            })
         
-        # TODO: Ajouter d'autres types d'alertes (assurance, etc.)
+        # Alertes maintenances urgentes
+        cursor.execute('''
+            SELECT v.nom, v.immatriculation, m.type_maintenance, m.date_debut
+            FROM maintenances m
+            JOIN vehicules v ON m.vehicule_id = v.id
+            WHERE m.statut = 'planifiee' 
+            AND m.priorite = 'urgente'
+            AND DATE(m.date_debut) <= DATE('now', '+7 days')
+            ORDER BY DATE(m.date_debut)
+        ''')
+        
+        maintenance_alerts = cursor.fetchall()
+        for maintenance in maintenance_alerts:
+            alerts.append({
+                'type': 'urgent',
+                'title': 'Maintenance urgente programmée',
+                'description': f'{maintenance[0]} ({maintenance[1]}) - {maintenance[2]} le {maintenance[3]}',
+                'vehicle_plate': maintenance[1]
+            })
         
         conn.close()
-        
-        alerts = []
-        for alert in ct_alerts:
-            alert_type = 'urgent' if alert[3] <= 7 else 'warning'
-            alerts.append({
-                'type': alert_type,
-                'title': 'Contrôle technique à renouveler',
-                'description': f'{alert[0]} ({alert[1]}) - Échéance : {alert[2]}',
-                'vehicle_name': alert[0],
-                'vehicle_plate': alert[1],
-                'due_date': alert[2],
-                'days_remaining': alert[3]
-            })
         
         return jsonify({
             'success': True,
@@ -3901,9 +4399,9 @@ def api_admin_get_alerts():
             'success': False,
             'message': 'Erreur lors de la récupération des alertes'
         }), 500
-# ============================================================================
-# 🚀 LANCEMENT DE L'APPLICATION
-# ============================================================================
+
+
+
 
 if __name__ == '__main__':
     with app.app_context():

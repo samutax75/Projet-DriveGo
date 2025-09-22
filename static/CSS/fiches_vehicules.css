@@ -499,34 +499,35 @@ body {
 }
 
 /* Container des boutons de navigation optimisé */
+/* Navigation optimisée pour 4 boutons sur une ligne */
 .nav-buttons {
-    display: flex;
-    gap: 4px;
-    justify-content: center;
+    display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        justify-content: stretch;
     align-items: stretch;
     margin: 24px 0;
-    padding: 6px;
-    background: rgba(248, 250, 252, 0.9);
-    border-radius: 20px;
+    padding: 8px;
+        background: rgba(248, 250, 252, 0.95);
+        border-radius: 16px;
     border: 1px solid rgba(226, 232, 240, 0.8);
     box-shadow: 
         0 4px 20px rgba(0, 0, 0, 0.08),
         inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(15px);
 }
 
-/* Boutons de navigation avec design iOS/Material moderne */
 .nav-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 12px 18px;
+    gap: 6px;
+        padding: 12px 8px;
     background: transparent;
     color: #64748b;
     border: none;
-    border-radius: 16px;
-    font-size: 0.9rem;
+    border-radius: 12px;
+        font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -535,18 +536,27 @@ body {
     white-space: nowrap;
     position: relative;
     overflow: hidden;
-    flex: 1;
-    min-width: 120px;
-    max-width: 160px;
+    text-align: center;
+        line-height: 1.2;
 }
 
-/* États hover pour chaque type */
+.nav-btn span {
+    font-size: 1.1em;
+    margin-right: 4px;
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
 .nav-btn:hover {
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.8);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+.nav-btn:hover span {
+    transform: scale(1.1);
+}
+
+/* Couleurs spécifiques pour chaque section */
 .nav-btn.general:hover {
     color: #8b5cf6;
     background: rgba(139, 92, 246, 0.1);
@@ -562,7 +572,12 @@ body {
     background: rgba(59, 130, 246, 0.1);
 }
 
-/* États actifs avec design moderne */
+.nav-btn.controle-technique:hover {
+    color: #059669;
+    background: rgba(5, 150, 105, 0.1);
+}
+
+/* États actifs avec gradients distincts */
 .nav-btn.active {
     color: white;
     transform: translateY(-1px);
@@ -584,6 +599,15 @@ body {
     box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
 }
 
+.nav-btn.controle-technique.active {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    box-shadow: 0 6px 20px rgba(5, 150, 105, 0.4);
+}
+
+.nav-btn.active span {
+    transform: scale(1.05);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
 /* États actifs hover */
 .nav-btn.active:hover {
     transform: translateY(-2px);
@@ -604,51 +628,89 @@ body {
     box-shadow: 0 8px 24px rgba(59, 130, 246, 0.5);
 }
 
-/* Animation de sélection avec ripple effect */
-.nav-btn::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
+.nav-btn.controle-technique.active:hover {
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    box-shadow: 0 8px 24px rgba(5, 150, 105, 0.5);
 }
 
-.nav-btn:active::after {
-    width: 200px;
-    height: 200px;
-}
-
-/* Indicateur de sélection */
-.nav-btn.active::before {
-    content: '';
-    position: absolute;
-    bottom: 4px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 20px;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 2px;
-    animation: slideInIndicator 0.3s ease-out;
-}
-
-@keyframes slideInIndicator {
-    from {
-        width: 0;
-        opacity: 0;
+/* Responsive pour maintenir les 4 boutons sur une ligne */
+@media (max-width: 1200px) {
+    .nav-buttons {
+        gap: 6px;
+        padding: 6px;
     }
-    to {
-        width: 20px;
-        opacity: 1;
+
+    .nav-btn {
+        font-size: 0.8rem;
+        padding: 10px 6px;
+        min-height: 42px;
+    }
+
+    .nav-btn span {
+        font-size: 1em;
+        margin-right: 3px;
     }
 }
 
-/* Animation d'entrée décalée */
+@media (max-width: 1024px) {
+    .nav-buttons {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        padding: 4px;
+    }
+
+    .nav-btn {
+        font-size: 0.75rem;
+        padding: 8px 4px;
+        min-height: 40px;
+        line-height: 1.1;
+    }
+
+    .nav-btn span {
+        font-size: 0.9em;
+        margin-right: 2px;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-buttons {
+        margin: 16px 0;
+    }
+
+    .nav-btn {
+        font-size: 0.7rem;
+        padding: 6px 2px;
+        min-height: 36px;
+        gap: 2px;
+    }
+
+    .nav-btn span {
+        font-size: 0.8em;
+        margin-right: 1px;
+    }
+}
+
+/* Pour très petits écrans, on peut empiler en 2x2 */
+@media (max-width: 480px) {
+    .nav-buttons {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .nav-btn {
+        font-size: 0.85rem;
+        padding: 12px 8px;
+        min-height: 48px;
+        gap: 4px;
+    }
+        .nav-btn span {
+            font-size: 1em;
+            margin-right: 4px;
+        }
+}
+
+/* Animations d'entrée décalées */
 .nav-btn {
     animation: slideInUp 0.5s ease-out;
     animation-fill-mode: both;
@@ -664,6 +726,95 @@ body {
 
 .nav-btn:nth-child(3) {
     animation-delay: 0.3s;
+}
+
+.nav-btn:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.8);
+    }
+        to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        }
+        }
+        
+        /* Accessibilité */
+        .nav-btn:focus-visible {
+            outline: 3px solid rgba(102, 126, 234, 0.5);
+            outline-offset: 2px;
+            z-index: 1;
+        }
+        
+        /* Amélioration du feedback tactile */
+        .nav-btn {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Optimisation pour les écrans tactiles */
+        @media (hover: none) and (pointer: coarse) {
+            .nav-btn:active {
+                transform: scale(0.97);
+                transition: transform 0.1s ease;
+            }
+        
+            .nav-btn.active:active {
+                transform: scale(0.97) translateY(-1px);
+    }
+}
+
+/* Amélioration de l'accessibilité - contraste élevé */
+@media (prefers-contrast: high) {
+    .nav-btn {
+        border: 2px solid currentColor;
+    }
+
+    .nav-btn.active {
+        border-color: transparent;
+    }
+}
+
+/* Support pour la réduction de transparence */
+@media (prefers-reduced-transparency: reduce) {
+    .nav-buttons {
+        background: #f8fafc;
+        backdrop-filter: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-btn {
+        animation: none;
+            transition: none;
+        }
+        .nav-btn:hover,
+        .nav-btn.active {
+            transform: none;
+        }
+}
+
+/* Mode sombre (optionnel) */
+@media (prefers-color-scheme: dark) {
+    .nav-buttons {
+        background: rgba(30, 41, 59, 0.9);
+        border-color: rgba(71, 85, 105, 0.8);
+    }
+        .nav-btn {
+            color: #94a3b8;
+        }
+    
+        .nav-btn:hover {
+            background: rgba(51, 65, 85, 0.7);
+            color: #e2e8f0;
+        }
 }
 
 /* Mobile View Indicator */
@@ -1906,7 +2057,6 @@ body {
         scroll-behavior: auto !important;
     }
 }
-
 
 
 /* ===============================

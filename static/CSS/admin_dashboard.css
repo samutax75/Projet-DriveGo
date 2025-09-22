@@ -1007,3 +1007,71 @@ body::before {
     from { opacity: 0; }
     to { opacity: 1; }
 }
+
+
+
+
+
+/* Améliorations pour les actions des véhicules */
+.vehicle-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+    flex-wrap: wrap; /* Permet le retour à la ligne si nécessaire */
+}
+
+.vehicle-actions .btn-sm {
+    flex: 1; /* Les boutons prennent la largeur disponible */
+    min-width: 90px; /* Largeur minimum pour éviter le débordement */
+    padding: var(--spacing-sm) var(--spacing-xs); /* Padding réduit pour plus d'espace */
+    font-size: 0.8rem; /* Taille de texte légèrement réduite */
+    white-space: nowrap; /* Évite le retour à la ligne dans le bouton */
+    justify-content: center; /* Centre le contenu */
+}
+
+/* Pour les écrans plus petits, on peut empiler les boutons */
+@media (max-width: 768px) {
+    .vehicle-actions {
+        flex-direction: column;
+    }
+    
+    .vehicle-actions .btn-sm {
+        flex: none;
+        min-width: 100%;
+    }
+}
+
+/* Alternative : disposition en grille pour un meilleur contrôle */
+.vehicle-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+}
+
+.vehicle-actions-grid .btn-sm {
+    padding: var(--spacing-sm) var(--spacing-xs);
+    font-size: 0.8rem;
+    white-space: nowrap;
+    justify-content: center;
+}
+
+/* Pour 3 boutons, on peut utiliser cette variante */
+.vehicle-actions-three {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-xs);
+    margin-top: var(--spacing-lg);
+}
+
+.vehicle-actions-three .btn-sm {
+    padding: var(--spacing-xs) 2px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    justify-content: center;
+}
+
+/* Réduire l'espacement des icônes dans les petits boutons */
+.btn-sm .icon {
+    margin-right: 2px;
+}

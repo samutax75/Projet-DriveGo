@@ -1,392 +1,138 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administration - DriveGo</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/admin_dashboard.css') }}">
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-</head>
-<body>
-    <div class="admin-container">
-        <!-- Header simplifié -->
-        <header class="header">
-            <div class="header-content">
-                <div class="logo-section">
-                    <a href="{{ url_for('index') }}" class="logo">
-                        <img src="../static/images/logo perce-neige.PNG" alt="Logo Fondation Perce-Neige" class="logo-image">
-                    </a>
-                    <div class="header-text">
-                        <h1>Administration DriveGo</h1>
-                        <p>Gestion du parc automobile et des utilisateurs</p>
-                    </div>
-                </div>
-                <div class="header-actions">
-                    <button class="btn btn-outline" onclick="showModal('inviteUserModal')">
-                        <span class="icon">✉️</span>
-                        Inviter un conducteur
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <!-- Navigation principale -->
-        <nav class="main-nav">
-            <button class="nav-tab active" onclick="showSection('dashboard')" data-section="dashboard">
-                <span class="nav-icon">📊</span>
-                <span class="nav-text">Tableau de bord</span>
+<!-- Section maintenance améliorée -->
+<section id="maintenance" class="content-section">
+    <div class="section-header">
+        <h2 class="section-title">Maintenance et contrôles</h2>
+        <div class="section-actions">
+            <button class="btn btn-primary" onclick="showModal('addMaintenanceModal')">
+                <span class="icon">🔧</span>
+                Programmer une maintenance
             </button>
-            <button class="nav-tab" onclick="showSection('vehicles')" data-section="vehicles">
-                <span class="nav-icon">🚗</span>
-                <span class="nav-text">Parc automobile</span>
+            <button class="btn btn-export" onclick="exportMaintenanceCSV()">
+                <span class="icon">📊</span>
+                Exporter
             </button>
-            <button class="nav-tab" onclick="showSection('users')" data-section="users">
-                <span class="nav-icon">👥</span>
-                <span class="nav-text">Conducteurs</span>
-            </button>
-            <button class="nav-tab" onclick="showSection('maintenance')" data-section="maintenance">
-                <span class="nav-icon">🔧</span>
-                <span class="nav-text">Maintenance</span>
-            </button>
-        </nav>
+        </div>
+    </div>
 
-        <!-- Dashboard -->
-        <section id="dashboard" class="content-section active">
-            <div class="section-header">
-                <h2 class="section-title">Vue d'ensemble</h2>
-                <div class="section-actions">
-                    <button class="btn btn-export" onclick="exportDashboardCSV()">
-                        <span class="icon">📊</span>
-                        Exporter CSV
-                    </button>
-                    <button class="btn btn-export" onclick="exportDashboardPDF()">
-                        <span class="icon">📄</span>
-                        Exporter PDF
-                    </button>
-                </div>
+    <!-- Vue d'ensemble maintenance -->
+    <div class="maintenance-overview">
+        <div class="maintenance-stats">
+            <div class="maintenance-stat">
+                <h4 id="maintenanceEnCours">1</h4>
+                <p>Véhicules en maintenance</p>
             </div>
-
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">🚗</div>
-                    <div class="stat-content">
-                        <h3 id="totalVehicles">5</h3>
-                        <p>Véhicules actifs</p>
-                        <small class="stat-detail">Tous statuts confondus</small>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">✅</div>
-                    <div class="stat-content">
-                        <h3 id="availableVehicles">3</h3>
-                        <p>Véhicules disponibles</p>
-                        <small class="stat-detail">Prêts à l'utilisation</small>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">👥</div>
-                    <div class="stat-content">
-                        <h3 id="totalUsers">12</h3>
-                        <p>Conducteurs actifs</p>
-                        <small class="stat-detail">Comptes validés</small>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">⚠️</div>
-                    <div class="stat-content">
-                        <h3 id="alertsCount">2</h3>
-                        <p>Alertes actives</p>
-                        <small class="stat-detail">Contrôles techniques</small>
-                    </div>
-                </div>
+            <div class="maintenance-stat">
+                <h4 id="controlesTechniques">2</h4>
+                <p>Contrôles techniques à renouveler</p>
             </div>
-
-            <!-- Alertes et notifications -->
-            <div class="alerts-section">
-                <h3>Alertes importantes</h3>
-                <div class="alert-list">
-                    <div class="alert-item warning">
-                        <div class="alert-icon">⚠️</div>
-                        <div class="alert-content">
-                            <strong>Contrôle technique à renouveler</strong>
-                            <p>TRAFIC VERT (EJ-374-TT) - Échéance : 12/03/2025</p>
-                        </div>
-                        <div class="alert-actions">
-                            <button class="btn btn-sm">Voir détails</button>
-                        </div>
-                    </div>
-                    <div class="alert-item warning">
-                        <div class="alert-icon">⚠️</div>
-                        <div class="alert-content">
-                            <strong>Contrôle technique à renouveler</strong>
-                            <p>TRAFIC ROUGE (CW-819-FR) - Échéance : 27/01/2025</p>
-                        </div>
-                        <div class="alert-actions">
-                            <button class="btn btn-sm">Voir détails</button>
-                        </div>
-                    </div>
-                </div>
+            <div class="maintenance-stat">
+                <h4 id="assurancesExpirees">0</h4>
+                <p>Assurances à renouveler</p>
             </div>
-        </section>
+        </div>
+    </div>
 
-        <!-- Gestion des véhicules -->
-        <section id="vehicles" class="content-section">
-            <div class="section-header">
-                <h2 class="section-title">Parc automobile</h2>
-                <div class="section-actions">
-                    <button class="btn btn-primary" onclick="showModal('addVehicleModal')">
-                        <span class="icon">➕</span>
-                        Ajouter un véhicule
-                    </button>
-                    <button class="btn btn-export" onclick="exportVehiclesCSV()">
-                        <span class="icon">📊</span>
-                        Exporter
-                    </button>
-                </div>
+    <!-- Filtres -->
+    <div class="filters-section">
+        <div class="search-bar">
+            <input type="text" id="maintenanceSearch" placeholder="Rechercher par véhicule, type...">
+            <button class="search-btn">🔍</button>
+        </div>
+        <div class="filter-controls">
+            <select id="maintenanceTypeFilter">
+                <option value="">Tous les types</option>
+                <option value="preventive">Maintenance préventive</option>
+                <option value="corrective">Maintenance corrective</option>
+                <option value="controle_technique">Contrôle technique</option>
+                <option value="revision">Révision</option>
+            </select>
+            <select id="maintenanceStatusFilter">
+                <option value="">Tous les statuts</option>
+                <option value="planifiee">Planifiée</option>
+                <option value="en_cours">En cours</option>
+                <option value="terminee">Terminée</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Liste des maintenances -->
+    <div class="maintenance-list" id="maintenanceList">
+        <!-- Contenu chargé dynamiquement -->
+    </div>
+</section>
+
+<!-- Modal pour programmer une maintenance -->
+<div id="addMaintenanceModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Programmer une maintenance</h2>
+            <button class="modal-close" onclick="closeModal('addMaintenanceModal')">×</button>
+        </div>
+        <form id="maintenanceForm" onsubmit="handleMaintenanceForm(event)">
+            <div class="form-group">
+                <label for="maintenanceVehicle">Véhicule</label>
+                <select id="maintenanceVehicle" required>
+                    <option value="">Sélectionner un véhicule...</option>
+                    <!-- Options chargées dynamiquement -->
+                </select>
             </div>
-
-            <div class="filters-section">
-                <div class="search-bar">
-                    <input type="text" id="vehicleSearch" placeholder="Rechercher par nom, immatriculation...">
-                    <button class="search-btn">🔍</button>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="maintenanceType">Type de maintenance</label>
+                    <select id="maintenanceType" required>
+                        <option value="">Sélectionner...</option>
+                        <option value="preventive">Maintenance préventive</option>
+                        <option value="corrective">Maintenance corrective</option>
+                        <option value="controle_technique">Contrôle technique</option>
+                        <option value="revision">Révision complète</option>
+                        <option value="pneus">Changement pneus</option>
+                        <option value="vidange">Vidange</option>
+                        <option value="autre">Autre</option>
+                    </select>
                 </div>
-                <div class="filter-controls">
-                    <select id="statusFilter">
-                        <option value="">Tous les statuts</option>
-                        <option value="actif">Actif</option>
-                        <option value="maintenance">En maintenance</option>
-                        <option value="hors-service">Hors service</option>
+                <div class="form-group">
+                    <label for="maintenanceUrgency">Priorité</label>
+                    <select id="maintenanceUrgency" required>
+                        <option value="normale">Normale</option>
+                        <option value="haute">Haute</option>
+                        <option value="urgente">Urgente</option>
                     </select>
                 </div>
             </div>
-
-            <div class="vehicles-grid" id="vehiclesGrid">
-                <!-- Les véhicules seront chargés dynamiquement -->
-            </div>
-        </section>
-
-        <!-- Gestion des utilisateurs -->
-        <section id="users" class="content-section">
-            <div class="section-header">
-                <h2 class="section-title">Conducteurs</h2>
-                <div class="section-actions">
-                    <button class="btn btn-primary" onclick="showModal('addUserModal')">
-                        <span class="icon">➕</span>
-                        Ajouter un conducteur
-                    </button>
-                    <button class="btn btn-export" onclick="exportUsersCSV()">
-                        <span class="icon">📊</span>
-                        Exporter
-                    </button>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="maintenanceDateDebut">Date de début</label>
+                    <input type="datetime-local" id="maintenanceDateDebut" required>
+                </div>
+                <div class="form-group">
+                    <label for="maintenanceDateFin">Date de fin prévue</label>
+                    <input type="datetime-local" id="maintenanceDateFin">
                 </div>
             </div>
-
-            <div class="filters-section">
-                <div class="search-bar">
-                    <input type="text" id="userSearch" placeholder="Rechercher par nom, email...">
-                    <button class="search-btn">🔍</button>
-                </div>
-                <div class="filter-controls">
-                    <select id="userStatusFilter">
-                        <option value="">Tous les statuts</option>
-                        <option value="actif">Actif</option>
-                        <option value="suspendu">Suspendu</option>
-                        <option value="en-attente">En attente</option>
-                    </select>
-                </div>
+            
+            <div class="form-group">
+                <label for="maintenanceGarage">Garage / Prestataire</label>
+                <input type="text" id="maintenanceGarage" placeholder="ex: Garage Dupont, Renault Service">
             </div>
-
-            <div class="users-table-container">
-                <table class="modern-table">
-                    <thead>
-                        <tr>
-                            <th>Conducteur</th>
-                            <th>Contact</th>
-                            <th>Statut</th>
-                            <th>Dernière activité</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersTableBody">
-                        <!-- Les utilisateurs seront chargés dynamiquement -->
-                    </tbody>
-                </table>
+            
+            <div class="form-group">
+                <label for="maintenanceDescription">Description / Commentaires</label>
+                <textarea id="maintenanceDescription" rows="4" placeholder="Détails de la maintenance à effectuer..."></textarea>
             </div>
-        </section>
-
-        <!-- Section maintenance -->
-        <section id="maintenance" class="content-section">
-            <div class="section-header">
-                <h2 class="section-title">Maintenance et contrôles</h2>
-                <div class="section-actions">
-                    <button class="btn btn-primary" onclick="showModal('addMaintenanceModal')">
-                        <span class="icon">🔧</span>
-                        Programmer une maintenance
-                    </button>
-                </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="maintenanceImmediateBlock" onchange="toggleImmediateBlock()">
+                    Bloquer immédiatement le véhicule (passer en maintenance maintenant)
+                </label>
             </div>
-
-            <div class="maintenance-overview">
-                <div class="maintenance-stats">
-                    <div class="maintenance-stat">
-                        <h4>2</h4>
-                        <p>Contrôles techniques à renouveler</p>
-                    </div>
-                    <div class="maintenance-stat">
-                        <h4>1</h4>
-                        <p>Véhicule en maintenance</p>
-                    </div>
-                    <div class="maintenance-stat">
-                        <h4>0</h4>
-                        <p>Assurances à renouveler</p>
-                    </div>
-                </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addMaintenanceModal')">Annuler</button>
+                <button type="submit" class="btn btn-primary">Programmer la maintenance</button>
             </div>
-
-            <div class="maintenance-calendar">
-                <h3>Prochaines échéances</h3>
-                <div class="calendar-items">
-                    <div class="calendar-item urgent">
-                        <div class="calendar-date">
-                            <span class="day">27</span>
-                            <span class="month">Jan</span>
-                        </div>
-                        <div class="calendar-content">
-                            <strong>Contrôle technique - TRAFIC ROUGE</strong>
-                            <p>CW-819-FR • Urgent</p>
-                        </div>
-                        <div class="calendar-actions">
-                            <button class="btn btn-sm btn-primary">Planifier</button>
-                        </div>
-                    </div>
-                    <div class="calendar-item warning">
-                        <div class="calendar-date">
-                            <span class="day">12</span>
-                            <span class="month">Mar</span>
-                        </div>
-                        <div class="calendar-content">
-                            <strong>Contrôle technique - TRAFIC VERT</strong>
-                            <p>EJ-374-TT • À prévoir</p>
-                        </div>
-                        <div class="calendar-actions">
-                            <button class="btn btn-sm btn-primary">Planifier</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+        </form>
     </div>
-
-    <!-- Modal d'invitation -->
-    <div id="inviteUserModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Inviter un nouveau conducteur</h2>
-                <button class="modal-close" onclick="closeModal('inviteUserModal')">×</button>
-            </div>
-            <form id="invitationForm" onsubmit="sendInvitation(event)">
-                <div class="form-group">
-                    <label for="inviteEmail">Adresse email</label>
-                    <input type="email" id="inviteEmail" placeholder="conducteur@fondation-perceneige.org" required>
-                </div>
-                <div class="form-group">
-                    <label for="inviteMessage">Message personnalisé (optionnel)</label>
-                    <textarea id="inviteMessage" rows="3" placeholder="Message d'accueil pour le nouveau conducteur..."></textarea>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('inviteUserModal')">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Envoyer l'invitation</button>
-                </div>
-            </form>
-            <div id="inviteResult" class="form-result"></div>
-        </div>
-    </div>
-
-    <!-- Modal véhicule -->
-    <div id="addVehicleModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Ajouter un véhicule</h2>
-                <button class="modal-close" onclick="closeModal('addVehicleModal')">×</button>
-            </div>
-            <form id="vehicleForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="vehicleName">Nom du véhicule</label>
-                        <input type="text" id="vehicleName" placeholder="ex: TRAFIC BLANC" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="vehiclePlate">Immatriculation</label>
-                        <input type="text" id="vehiclePlate" placeholder="AB-123-CD" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="vehicleBrand">Marque</label>
-                        <select id="vehicleBrand" required>
-                            <option value="">Sélectionner...</option>
-                            <option value="Renault">Renault</option>
-                            <option value="Peugeot">Peugeot</option>
-                            <option value="Citroën">Citroën</option>
-                            <option value="Ford">Ford</option>
-                            <option value="Mercedes">Mercedes</option>
-                            <option value="Volkswagen">Volkswagen</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="vehicleModel">Modèle</label>
-                        <input type="text" id="vehicleModel" placeholder="ex: Trafic, Kangoo" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="vehicleRegistrationDate">Date d'immatriculation</label>
-                    <input type="date" id="vehicleRegistrationDate" required>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('addVehicleModal')">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Ajouter le véhicule</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal utilisateur -->
-    <div id="addUserModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Ajouter un conducteur</h2>
-                <button class="modal-close" onclick="closeModal('addUserModal')">×</button>
-            </div>
-            <form id="userForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="userFirstName">Prénom</label>
-                        <input type="text" id="userFirstName" placeholder="Jean" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="userLastName">Nom</label>
-                        <input type="text" id="userLastName" placeholder="Dupont" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="userEmail">Email</label>
-                    <input type="email" id="userEmail" placeholder="jean.dupont@fondation-perceneige.org" required>
-                </div>
-                <div class="form-group">
-                    <label for="userPhone">Téléphone</label>
-                    <input type="tel" id="userPhone" placeholder="06 12 34 56 78">
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('addUserModal')">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Ajouter le conducteur</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
-    
-</body>
-</html>
+</div>
