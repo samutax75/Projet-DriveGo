@@ -300,11 +300,7 @@ function generateVehicleDetailsHTML(vehicle) {
     const statuses = getMultipleStatuses(vehicle);
 
     return `
-        <div class="vehicle-header-detail">
-            <h3>${vehicle.nom}</h3>
-            <p>${vehicle.immatriculation}</p>
-        </div>
-
+        
         <!-- Navigation moderne -->
         <div class="nav-buttons">
             <button class="nav-btn general active" onclick="showTab('general')" data-section="general">
@@ -952,3 +948,5 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     document.head.appendChild(rippleStyle);
 });
+
+

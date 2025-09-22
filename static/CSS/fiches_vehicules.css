@@ -1906,3 +1906,740 @@ body {
         scroll-behavior: auto !important;
     }
 }
+
+
+
+/* ===============================
+   AMÉLIORATIONS MOBILE CIBLÉES
+   À AJOUTER à votre CSS existant
+   =============================== */
+
+/* Remplacer seulement la section .nav-buttons existante par : */
+
+.nav-buttons {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    align-items: stretch;
+    margin: 24px 0;
+    padding: 6px;
+    background: rgba(248, 250, 252, 0.9);
+    border-radius: 20px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    /* Amélioration mobile : position adaptative */
+    position: relative;
+    z-index: 100;
+}
+
+/* Améliorer les boutons existants pour mobile */
+.nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 18px;
+    background: transparent;
+    color: #64748b;
+    border: none;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    min-height: 44px;
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+    min-width: 120px;
+    max-width: 160px;
+    /* Améliorations tactiles */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* ===============================
+   RESPONSIVE MOBILE OPTIMISÉ
+   =============================== */
+
+/* Desktop - garder le style actuel */
+@media (min-width: 1025px) {
+    .nav-buttons {
+        /* Styles desktop restent inchangés */
+    }
+}
+
+/* Tablette - navigation en haut compacte */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .nav-buttons {
+        position: fixed;
+        top: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 95%;
+        max-width: 500px;
+        margin: 0;
+        z-index: 1000;
+        border-radius: 16px;
+        padding: 4px;
+        gap: 2px;
+    }
+    
+    .nav-btn {
+        min-height: 40px;
+        font-size: 0.8rem;
+        padding: 8px 12px;
+        min-width: 90px;
+        max-width: 120px;
+    }
+    
+    /* Ajuster le contenu pour la nav fixe */
+    .vehicle-details {
+        padding-top: 70px;
+    }
+}
+
+/* Mobile Portrait - navigation en bas */
+@media (max-width: 768px) and (orientation: portrait) {
+    .nav-buttons {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: 0;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: none;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 0;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+        z-index: 1000;
+        /* Support iPhone safe area */
+        padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    }
+    
+    .nav-btn {
+        flex-direction: column;
+        gap: 4px;
+        padding: 12px 8px;
+        min-height: 60px;
+        min-width: auto;
+        max-width: none;
+        font-size: 0.75rem;
+        border-radius: 12px;
+    }
+    
+    .nav-btn span {
+        font-size: 1.5em;
+        margin-right: 0;
+        margin-bottom: 2px;
+    }
+    
+    /* Indicateur de sélection en haut pour mobile */
+    .nav-btn.active::before {
+        bottom: auto;
+        top: 4px;
+        width: 32px;
+        height: 3px;
+    }
+    
+    /* Ajuster le contenu pour la nav bottom */
+    .main-grid {
+        margin-bottom: 90px;
+    }
+    
+    .vehicle-details {
+        padding-bottom: 90px;
+    }
+}
+
+/* Mobile Paysage - navigation en haut compacte */
+@media (max-width: 768px) and (orientation: landscape) {
+    .nav-buttons {
+        position: fixed;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 98%;
+        max-width: 600px;
+        margin: 0;
+        padding: 3px;
+        gap: 2px;
+        z-index: 1000;
+        border-radius: 12px;
+    }
+    
+    .nav-btn {
+        min-height: 36px;
+        font-size: 0.7rem;
+        padding: 6px 8px;
+        gap: 4px;
+    }
+    
+    .nav-btn span {
+        font-size: 1em;
+        margin-right: 3px;
+    }
+    
+    .main-grid {
+        margin-top: 55px;
+        margin-bottom: 0;
+    }
+    
+    .vehicle-details {
+        padding-top: 55px;
+        padding-bottom: 0;
+    }
+}
+
+/* Très petits écrans */
+@media (max-width: 400px) {
+    .nav-btn {
+        font-size: 0.65rem;
+        padding: 10px 4px;
+    }
+    
+    /* Textes abrégés */
+    .nav-btn:nth-child(1) .btn-text::after { content: "Info"; }
+    .nav-btn:nth-child(2) .btn-text::after { content: "CG"; }
+    .nav-btn:nth-child(3) .btn-text::after { content: "Ass"; }
+    .nav-btn:nth-child(4) .btn-text::after { content: "CT"; }
+    
+    .nav-btn .btn-text {
+        display: none;
+    }
+    
+    .nav-btn .btn-text::after {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 600;
+    }
+}
+
+/* ===============================
+   AMÉLIORATIONS TACTILES
+   =============================== */
+
+/* Feedback visuel pour écrans tactiles */
+@media (hover: none) and (pointer: coarse) {
+    .nav-btn:active {
+        transform: scale(0.95);
+        background: rgba(0, 0, 0, 0.05);
+        transition: transform 0.1s ease;
+    }
+    
+    .nav-btn.active:active {
+        transform: scale(0.95);
+    }
+    
+    /* Améliorer la taille des zones tactiles */
+    .nav-btn {
+        min-width: 60px;
+    }
+}
+
+/* ===============================
+   AJUSTEMENTS CONTENUS
+   =============================== */
+
+/* Espacements pour navigation fixe */
+@media (max-width: 768px) {
+    .card {
+        padding: 16px;
+        border-radius: 12px;
+    }
+    
+    .header {
+        margin-bottom: 24px;
+    }
+    
+    .header h1 {
+        font-size: 1.75rem;
+    }
+    
+    .details-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .upload-btn {
+        width: 100%;
+        padding: 14px;
+        margin: 8px 0;
+        font-size: 1rem;
+    }
+}
+
+/* ===============================
+   ANIMATIONS OPTIMISÉES
+   =============================== */
+
+/* Animations d'entrée pour mobile */
+@media (max-width: 768px) {
+    .nav-btn {
+        animation: fadeInUp 0.3s ease-out;
+        animation-fill-mode: both;
+    }
+    
+    .nav-btn:nth-child(1) { animation-delay: 0.05s; }
+    .nav-btn:nth-child(2) { animation-delay: 0.1s; }
+    .nav-btn:nth-child(3) { animation-delay: 0.15s; }
+    .nav-btn:nth-child(4) { animation-delay: 0.2s; }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}
+
+/* Réduction des animations si demandée */
+@media (prefers-reduced-motion: reduce) {
+    .nav-btn {
+        animation: none;
+    }
+}
+
+/* ===============================
+   ACCESSIBILITÉ MOBILE
+   =============================== */
+
+/* Focus visible amélioré */
+.nav-btn:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    z-index: 1;
+}
+
+/* Mode contraste élevé */
+@media (prefers-contrast: high) {
+    .nav-buttons {
+        background: #ffffff;
+        border: 2px solid #000000;
+    }
+    
+    .nav-btn {
+        border: 1px solid currentColor;
+    }
+}
+
+/* ===============================
+   DARK MODE MOBILE
+   =============================== */
+
+@media (prefers-color-scheme: dark) {
+    .nav-buttons {
+        background: rgba(31, 41, 55, 0.95);
+        border-color: rgba(75, 85, 99, 0.8);
+    }
+    
+    @media (max-width: 768px) and (orientation: portrait) {
+        .nav-buttons {
+            background: rgba(31, 41, 55, 0.95);
+            border-top-color: rgba(75, 85, 99, 0.8);
+        }
+    }
+    
+    .nav-btn {
+        color: #d1d5db;
+    }
+    
+    .nav-btn:active {
+        background: rgba(255, 255, 255, 0.1);
+    }
+}
+
+
+/* ===============================
+   NAVIGATION REPOSITIONNÉE PROPREMENT
+   =============================== */
+
+/* Déplacer la navigation APRÈS le header du véhicule */
+.vehicle-details .vehicle-header-detail {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Navigation placée entre le header et le contenu */
+.nav-buttons {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin: 0 0 24px 0;
+    padding: 6px;
+    background: rgba(248, 250, 252, 0.95);
+    border-radius: 16px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(10px);
+    /* Animation d'apparition */
+    opacity: 0;
+    transform: translateY(10px);
+    animation: slideInNav 0.4s ease-out 0.1s forwards;
+}
+
+@keyframes slideInNav {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 6px;
+    background: transparent;
+    color: #64748b;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 50px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.nav-btn span {
+    font-size: 1.2em;
+    margin-bottom: 2px;
+    transition: transform 0.2s ease;
+}
+
+/* États hover et actifs */
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.8);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-btn.general:hover,
+.nav-btn.general.active {
+    color: #8b5cf6;
+    background: rgba(139, 92, 246, 0.1);
+}
+
+.nav-btn.carte-grise:hover,
+.nav-btn.carte-grise.active {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.nav-btn.assurance:hover,
+.nav-btn.assurance.active {
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.nav-btn.controle-technique:hover,
+.nav-btn.controle-technique.active {
+    color: #059669;
+    background: rgba(5, 150, 105, 0.1);
+}
+
+.nav-btn.active {
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Indicateur de sélection */
+.nav-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 2px;
+    border-radius: 1px;
+    animation: slideIndicator 0.3s ease-out;
+}
+
+.nav-btn.general.active::after { background: #8b5cf6; }
+.nav-btn.carte-grise.active::after { background: #f59e0b; }
+.nav-btn.assurance.active::after { background: #3b82f6; }
+.nav-btn.controle-technique.active::after { background: #059669; }
+
+@keyframes slideIndicator {
+    from { width: 0; opacity: 0; }
+    to { width: 20px; opacity: 1; }
+}
+
+/* ===============================
+   OPTIMISATION CONTENU VÉHICULE
+   =============================== */
+
+/* Informations véhicule plus compactes et lisibles */
+.vehicle-info-compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.info-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.info-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.info-status {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 6px;
+    width: fit-content;
+}
+
+.info-status.expired {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.1);
+}
+
+.info-status.warning {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.info-status.valid {
+    color: #059669;
+    background: rgba(5, 150, 105, 0.1);
+}
+
+/* ===============================
+   RESPONSIVE OPTIMISÉ
+   =============================== */
+
+/* Desktop - Navigation large */
+@media (min-width: 1025px) {
+    .nav-buttons {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        padding: 8px;
+    }
+    
+    .nav-btn {
+        min-height: 54px;
+        font-size: 0.85rem;
+        padding: 12px 8px;
+    }
+    
+    .nav-btn span {
+        font-size: 1.3em;
+    }
+}
+
+/* Tablette - Navigation moyenne */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .nav-buttons {
+        gap: 4px;
+        padding: 4px;
+    }
+    
+    .nav-btn {
+        min-height: 48px;
+        font-size: 0.8rem;
+        padding: 10px 6px;
+    }
+    
+    .nav-btn span {
+        font-size: 1.2em;
+    }
+}
+
+/* Mobile - Navigation compacte */
+@media (max-width: 768px) {
+    .nav-buttons {
+        gap: 4px;
+        padding: 4px;
+        margin-bottom: 16px;
+    }
+    
+    .nav-btn {
+        min-height: 44px;
+        font-size: 0.7rem;
+        padding: 8px 4px;
+        gap: 2px;
+    }
+    
+    .nav-btn span {
+        font-size: 1.1em;
+        margin-bottom: 1px;
+    }
+    
+    /* Informations véhicule en colonne sur mobile */
+    .vehicle-info-compact {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 12px;
+    }
+    
+    .info-item {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
+/* Très petits écrans */
+@media (max-width: 400px) {
+    .nav-btn {
+        font-size: 0.65rem;
+        padding: 6px 2px;
+        min-height: 40px;
+    }
+    
+    /* Abréviations pour économiser l'espace */
+    .nav-btn:nth-child(1) .btn-text::after { content: "Info"; }
+    .nav-btn:nth-child(2) .btn-text::after { content: "CG"; }
+    .nav-btn:nth-child(3) .btn-text::after { content: "Ass"; }
+    .nav-btn:nth-child(4) .btn-text::after { content: "CT"; }
+    
+    .nav-btn .btn-text {
+        display: none;
+    }
+    
+    .nav-btn .btn-text::after {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 600;
+    }
+}
+
+/* ===============================
+   AMÉLIORATIONS TACTILES
+   =============================== */
+
+@media (hover: none) and (pointer: coarse) {
+    .nav-btn:active {
+        transform: scale(0.95);
+        background: rgba(0, 0, 0, 0.05);
+    }
+    
+    .nav-btn {
+        min-height: 48px; /* Taille tactile minimum */
+    }
+}
+
+/* ===============================
+   STRUCTURE HTML SUGGÉRÉE
+   =============================== */
+
+/*
+Structure HTML recommandée :
+
+<div class="vehicle-details">
+    <div class="vehicle-header-detail">
+        <h3>KANGOO</h3>
+        <p>Plaque d'immatriculation</p>
+    </div>
+    
+    <!-- INFORMATIONS VÉHICULE COMPACTES -->
+    <div class="vehicle-info-compact">
+        <div class="info-item">
+            <span class="info-label">Assurance</span>
+            <div>
+                <div class="info-value">30/09/2026</div>
+                <span class="info-status valid">Valide</span>
+            </div>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Contrôle Technique</span>
+            <div>
+                <div class="info-value">29/01/2025</div>
+                <span class="info-status expired">Expiré depuis 236 jours</span>
+            </div>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Prochain Contrôle</span>
+            <div class="info-value">28/01/2027</div>
+        </div>
+    </div>
+    
+    <!-- NAVIGATION APRÈS LES INFOS -->
+    <div class="nav-buttons">
+        <button class="nav-btn general active">
+            <span>🔧</span>
+            <div class="btn-text">Général</div>
+        </button>
+        <button class="nav-btn carte-grise">
+            <span>📄</span>
+            <div class="btn-text">Carte Grise</div>
+        </button>
+        <button class="nav-btn assurance">
+            <span>🛡️</span>
+            <div class="btn-text">Assurance</div>
+        </button>
+        <button class="nav-btn controle-technique">
+            <span>🔧</span>
+            <div class="btn-text">CT</div>
+        </button>
+    </div>
+    
+    <!-- CONTENU DES SECTIONS -->
+    <div class="section-content active" id="general-section">
+        <!-- Contenu de la section générale -->
+    </div>
+</div>
+*/
+
+/* ===============================
+   ACCESSIBILITÉ
+   =============================== */
+
+.nav-btn:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-buttons {
+        animation: none;
+    }
+    
+    .nav-btn {
+        transition: none;
+    }
+}

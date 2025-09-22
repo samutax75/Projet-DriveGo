@@ -1,241 +1,3 @@
-function displayAlerts(alerts) {
-    const alertList = document.querySelector('.alert-list');
-    if (!alertList) return;
-    
-    if (alerts.length === 0) {
-        alertList.innerHTML = `
-            <div class="alert-item success">
-                <div class="alert-icon">✅</div>
-                <div class="alert-content">
-                    <strong>Aucune alerte</strong>
-                    <p>Tous vos véhicules sont à jour !</p>
-                </div>
-            </div>
-        `;
-        return;
-    }
-    
-    alertList.innerHTML = alerts.map(alert => `
-        <div class="alert-item ${alert.type}">
-            <div class="alert-icon">${alert.type === 'urgent' ? '🚨' : '⚠️'}</div>
-            <div class="alert-content">
-                <strong>${alert.title}</strong>
-                <p>${alert.description}</p>
-            </div>
-            <div class="alert-actions">
-                <button class="btn btn-sm" onclick="viewVehicleDetails(${getVehicleIdByPlate(alert.vehicle_plate)})">Voir détails</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-function getVehicleIdByPlate(plate) {
-    const vehicle = vehicles.find(v => v.immatriculation === plate);
-    return vehicle ? vehicle.id : 1;
-}
-
-// Mettre à jour les formulaires pour utiliser les nouvelles APIs
-async function handleVehicleForm(event) {
-    event.preventDefault();
-
-    const formData = {
-        nom: document.getElementById('vehicleName').value,
-        immatriculation: document.getElementById('vehiclePlate').value,
-        dateImmatriculation: document.getElementById('vehicleRegistrationDate').value,
-        marque: document.getElementById('vehicleBrand').value,
-        modele: document.getElementById('vehicleModel').value,
-        numeroCarteGrise: '', // Vous pouvez ajouter ce champ au formulaire si nécessaire
-        dateEmission: document.getElementById('vehicleRegistrationDate').value,
-        titulaire: 'Fondation Perce-Neige'
-    };
-
-    const url = currentVehicleId ?
-        `/api/admin/vehicles/${currentVehicleId}` :
-        '/api/admin/vehicles';
-    const method = currentVehicleId ? 'PUT' : 'POST';
-
-    try {
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData)
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            const message = currentVehicleId ? 'Véhicule modifié avec succès' : 'Véhicule ajouté avec succès';
-            showNotification(message);
-            closeModal('addVehicleModal');
-            loadVehicles();
-            loadDashboardStats(); // Recharger les stats
-        } else {
-            throw new Error(data.message);
-        }
-    } catch (error) {
-        console.error('Erreur formulaire véhicule:', error);
-        showFormError('vehicleForm', error.message || 'Erreur lors de l\'opération');
-    }
-}
-
-async function handleUserForm(event) {
-    event.preventDefault();
-    
-    const formData = {
-        prenom: document.getElementById('userFirstName').value,
-        nom: document.getElementById('userLastName').value,
-        email: document.getElementById('userEmail').value,
-        telephone: document.getElementById('userPhone').value
-    };
-    
-    const url = currentUserId ?
-        `/api/admin/users/${currentUserId}` :
-        '/api/admin/users';
-    const method = currentUserId ? 'PUT' : 'POST';
-    
-    try {
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData)
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            const message = currentUserId ? 'Conducteur modifié avec succès' : 'Conducteur ajouté avec succès';
-            showNotification(message);
-
-            // Afficher le mot de passe temporaire pour les nouveaux utilisateurs
-            if (!currentUserId && data.temp_password) {
-                showNotification(`Mot de passe temporaire: ${data.temp_password}`, 'info', 10000);
-            }
-
-            closeModal('addUserModal');
-            loadUsers();
-            loadDashboardStats(); // Recharger les stats
-        } else {
-            throw new Error(data.message);
-        }
-    } catch (error) {
-        console.error('Erreur formulaire utilisateur:', error);
-        showFormError('userForm', error.message || 'Erreur lors de l\'opération');
-    }
-}
-
-async function sendInvitation(event) {
-    event.preventDefault();
-
-    const email = document.getElementById('inviteEmail').value;
-    const message = document.getElementById('inviteMessage').value;
-    
-    if (!email) {
-        showFormError('invitationForm', 'Veuillez saisir une adresse email valide');
-        return;
-    }
-
-    try {
-        console.log("lets go")
-        const response = await fetch('/api/admin/send-invitation', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, message })
-        });
-
-        const data = await response.json();
-        console.log(data)
-
-        if (data.success) {
-            showFormSuccess('invitationForm', data.message);
-            document.getElementById('inviteEmail').value = '';
-            document.getElementById('inviteMessage').value = '';
-            showNotification(data.message);
-            closeModal('inviteUserModal');
-        } else {
-            throw new Error(data.message || 'Erreur lors de l\'envoi');
-        }
-    } catch (error) {
-        console.error('Erreur envoi invitation:', error);
-        showFormError('invitationForm', error.message || 'Erreur lors de l\'envoi de l\'invitation');
-    }
-}
-
-// Mettre à jour les fonctions de suppression et suspension
-function deleteVehicle(vehicleId) {
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    if (!vehicle) return;
-
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le véhicule "${vehicle.nom}" ?`)) {
-        fetch(`/api/admin/vehicles/${vehicleId}`, {
-            method: 'DELETE'
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification(data.message);
-                    loadVehicles();
-                    loadDashboardStats();
-                } else {
-                    throw new Error(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Erreur suppression véhicule:', error);
-                showNotification(error.message || 'Erreur lors de la suppression', 'error');
-            });
-    }
-}
-
-function suspendUser(userId) {
-    const user = users.find(u => u.id === userId);
-    if (!user) return;
-
-    if (confirm(`Êtes-vous sûr de vouloir suspendre ${user.prenom} ${user.nom} ?`)) {
-        fetch(`/api/admin/users/${userId}/suspend`, {
-            method: 'PUT'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showNotification(data.message);
-                loadUsers();
-                loadDashboardStats();
-            } else {
-                throw new Error(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Erreur suspension utilisateur:', error);
-            showNotification(error.message || 'Erreur lors de la suspension', 'error');
-        });
-    }
-}
-
-function activateUser(userId) {
-    fetch(`/api/admin/users/${userId}/activate`, {
-        method: 'PUT'
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showNotification(data.message);
-                loadUsers();
-                loadDashboardStats();
-            } else {
-                throw new Error(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Erreur réactivation utilisateur:', error);
-            showNotification(error.message || 'Erreur lors de la réactivation', 'error');
-        });
-}
 // ===============================
 // VARIABLES GLOBALES
 // ===============================
@@ -413,38 +175,37 @@ function showNotification(message, type = 'success', duration = 4000) {
     }
 }
 
-
 // ===============================
 // CHARGEMENT DES DONNÉES
 // ===============================
-// async function loadDashboardStats() {
-//     try {
-//         const response = await fetch('/api/admin/dashboard/stats');
-//         const data = await response.json();
+async function loadDashboardStats() {
+    try {
+        const response = await fetch('/api/admin/dashboard/stats');
+        const data = await response.json();
 
-//         if (data.success) {
-//             const stats = data.stats;
-//             // Mise à jour des statistiques avec animation
-//             updateStatWithAnimation('totalVehicles', stats.totalVehicles);
-//             updateStatWithAnimation('availableVehicles', stats.availableVehicles);
-//             updateStatWithAnimation('totalUsers', stats.totalUsers);
-//             updateStatWithAnimation('alertsCount', stats.alertsCount);
+        if (data.success) {
+            const stats = data.stats;
+            // Mise à jour des statistiques avec animation
+            updateStatWithAnimation('totalVehicles', stats.totalVehicles);
+            updateStatWithAnimation('availableVehicles', stats.availableVehicles);
+            updateStatWithAnimation('totalUsers', stats.totalUsers);
+            updateStatWithAnimation('alertsCount', stats.alertsCount);
 
-//             // Charger les alertes
-//             loadAlerts();
-//         } else {
-//             throw new Error(data.message);
-//         }
-//     } catch (error) {
-//         console.error('Erreur lors du chargement des statistiques:', error);
-//         showNotification('Erreur lors du chargement des statistiques', 'error');
-//         // Valeurs par défaut en cas d'erreur
-//         updateStatWithAnimation('totalVehicles', 0);
-//         updateStatWithAnimation('availableVehicles', 0);
-//         updateStatWithAnimation('totalUsers', 0);
-//         updateStatWithAnimation('alertsCount', 0);
-//     }
-// }
+            // Charger les alertes
+            loadAlerts();
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        console.error('Erreur lors du chargement des statistiques:', error);
+        showNotification('Erreur lors du chargement des statistiques', 'error');
+        // Valeurs par défaut en cas d'erreur
+        updateStatWithAnimation('totalVehicles', 0);
+        updateStatWithAnimation('availableVehicles', 0);
+        updateStatWithAnimation('totalUsers', 0);
+        updateStatWithAnimation('alertsCount', 0);
+    }
+}
 
 function updateStatWithAnimation(elementId, newValue) {
     const element = document.getElementById(elementId);
@@ -473,6 +234,55 @@ function easeOutCubic(t) {
     return 1 - Math.pow(1 - t, 3);
 }
 
+async function loadAlerts() {
+    try {
+        const response = await fetch('/api/admin/alerts');
+        const data = await response.json();
+
+        if (data.success) {
+            displayAlerts(data.alerts);
+        }
+    } catch (error) {
+        console.error('Erreur chargement alertes:', error);
+    }
+}
+
+function displayAlerts(alerts) {
+    const alertList = document.querySelector('.alert-list');
+    if (!alertList) return;
+    
+    if (alerts.length === 0) {
+        alertList.innerHTML = `
+            <div class="alert-item success">
+                <div class="alert-icon">✅</div>
+                <div class="alert-content">
+                    <strong>Aucune alerte</strong>
+                    <p>Tous vos véhicules sont à jour !</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    alertList.innerHTML = alerts.map(alert => `
+        <div class="alert-item ${alert.type}">
+            <div class="alert-icon">${alert.type === 'urgent' ? '🚨' : '⚠️'}</div>
+            <div class="alert-content">
+                <strong>${alert.title}</strong>
+                <p>${alert.description}</p>
+            </div>
+            <div class="alert-actions">
+                <button class="btn btn-sm" onclick="viewVehicleDetails(${getVehicleIdByPlate(alert.vehicle_plate)})">Voir détails</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function getVehicleIdByPlate(plate) {
+    const vehicle = vehicles.find(v => v.immatriculation === plate);
+    return vehicle ? vehicle.id : 1;
+}
+
 async function loadVehicles() {
     try {
         const response = await fetch('/api/admin/vehicles');
@@ -487,7 +297,6 @@ async function loadVehicles() {
     } catch (error) {
         console.error('Erreur chargement véhicules:', error);
         showNotification('Erreur lors du chargement des véhicules', 'error');
-        // Afficher des données de fallback
         displayVehicles([]);
     }
 }
@@ -575,7 +384,6 @@ async function loadUsers() {
     } catch (error) {
         console.error('Erreur chargement utilisateurs:', error);
         showNotification('Erreur lors du chargement des utilisateurs', 'error');
-        // Afficher des données de fallback
         displayUsers([]);
     }
 }
@@ -639,7 +447,6 @@ function formatDate(dateString) {
 // GESTION DES VÉHICULES
 // ===============================
 function viewVehicleDetails(vehicleId) {
-    // Rediriger vers la page de détails du véhicule
     window.location.href = `/vehicules/${vehicleId}`;
 }
 
@@ -666,28 +473,28 @@ function editVehicle(vehicleId) {
     showModal('addVehicleModal');
 }
 
-function deleteVehicle(vehicleId) {
+async function deleteVehicle(vehicleId) {
     const vehicle = vehicles.find(v => v.id === vehicleId);
     if (!vehicle) return;
 
     if (confirm(`Êtes-vous sûr de vouloir supprimer le véhicule "${vehicle.nom}" ?`)) {
-        // Implémentez l'appel API de suppression
-        fetch(`/api/vehicules/${vehicleId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
+        try {
+            const response = await fetch(`/api/admin/vehicles/${vehicleId}`, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+            
             if (data.success) {
-                showNotification('Véhicule supprimé avec succès');
-                loadVehicles(); // Recharger la liste
+                showNotification(data.message);
+                loadVehicles();
+                loadDashboardStats();
             } else {
                 throw new Error(data.message);
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Erreur suppression véhicule:', error);
-            showNotification('Erreur lors de la suppression', 'error');
-        });
+            showNotification(error.message || 'Erreur lors de la suppression', 'error');
+        }
     }
 }
 
@@ -716,47 +523,49 @@ function editUser(userId) {
     showModal('addUserModal');
 }
 
-function suspendUser(userId) {
+async function suspendUser(userId) {
     const user = users.find(u => u.id === userId);
     if (!user) return;
 
     if (confirm(`Êtes-vous sûr de vouloir suspendre ${user.prenom} ${user.nom} ?`)) {
-        fetch(`/api/users/${userId}/suspend`, {
-            method: 'PUT'
-        })
-        .then(response => response.json())
-        .then(data => {
+        try {
+            const response = await fetch(`/api/admin/users/${userId}/suspend`, {
+                method: 'PUT'
+            });
+            const data = await response.json();
+            
             if (data.success) {
-                showNotification('Utilisateur suspendu');
+                showNotification(data.message);
                 loadUsers();
+                loadDashboardStats();
             } else {
                 throw new Error(data.message);
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Erreur suspension utilisateur:', error);
-            showNotification('Erreur lors de la suspension', 'error');
-        });
+            showNotification(error.message || 'Erreur lors de la suspension', 'error');
+        }
     }
 }
 
-function activateUser(userId) {
-    fetch(`/api/users/${userId}/activate`, {
-        method: 'PUT'
-    })
-    .then(response => response.json())
-    .then(data => {
+async function activateUser(userId) {
+    try {
+        const response = await fetch(`/api/admin/users/${userId}/activate`, {
+            method: 'PUT'
+        });
+        const data = await response.json();
+        
         if (data.success) {
-            showNotification('Utilisateur réactivé');
+            showNotification(data.message);
             loadUsers();
+            loadDashboardStats();
         } else {
             throw new Error(data.message);
         }
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('Erreur réactivation utilisateur:', error);
-        showNotification('Erreur lors de la réactivation', 'error');
-    });
+        showNotification(error.message || 'Erreur lors de la réactivation', 'error');
+    }
 }
 
 // ===============================
@@ -768,14 +577,17 @@ async function handleVehicleForm(event) {
     const formData = {
         nom: document.getElementById('vehicleName').value,
         immatriculation: document.getElementById('vehiclePlate').value,
+        dateImmatriculation: document.getElementById('vehicleRegistrationDate').value,
         marque: document.getElementById('vehicleBrand').value,
         modele: document.getElementById('vehicleModel').value,
-        dateImmatriculation: document.getElementById('vehicleRegistrationDate').value
+        numeroCarteGrise: '',
+        dateEmission: document.getElementById('vehicleRegistrationDate').value,
+        titulaire: 'Fondation Perce-Neige'
     };
 
-    const url = currentVehicleId ? 
-        `/api/vehicules/${currentVehicleId}` :
-        '/api/vehicules';
+    const url = currentVehicleId ?
+        `/api/admin/vehicles/${currentVehicleId}` :
+        '/api/admin/vehicles';
     const method = currentVehicleId ? 'PUT' : 'POST';
 
     try {
@@ -794,30 +606,31 @@ async function handleVehicleForm(event) {
             showNotification(message);
             closeModal('addVehicleModal');
             loadVehicles();
+            loadDashboardStats();
         } else {
             throw new Error(data.message);
         }
     } catch (error) {
         console.error('Erreur formulaire véhicule:', error);
-        showFormError('vehicleForm', 'Erreur lors de l\'opération');
+        showFormError('vehicleForm', error.message || 'Erreur lors de l\'opération');
     }
 }
 
 async function handleUserForm(event) {
     event.preventDefault();
-
+    
     const formData = {
         prenom: document.getElementById('userFirstName').value,
         nom: document.getElementById('userLastName').value,
         email: document.getElementById('userEmail').value,
         telephone: document.getElementById('userPhone').value
     };
-
-    const url = currentUserId ? 
-        `/api/users/${currentUserId}` :
-        '/api/users';
+    
+    const url = currentUserId ?
+        `/api/admin/users/${currentUserId}` :
+        '/api/admin/users';
     const method = currentUserId ? 'PUT' : 'POST';
-
+    
     try {
         const response = await fetch(url, {
             method: method,
@@ -832,29 +645,51 @@ async function handleUserForm(event) {
         if (data.success) {
             const message = currentUserId ? 'Conducteur modifié avec succès' : 'Conducteur ajouté avec succès';
             showNotification(message);
+
+            if (!currentUserId && data.temp_password) {
+                showNotification(`Mot de passe temporaire: ${data.temp_password}`, 'info', 10000);
+            }
+
             closeModal('addUserModal');
             loadUsers();
+            loadDashboardStats();
         } else {
             throw new Error(data.message);
         }
     } catch (error) {
         console.error('Erreur formulaire utilisateur:', error);
-        showFormError('userForm', 'Erreur lors de l\'opération');
+        showFormError('userForm', error.message || 'Erreur lors de l\'opération');
     }
 }
 
+// ===============================
+// FONCTION D'INVITATION (CORRIGÉE)
+// ===============================
 async function sendInvitation(event) {
     event.preventDefault();
 
     const email = document.getElementById('inviteEmail').value;
     const message = document.getElementById('inviteMessage').value;
-
-    if (!email) {
+    
+    console.log('=== DEBUG INVITATION ===');
+    console.log('Email:', email);
+    console.log('Message:', message);
+    
+    if (!email || !email.includes('@')) {
         showFormError('invitationForm', 'Veuillez saisir une adresse email valide');
         return;
     }
 
+    // Désactiver le bouton de soumission
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Envoi en cours...';
+    }
+
     try {
+        console.log('Envoi de la requête...');
+        
         const response = await fetch('/api/admin/send-invitation', {
             method: 'POST',
             headers: {
@@ -864,18 +699,26 @@ async function sendInvitation(event) {
         });
 
         const data = await response.json();
+        console.log('Réponse reçue:', data);
 
         if (data.success) {
-            showFormSuccess('invitationForm', `Invitation envoyée avec succès à ${email}`);
+            showFormSuccess('invitationForm', data.message);
             document.getElementById('inviteEmail').value = '';
             document.getElementById('inviteMessage').value = '';
-            showNotification(`Invitation envoyée à ${email}`);
+            showNotification(data.message);
+            closeModal('inviteUserModal');
         } else {
             throw new Error(data.message || 'Erreur lors de l\'envoi');
         }
     } catch (error) {
         console.error('Erreur envoi invitation:', error);
-        showFormError('invitationForm', 'Erreur lors de l\'envoi de l\'invitation');
+        showFormError('invitationForm', error.message || 'Erreur lors de l\'envoi de l\'invitation');
+    } finally {
+        // Réactiver le bouton
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Envoyer l\'invitation';
+        }
     }
 }
 
@@ -906,45 +749,6 @@ function showFormResult(formId, message, type) {
         result.style.display = 'none';
     }, 5000);
 }
-
-// ===============================
-// FONCTIONS UTILITAIRES
-// ===============================
-function formatDateForInput(dateStr) {
-    if (!dateStr) return '';
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) return '';
-    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-}
-
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-// Fonction de recherche avec debounce
-const debouncedVehicleSearch = debounce((searchTerm) => {
-    const filtered = vehicles.filter(vehicle =>
-        vehicle.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vehicle.immatriculation.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    displayVehicles(filtered);
-}, 300);
-
-const debouncedUserSearch = debounce((searchTerm) => {
-    const filtered = users.filter(user =>
-        `${user.prenom} ${user.nom}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    displayUsers(filtered);
-}, 300);
 
 // ===============================
 // FONCTIONS D'EXPORT
@@ -1031,6 +835,45 @@ function downloadCSV(filename, csvContent) {
 }
 
 // ===============================
+// FONCTIONS UTILITAIRES
+// ===============================
+function formatDateForInput(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return '';
+    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Fonction de recherche avec debounce
+const debouncedVehicleSearch = debounce((searchTerm) => {
+    const filtered = vehicles.filter(vehicle =>
+        vehicle.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        vehicle.immatriculation.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    displayVehicles(filtered);
+}, 300);
+
+const debouncedUserSearch = debounce((searchTerm) => {
+    const filtered = users.filter(user =>
+        `${user.prenom} ${user.nom}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    displayUsers(filtered);
+}, 300);
+
+// ===============================
 // INITIALISATION ET ÉVÉNEMENTS
 // ===============================
 document.addEventListener('DOMContentLoaded', function () {
@@ -1096,49 +939,3 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }, 500);
 });
-
-
-function sendInvitation() {
-    console.log('Fonction sendInvitation appelée');
-
-    const email = document.getElementById('email').value;
-    const message = document.getElementById('message').value;
-
-    console.log('Email:', email);
-    console.log('Message:', message);
-
-    if (!email || !email.includes('@')) {
-        console.log('Email invalide');
-        alert('Veuillez entrer une adresse email valide');
-        return;
-    }
-
-    console.log('Envoi de la requête...');
-
-    fetch('/api/admin/send-invitation', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            email: email,
-            message: message
-        })
-    })
-        .then(response => {
-            console.log('Réponse reçue:', response);
-            return response.json();
-        })
-        .then(data => {
-            console.log('Données:', data);
-            if (data.success) {
-                alert('Invitation envoyée avec succès !');
-            } else {
-                alert('Erreur: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Erreur catch:', error);
-            alert('Erreur de connexion');
-        });
-}
