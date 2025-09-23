@@ -31,6 +31,7 @@ from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
 from flask_mail import Mail, Message
 from dotenv import load_dotenv
+import string
 
 load_dotenv()
 app = Flask(__name__)
@@ -1484,6 +1485,288 @@ def logout():
     return redirect(url_for('index'))
 
 
+
+@app.route('/api/support/incident', methods=['POST'])
+def api_support_incident():
+    """Traiter un signalement d'incident et envoyer par email"""
+    try:
+        # Récupérer les données JSON
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({
+                'success': False,
+                'message': 'Aucune donnée reçue'
+            }), 400
+        
+        # Validation des champs requis
+        required_fields = ['nom', 'prenom', 'vehicule', 'priorite', 'type_incident', 'localisation', 'description', 'telephone']
+        missing_fields = []
+        
+        for field in required_fields:
+            if not data.get(field):
+                missing_fields.append(field)
+        
+        if missing_fields:
+            return jsonify({
+                'success': False,
+                'message': f'Champs manquants: {", ".join(missing_fields)}'
+            }), 400
+        
+        # Générer un numéro de ticket unique
+        ticket_id = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+        
+        # Timestamp
+        timestamp = datetime.now()
+        
+        # Préparer les données du signalement
+        incident_data = {
+            'ticket_id': ticket_id,
+            'timestamp': timestamp.isoformat(),
+            'conducteur': f"{data['prenom']} {data['nom']}",
+            'vehicule': data['vehicule'],
+            'priorite': data['priorite'],
+            'type_incident': data['type_incident'],
+            'localisation': data['localisation'],
+            'description': data['description'],
+            'telephone': data['telephone'],
+            'email': data.get('email', ''),
+            'user_agent': data.get('user_agent', ''),
+            'current_url': data.get('current_url', '')
+        }
+        
+        # Déterminer les destinataires selon la priorité
+        priority_emails = {
+            'critique': ['astreinte@fondation-perceneige.org', 'urgence@fondation-perceneige.org'],
+            'elevee': ['technique@fondation-perceneige.org', 'flotte@fondation-perceneige.org'],
+            'normale': ['technique@fondation-perceneige.org'],
+            'faible': ['maintenance@fondation-perceneige.org']
+        }
+        
+        # Email destinataires (remplacez par vos vraies adresses)
+        recipients = priority_emails.get(data['priorite'], ['support@fondation-perceneige.org'])
+        
+        # Créer l'email de signalement
+        subject = f"[DRIVEGO-{data['priorite'].upper()}] Incident #{ticket_id} - {data['vehicule']}"
+        
+        # Corps de l'email en HTML
+        email_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .header {{ background: #e74c3c; color: white; padding: 20px; text-align: center; }}
+        .urgent {{ background: #c0392b; }}
+        .elevee {{ background: #f39c12; }}
+        .normale {{ background: #3498db; }}
+        .faible {{ background: #27ae60; }}
+        .content {{ padding: 20px; }}
+        .info-grid {{ display: grid; grid-template-columns: 200px 1fr; gap: 10px; margin: 10px 0; }}
+        .label {{ font-weight: bold; background: #f8f9fa; padding: 8px; }}
+        .value {{ padding: 8px; border-left: 3px solid #e74c3c; }}
+        .description {{ background: #f8f9fa; padding: 15px; border-left: 4px solid #3498db; margin: 15px 0; }}
+        .footer {{ background: #34495e; color: white; padding: 15px; text-align: center; font-size: 12px; }}
+        .priority-critical {{ color: #c0392b; font-weight: bold; }}
+        .priority-elevee {{ color: #f39c12; font-weight: bold; }}
+        .priority-normale {{ color: #3498db; font-weight: bold; }}
+        .priority-faible {{ color: #27ae60; font-weight: bold; }}
+    </style>
+</head>
+<body>
+    <div class="header {data['priorite']}">
+        <h1>🚨 SIGNALEMENT D'INCIDENT DRIVEGO</h1>
+        <h2>Ticket #{ticket_id}</h2>
+        <p>Priorité: <span class="priority-{data['priorite']}">{data['priorite'].upper()}</span></p>
+    </div>
+    
+    <div class="content">
+        <h3>Informations du signalement</h3>
+        <div class="info-grid">
+            <div class="label">Conducteur:</div>
+            <div class="value">{incident_data['conducteur']}</div>
+            
+            <div class="label">Véhicule:</div>
+            <div class="value">{data['vehicule']}</div>
+            
+            <div class="label">Type d'incident:</div>
+            <div class="value">{data['type_incident']}</div>
+            
+            <div class="label">Localisation:</div>
+            <div class="value">{data['localisation']}</div>
+            
+            <div class="label">Téléphone:</div>
+            <div class="value"><a href="tel:{data['telephone']}">{data['telephone']}</a></div>
+            
+            <div class="label">Email:</div>
+            <div class="value">{data.get('email', 'Non fourni')}</div>
+            
+            <div class="label">Date/Heure:</div>
+            <div class="value">{timestamp.strftime('%d/%m/%Y à %H:%M:%S')}</div>
+        </div>
+        
+        <h3>Description détaillée</h3>
+        <div class="description">
+            {data['description'].replace('\n', '<br>')}
+        </div>
+        
+        {"<div style='background: #ffebee; padding: 15px; border-left: 4px solid #f44336; margin: 15px 0;'><strong>⚠️ URGENCE CRITIQUE:</strong> Contacter immédiatement le conducteur !</div>" if data['priorite'] == 'critique' else ""}
+        
+        <h3>Actions à entreprendre</h3>
+        <ul>
+            {"<li><strong>Contacter immédiatement le conducteur</strong></li>" if data['priorite'] in ['critique', 'elevee'] else ""}
+            <li>Évaluer la situation et les risques</li>
+            <li>Organiser l'assistance nécessaire</li>
+            <li>Tenir informé le conducteur de l'avancement</li>
+            <li>Clôturer le ticket une fois résolu</li>
+        </ul>
+    </div>
+    
+    <div class="footer">
+        <p>DriveGo - Système de gestion des incidents | Fondation Perce-Neige</p>
+        <p>Ce signalement a été généré automatiquement le {timestamp.strftime('%d/%m/%Y à %H:%M:%S')}</p>
+    </div>
+</body>
+</html>
+        """
+        
+        try:
+            # Créer et envoyer l'email principal
+            msg = Message(
+                subject=subject,
+                recipients=recipients,
+                html=email_body
+            )
+            
+            mail.send(msg)
+            
+            # Si un email conducteur est fourni, envoyer une confirmation
+            if data.get('email'):
+                confirmation_subject = f"Confirmation - Signalement #{ticket_id} reçu"
+                confirmation_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .header {{ background: #3498db; color: white; padding: 20px; text-align: center; }}
+        .content {{ padding: 20px; }}
+        .ticket {{ background: #e8f4fd; padding: 15px; border-left: 4px solid #3498db; margin: 15px 0; }}
+        .footer {{ background: #34495e; color: white; padding: 15px; text-align: center; font-size: 12px; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>✅ SIGNALEMENT REÇU</h1>
+        <h2>DriveGo - Fondation Perce-Neige</h2>
+    </div>
+    
+    <div class="content">
+        <p>Bonjour {data['prenom']},</p>
+        
+        <p>Votre signalement d'incident a bien été reçu et transmis à notre équipe technique.</p>
+        
+        <div class="ticket">
+            <strong>Numéro de ticket:</strong> #{ticket_id}<br>
+            <strong>Véhicule:</strong> {data['vehicule']}<br>
+            <strong>Priorité:</strong> {data['priorite'].capitalize()}<br>
+            <strong>Date:</strong> {timestamp.strftime('%d/%m/%Y à %H:%M')}
+        </div>
+        
+        {"<p><strong>⚠️ Votre signalement est marqué comme URGENT.</strong> Notre équipe d'astreinte va vous contacter très rapidement.</p>" if data['priorite'] in ['critique', 'elevee'] else "<p>Notre équipe va traiter votre demande dans les meilleurs délais.</p>"}
+        
+        <p>En cas d'urgence immédiate, n'hésitez pas à contacter directement l'astreinte au <strong>06 12 34 56 78</strong>.</p>
+        
+        <p>Merci de votre vigilance,<br>
+        L'équipe DriveGo</p>
+    </div>
+    
+    <div class="footer">
+        <p>Fondation Perce-Neige - Service Technique</p>
+        <p>Ne pas répondre à cet email automatique</p>
+    </div>
+</body>
+</html>
+                """
+                
+                confirmation_msg = Message(
+                    subject=confirmation_subject,
+                    recipients=[data['email']],
+                    html=confirmation_body
+                )
+                
+                mail.send(confirmation_msg)
+        
+        except Exception as email_error:
+            print(f"Erreur envoi email: {email_error}")
+            # Ne pas faire échouer la requête si l'email ne fonctionne pas
+            return jsonify({
+                'success': True,
+                'message': 'Signalement reçu mais erreur d\'envoi email',
+                'ticket_id': ticket_id,
+                'priority': data['priorite'],
+                'email_error': str(email_error)
+            }), 200
+        
+        # Optionnel: Sauvegarder en base de données
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+            
+            # Créer la table incidents si elle n'existe pas
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS incidents (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ticket_id TEXT UNIQUE NOT NULL,
+                    conducteur_nom TEXT NOT NULL,
+                    conducteur_prenom TEXT NOT NULL,
+                    vehicule TEXT NOT NULL,
+                    priorite TEXT NOT NULL,
+                    type_incident TEXT NOT NULL,
+                    localisation TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    telephone TEXT NOT NULL,
+                    email TEXT,
+                    statut TEXT DEFAULT 'ouvert',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Insérer le signalement
+            cursor.execute('''
+                INSERT INTO incidents (
+                    ticket_id, conducteur_nom, conducteur_prenom, vehicule,
+                    priorite, type_incident, localisation, description,
+                    telephone, email
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                ticket_id, data['nom'], data['prenom'], data['vehicule'],
+                data['priorite'], data['type_incident'], data['localisation'],
+                data['description'], data['telephone'], data.get('email', '')
+            ))
+            
+            conn.commit()
+            conn.close()
+            
+        except Exception as db_error:
+            print(f"Erreur sauvegarde DB: {db_error}")
+            # Ne pas faire échouer la requête
+        
+        return jsonify({
+            'success': True,
+            'message': 'Signalement transmis avec succès',
+            'ticket_id': ticket_id,
+            'priority': data['priorite']
+        }), 200
+        
+    except Exception as e:
+        print(f"Erreur traitement signalement: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors du traitement du signalement'
+        }), 500
 # ============================================================================
 # 🔐 ROUTES D'AUTHENTIFICATION
 # ============================================================================
@@ -3934,14 +4217,6 @@ def api_admin_send_invitation():
 # ============================================================================
 # ROUTES API Maintenance ADMINISTRATION
 # ============================================================================
-# Routes API pour la gestion de la maintenance
-
-
-# ============================================================================
-# 🚀 LANCEMENT DE L'APPLICATION
-# ============================================================================
-
-# Routes API pour la gestion de la maintenance
 
 @app.route('/api/admin/vehicles/<int:vehicle_id>/maintenance', methods=['PUT'])
 def api_admin_vehicle_maintenance(vehicle_id):
@@ -4400,7 +4675,9 @@ def api_admin_get_alerts():
             'message': 'Erreur lors de la récupération des alertes'
         }), 500
 
-
+# ============================================================================
+# 🚀 LANCEMENT DE L'APPLICATION
+# ============================================================================
 
 
 if __name__ == '__main__':

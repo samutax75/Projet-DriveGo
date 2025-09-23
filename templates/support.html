@@ -4,15 +4,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta charset="UTF-8">
   <title>DriveGo - Support & Assistance</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/support.css') }}">
-  
+  <link rel="stylesheet" href="{{ url_for('static', filename='CSS/support.css') }}">
 </head>
 <body>
   <header>
     <a href="{{ url_for('index') }}" class="logo">
-    <img src="../static/images/logo perce-neige.PNG"
-         alt="Logo Fondation Perce-Neige" class="logo-image"></a>
-         
+      <img src="../static/images/logo perce-neige.PNG" alt="Logo Fondation Perce-Neige" class="logo-image">
+    </a>
     <nav>
       <a href="{{ url_for('index') }}">Accueil</a>
       <a href="{{ url_for('support') }}" class="active">Support</a>
@@ -29,6 +27,7 @@
       <div class="support-card emergency">
         <div class="card-header emergency-header">
           <h3>🚨 Numéros d'Urgence</h3>
+          <p>En cas d'accident grave ou de danger immédiat</p>
         </div>
         <div class="contact-list">
           <div class="contact-item urgent">
@@ -36,6 +35,7 @@
             <div class="contact-info">
               <span class="contact-label">SAMU</span>
               <a href="tel:15" class="contact-number">15</a>
+              <span class="contact-desc">Urgences médicales</span>
             </div>
           </div>
           <div class="contact-item urgent">
@@ -43,6 +43,7 @@
             <div class="contact-info">
               <span class="contact-label">Pompiers</span>
               <a href="tel:18" class="contact-number">18</a>
+              <span class="contact-desc">Incendie, désincarcération</span>
             </div>
           </div>
           <div class="contact-item urgent">
@@ -50,6 +51,7 @@
             <div class="contact-info">
               <span class="contact-label">Police/Gendarmerie</span>
               <a href="tel:17" class="contact-number">17</a>
+              <span class="contact-desc">Accident, vol, agression</span>
             </div>
           </div>
           <div class="contact-item urgent">
@@ -57,6 +59,7 @@
             <div class="contact-info">
               <span class="contact-label">Urgences Européennes</span>
               <a href="tel:112" class="contact-number">112</a>
+              <span class="contact-desc">Numéro unique européen</span>
             </div>
           </div>
         </div>
@@ -66,6 +69,7 @@
       <div class="support-card company">
         <div class="card-header company-header">
           <h3>🏢 Contacts Entreprise</h3>
+          <p>Pour toute assistance relative aux véhicules</p>
         </div>
         <div class="contact-list">
           <div class="contact-item">
@@ -73,15 +77,15 @@
             <div class="contact-info">
               <span class="contact-label">Responsable Flotte</span>
               <a href="tel:+33123456789" class="contact-number">01 23 45 67 89</a>
-              <span class="contact-email">flotte@drivego.fr</span>
+              <span class="contact-email">flotte@fondation-perceneige.org</span>
             </div>
           </div>
-          <div class="contact-item">
-            <div class="contact-icon">📋</div>
+          <div class="contact-item priority">
+            <div class="contact-icon">📞</div>
             <div class="contact-info">
-              <span class="contact-label">Secrétariat</span>
-              <a href="tel:+33123456790" class="contact-number">01 23 45 67 90</a>
-              <span class="contact-email">secretariat@drivego.fr</span>
+              <span class="contact-label">Astreinte (24h/24)</span>
+              <a href="tel:+33612345678" class="contact-number">06 12 34 56 78</a>
+              <span class="contact-desc">Urgences véhicules uniquement</span>
             </div>
           </div>
           <div class="contact-item">
@@ -89,14 +93,15 @@
             <div class="contact-info">
               <span class="contact-label">Service Technique</span>
               <a href="tel:+33123456791" class="contact-number">01 23 45 67 91</a>
-              <span class="contact-email">technique@drivego.fr</span>
+              <span class="contact-email">technique@fondation-perceneige.org</span>
             </div>
           </div>
           <div class="contact-item">
-            <div class="contact-icon">📞</div>
+            <div class="contact-icon">📋</div>
             <div class="contact-info">
-              <span class="contact-label">Astreinte (24h/24)</span>
-              <a href="tel:+33612345678" class="contact-number">06 12 34 56 78</a>
+              <span class="contact-label">Secrétariat</span>
+              <a href="tel:+33123456790" class="contact-number">01 23 45 67 90</a>
+              <span class="contact-email">secretariat@fondation-perceneige.org</span>
             </div>
           </div>
         </div>
@@ -106,6 +111,7 @@
       <div class="support-card external">
         <div class="card-header external-header">
           <h3>🛠️ Services Externes</h3>
+          <p>Dépannage et assistance technique</p>
         </div>
         <div class="contact-list">
           <div class="contact-item">
@@ -113,6 +119,7 @@
             <div class="contact-info">
               <span class="contact-label">Dépannage Auto</span>
               <a href="tel:+33123456792" class="contact-number">01 23 45 67 92</a>
+              <span class="contact-desc">24h/24 - 7j/7</span>
             </div>
           </div>
           <div class="contact-item">
@@ -120,13 +127,7 @@
             <div class="contact-info">
               <span class="contact-label">Pneumatiques Express</span>
               <a href="tel:+33123456793" class="contact-number">01 23 45 67 93</a>
-            </div>
-          </div>
-          <div class="contact-item">
-            <div class="contact-icon">⚡</div>
-            <div class="contact-info">
-              <span class="contact-label">Recharge Électrique</span>
-              <a href="tel:+33123456794" class="contact-number">01 23 45 67 94</a>
+              <span class="contact-desc">Intervention rapide</span>
             </div>
           </div>
           <div class="contact-item">
@@ -134,6 +135,7 @@
             <div class="contact-info">
               <span class="contact-label">Assurance Véhicule</span>
               <a href="tel:+33123456795" class="contact-number">01 23 45 67 95</a>
+              <span class="contact-desc">Déclaration sinistre</span>
             </div>
           </div>
         </div>
@@ -148,91 +150,188 @@
           <p>Décrivez votre problème pour obtenir une assistance rapide</p>
         </div>
         
-        <form id="incident-form" class="incident-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="conducteur-nom">Nom :</label>
-              <input type="text" id="conducteur-nom" name="nom" required placeholder="Votre nom">
-            </div>
-            <div class="form-group">
-              <label for="conducteur-prenom">Prénom :</label>
-              <input type="text" id="conducteur-prenom" name="prenom" required placeholder="Votre prénom">
-            </div>
+        <!-- Indicateur de progression -->
+        <div class="form-progress">
+          <div class="progress-step active" data-step="1">
+            <span class="step-number">1</span>
+            <span class="step-label">Informations</span>
           </div>
+          <div class="progress-step" data-step="2">
+            <span class="step-number">2</span>
+            <span class="step-label">Incident</span>
+          </div>
+          <div class="progress-step" data-step="3">
+            <span class="step-number">3</span>
+            <span class="step-label">Contact</span>
+          </div>
+        </div>
+        
+        <form id="incident-form" class="incident-form">
+          
+          <!-- Étape 1: Informations générales -->
+          <div class="form-step active" id="step-1">
+            <h4 class="step-title">Informations générales</h4>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="conducteur-nom">Nom <span class="required">*</span></label>
+                <input type="text" id="conducteur-nom" name="nom" required placeholder="Votre nom" autocomplete="family-name">
+                <div class="field-error"></div>
+              </div>
+              <div class="form-group">
+                <label for="conducteur-prenom">Prénom <span class="required">*</span></label>
+                <input type="text" id="conducteur-prenom" name="prenom" required placeholder="Votre prénom" autocomplete="given-name">
+                <div class="field-error"></div>
+              </div>
+            </div>
 
-          <div class="form-row">
             <div class="form-group">
-              <label for="vehicule-incident">Véhicule concerné :</label>
+              <label for="vehicule-incident">Véhicule concerné <span class="required">*</span></label>
               <select id="vehicule-incident" name="vehicule" required>
                 <option value="">-- Sélectionner le véhicule --</option>
-                <option value="trafic-blanc">Trafic Blanc</option>
-                <option value="trafic-pmr">Trafic PMR</option>
-                <option value="trafic-vert">Trafic Vert</option>
-                <option value="trafic-rouge">Trafic Rouge</option>
-                <option value="kangoo">Kangoo</option>
+                <option value="TRAFIC BLANC - FV-088-JJ">TRAFIC BLANC (FV-088-JJ)</option>
+                <option value="TRAFIC PMR - GT-176-AF">TRAFIC PMR (GT-176-AF)</option>
+                <option value="TRAFIC VERT - EJ-374-TT">TRAFIC VERT (EJ-374-TT)</option>
+                <option value="TRAFIC ROUGE - CW-819-FR">TRAFIC ROUGE (CW-819-FR)</option>
+                <option value="KANGOO - DS-429-PF">KANGOO (DS-429-PF)</option>
               </select>
+              <div class="field-error"></div>
             </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-primary" onclick="nextStep(2)">
+                Suivant <span class="btn-icon">→</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Étape 2: Détails de l'incident -->
+          <div class="form-step" id="step-2">
+            <h4 class="step-title">Détails de l'incident</h4>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="priorite">Niveau d'urgence <span class="required">*</span></label>
+                <select id="priorite" name="priorite" required>
+                  <option value="">-- Niveau d'urgence --</option>
+                  <option value="critique">🔴 Critique - Danger immédiat</option>
+                  <option value="elevee">🟠 Élevée - Véhicule immobilisé</option>
+                  <option value="normale">🟡 Normale - Problème gênant</option>
+                  <option value="faible">🟢 Faible - Signalement préventif</option>
+                </select>
+                <div class="field-error"></div>
+              </div>
+              <div class="form-group">
+                <label for="type-incident">Type d'incident <span class="required">*</span></label>
+                <select id="type-incident" name="type_incident" required>
+                  <option value="">-- Choisir le type d'incident --</option>
+                  <option value="panne-moteur">🔧 Panne de moteur</option>
+                  <option value="pneu-creve">🛞 Pneu crevé/usé</option>
+                  <option value="accident">🚨 Accident</option>
+                  <option value="panne-batterie">🔋 Panne de batterie</option>
+                  <option value="probleme-carburant">⛽ Problème de carburant</option>
+                  <option value="vitres-cassees">🪟 Vitres cassées</option>
+                  <option value="vol-tentative">🚨 Vol ou tentative</option>
+                  <option value="probleme-electrique">⚡ Problème électrique</option>
+                  <option value="probleme-freins">🛑 Problème de freins</option>
+                  <option value="surchauffe">🌡️ Surchauffe moteur</option>
+                  <option value="cle-perdue">🗝️ Clé perdue/cassée</option>
+                  <option value="autres">❓ Autres</option>
+                </select>
+                <div class="field-error"></div>
+              </div>
+            </div>
+
             <div class="form-group">
-              <label for="priorite">Priorité :</label>
-              <select id="priorite" name="priorite" required>
-                <option value="">-- Niveau de priorité --</option>
-                <option value="critique">🔴 Critique - Urgence</option>
-                <option value="elevee">🟠 Élevée - Important</option>
-                <option value="normale">🟡 Normale - Standard</option>
-                <option value="faible">🟢 Faible - Peut attendre</option>
-              </select>
+              <label for="localisation">Localisation actuelle <span class="required">*</span></label>
+              <div class="input-with-button">
+                <input type="text" id="localisation" name="localisation" required placeholder="Adresse précise ou point de repère">
+                <button type="button" class="btn-location" onclick="getCurrentLocation()">📍</button>
+              </div>
+              <small class="field-help">Soyez le plus précis possible (adresse, km autoroutier, point de repère)</small>
+              <div class="field-error"></div>
             </div>
-          </div>
 
-          <div class="form-group">
-            <label for="type-incident">Type d'incident :</label>
-            <select id="type-incident" name="type_incident" required>
-              <option value="">-- Choisir le type d'incident --</option>
-              <option value="panne-moteur">🔧 Panne de moteur</option>
-              <option value="pneu-creve">🛞 Pneu crevé</option>
-              <option value="accident">🚨 Accident</option>
-              <option value="panne-batterie">🔋 Panne de batterie</option>
-              <option value="probleme-carburant">⛽ Problème de carburant</option>
-              <option value="vitres-cassees">🪟 Vitres cassées</option>
-              <option value="vol-tentative">🚨 Vol ou tentative</option>
-              <option value="probleme-electrique">⚡ Problème électrique</option>
-              <option value="probleme-freins">🛑 Problème de freins</option>
-              <option value="surchauffe">🌡️ Surchauffe moteur</option>
-              <option value="cle-perdue">🗝️ Clé perdue/cassée</option>
-              <option value="autres">❓ Autres</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="localisation">Localisation actuelle :</label>
-            <input type="text" id="localisation" name="localisation" required placeholder="Adresse précise ou point de repère">
-          </div>
-
-          <div class="form-group">
-            <label for="description">Description détaillée :</label>
-            <textarea id="description" name="description" rows="4" required placeholder="Décrivez précisément le problème, les circonstances, et les actions déjà entreprises..."></textarea>
-          </div>
-
-          <div class="form-row">
             <div class="form-group">
-              <label for="telephone">Numéro de téléphone :</label>
-              <input type="tel" id="telephone" name="telephone" required placeholder="06 12 34 56 78">
+              <label for="description">Description détaillée <span class="required">*</span></label>
+              <textarea id="description" name="description" rows="4" required 
+                placeholder="Décrivez précisément : 
+• Que s'est-il passé ?
+• Quand cela a-t-il commencé ?
+• Y a-t-il des bruits, voyants, odeurs particuliers ?
+• Le véhicule peut-il encore rouler ?
+• Avez-vous déjà tenté quelque chose ?"></textarea>
+              <div class="character-count">
+                <span id="desc-count">0</span>/500 caractères
+              </div>
+              <div class="field-error"></div>
             </div>
-            <div class="form-group">
-              <label for="email">Email :</label>
-              <input type="email" id="email" name="email" placeholder="votre.email@exemple.com">
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" onclick="prevStep(1)">
+                <span class="btn-icon">←</span> Précédent
+              </button>
+              <button type="button" class="btn btn-primary" onclick="nextStep(3)">
+                Suivant <span class="btn-icon">→</span>
+              </button>
             </div>
           </div>
 
-          <div class="form-actions">
-            <button type="button" id="urgence-btn" class="btn btn-emergency">🚨 Signaler Urgence</button>
-            <button type="submit" id="submit-btn" class="btn btn-primary">📤 Envoyer le Signalement</button>
+          <!-- Étape 3: Contact et envoi -->
+          <div class="form-step" id="step-3">
+            <h4 class="step-title">Informations de contact</h4>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="telephone">Numéro de téléphone <span class="required">*</span></label>
+                <input type="tel" id="telephone" name="telephone" required placeholder="06 12 34 56 78" autocomplete="tel">
+                <small class="field-help">Numéro où vous êtes joignable immédiatement</small>
+                <div class="field-error"></div>
+              </div>
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="votre.email@exemple.com" autocomplete="email">
+                <small class="field-help">Pour recevoir une confirmation (optionnel)</small>
+                <div class="field-error"></div>
+              </div>
+            </div>
+
+            <!-- Récapitulatif -->
+            <div class="form-summary">
+              <h5>Récapitulatif de votre signalement</h5>
+              <div class="summary-content">
+                <div class="summary-item">
+                  <strong>Conducteur:</strong> <span id="summary-conducteur">-</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Véhicule:</strong> <span id="summary-vehicule">-</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Urgence:</strong> <span id="summary-priorite">-</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Type:</strong> <span id="summary-type">-</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Localisation:</strong> <span id="summary-localisation">-</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" onclick="prevStep(2)">
+                <span class="btn-icon">←</span> Précédent
+              </button>
+              <button type="submit" id="submit-btn" class="btn btn-primary btn-submit">
+                <span class="btn-icon">📤</span> Envoyer le Signalement
+              </button>
+            </div>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Section Instructions d'Urgence -->
+    <!-- Section Instructions d'Urgence (simplifiée) -->
     <div class="instructions-section">
       <div class="instructions-card">
         <h3>⚠️ En cas d'urgence immédiate</h3>
@@ -240,8 +339,8 @@
           <div class="step">
             <div class="step-number">1</div>
             <div class="step-content">
-              <strong>Sécurisez la zone</strong>
-              <p>Allumez les feux de détresse, placez le triangle de signalisation</p>
+              <strong>Sécurisez-vous</strong>
+              <p>Sortez du véhicule si possible, allumez les feux de détresse</p>
             </div>
           </div>
           <div class="step">
@@ -255,14 +354,7 @@
             <div class="step-number">3</div>
             <div class="step-content">
               <strong>Contactez l'astreinte</strong>
-              <p>Appelez le 06 12 34 56 78 pour signaler l'incident</p>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-number">4</div>
-            <div class="step-content">
-              <strong>Remplissez ce formulaire</strong>
-              <p>Même en urgence, signalez l'incident via ce formulaire</p>
+              <p>Appelez le 06 12 34 56 78 pour signaler l'incident véhicule</p>
             </div>
           </div>
         </div>
@@ -271,7 +363,6 @@
 
   </main>
 
-    <script src="{{ url_for('static', filename='js/support.js') }}"></script>
-  
+  <script src="{{ url_for('static', filename='js/support.js') }}"></script>
 </body>
 </html>

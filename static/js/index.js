@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Cache le splash après l'animation
         setTimeout(() => {
             splash.style.display = 'none';
-        }, 3500);
+        }, 6500);
     }
 });
 
