@@ -30,7 +30,7 @@ document.querySelectorAll('.mobile-menu a').forEach(link => {
 
 // Close menu on window resize if mobile menu is open
 window.addEventListener('resize', () => {
-    if (window.innerWidth > 768) {
+    if (window.innerWidth > 700) {
         closeMenu();
     }
 });
