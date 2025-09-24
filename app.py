@@ -1608,7 +1608,8 @@ def api_support_incident():
         
         <h3>Description détaillée</h3>
         <div class="description">
-            {data['description'].replace('\n', '<br>')}
+
+        {data['description'].replace('\n', '<br>')}
         </div>
         
         {"<div style='background: #ffebee; padding: 15px; border-left: 4px solid #f44336; margin: 15px 0;'><strong>⚠️ URGENCE CRITIQUE:</strong> Contacter immédiatement le conducteur !</div>" if data['priorite'] == 'critique' else ""}
@@ -4679,7 +4680,6 @@ def api_admin_get_alerts():
 # 🚀 LANCEMENT DE L'APPLICATION
 # ============================================================================
 
-
 if __name__ == '__main__':
     with app.app_context():
         print("=" * 70)
@@ -4722,5 +4722,5 @@ if __name__ == '__main__':
         print("🚀 Serveur prêt sur http://localhost:5000")
         print("=" * 70)
     
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5001))
     app.run(host='0.0.0.0', port=port, debug=False)
