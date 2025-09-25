@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriveGo - Création de compte</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='CSS/inscription.css') }}">
-    
 </head>
 <body>
     <!-- Header -->
     <header>
         <div class="nav-container">
             <a href="{{ url_for('index') }}" class="logo">
-    <img src="../static/images/logo perce-neige.PNG" 
-         alt="Logo Fondation Perce-Neige" class="logo-image">
-    DriveGo</a>
+                <img src="../static/images/logo perce-neige.PNG" 
+                     alt="Logo Fondation Perce-Neige" class="logo-image">
+                DriveGo
+            </a>
         </div>
     </header>
     
@@ -47,20 +47,20 @@
                 Compte créé avec succès ! Redirection en cours...
             </div>
 
-            <form id="signupForm">
+            <form id="signupForm" method="POST" action="{{ url_for('handle_inscription') }}">
                 <!-- Champ caché pour le token d'invitation -->
                 <input type="hidden" name="token" value="{{ token if token else '' }}">
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="firstName">Prénom *</label>
-                        <input type="text" id="firstName" name="firstName" placeholder="Votre prénom" required>
-                        <div class="validation-message" id="firstNameValidation"></div>
+                        <label for="prenom">Prénom *</label>
+                        <input type="text" id="prenom" name="prenom" placeholder="Votre prénom" required>
+                        <div class="validation-message" id="prenomValidation"></div>
                     </div>
                     <div class="form-group">
-                        <label for="lastName">Nom *</label>
-                        <input type="text" id="lastName" name="lastName" placeholder="Votre nom" required>
-                        <div class="validation-message" id="lastNameValidation"></div>
+                        <label for="nom">Nom *</label>
+                        <input type="text" id="nom" name="nom" placeholder="Votre nom" required>
+                        <div class="validation-message" id="nomValidation"></div>
                     </div>
                 </div>
 
@@ -80,23 +80,38 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="phone">Téléphone *</label>
-                    <input type="tel" id="phone" name="phone" placeholder="0123456789" required>
-                    <div class="validation-message" id="phoneValidation"></div>
+                    <label for="telephone">Téléphone</label>
+                    <input type="tel" id="telephone" name="telephone" placeholder="0123456789">
+                    <div class="validation-message" id="telephoneValidation"></div>
                 </div>
 
                 <div class="form-group">
-                    <label for="department">Service/Département *</label>
-                    <select id="department" name="department" required>
-                        <option value="">Sélectionnez votre service</option>
-                        <option value="administration">Administration</option>
-                        <option value="transport">Transport</option>
-                        <option value="maintenance">Maintenance</option>
-                        <option value="commercial">Commercial</option>
-                        <option value="direction">Direction</option>
-                        <option value="autre">Autre</option>
+                    <label for="fonction">Fonction *</label>
+                    <select id="fonction" name="fonction" required>
+                        <option value="">Choisissez votre fonction</option>
+                        <option value="Éducateur/trice">Éducateur/Éducatrice</option>
+                        <option value="Infirmier/ère">Infirmier/Infirmière</option>
+                        <option value="Chauffeur/euse">Chauffeur/Chauffeuse</option>
+                        <option value="Psychologue">Psychologue</option>
+                        <option value="Assistant/e social/e">Assistant/Assistante social(e)</option>
+                        <option value="Kinésithérapeute">Kinésithérapeute</option>
+                        <option value="Ergothérapeute">Ergothérapeute</option>
+                        <option value="Orthophoniste">Orthophoniste</option>
+                        <option value="Aide-soignant/e">Aide-soignant/Aide-soignante</option>
+                        <option value="Animateur/trice">Animateur/Animatrice</option>
+                        <option value="Moniteur/trice d'atelier">Moniteur/Monitrice d'atelier</option>
+                        <option value="Agent/e d'entretien">Agent/Agente d'entretien</option>
+                        <option value="Cuisinier/ère">Cuisinier/Cuisinière</option>
+                        <option value="Secrétaire">Secrétaire</option>
+                        <option value="Comptable">Comptable</option>
+                        <option value="Directeur/trice">Directeur/Directrice</option>
+                        <option value="Chef/fe de service">Chef/Cheffe de service</option>
+                        <option value="Responsable qualité">Responsable qualité</option>
+                        <option value="Technicien/ne">Technicien/Technicienne</option>
+                        <option value="Agent/e de maintenance">Agent/Agente de maintenance</option>
+                        <option value="Autre">Autre</option>
                     </select>
-                    <div class="validation-message" id="departmentValidation"></div>
+                    <div class="validation-message" id="fonctionValidation"></div>
                 </div>
 
                 <div class="form-row">
@@ -150,119 +165,7 @@
             <p>&copy; 2024 DriveGo. Tous droits réservés. | Votre partenaire mobilité de confiance</p>
         </div>
     </footer>
-
-    <script>
-        // JavaScript intégré pour gérer le système d'invitation
-        document.addEventListener('DOMContentLoaded', function() {
-            const emailField = document.getElementById('email');
-            const form = document.getElementById('signupForm');
-            const submitBtn = document.getElementById('submitBtn');
-            const loadingSpinner = document.getElementById('loadingSpinner');
-            const submitText = document.getElementById('submitText');
-            const errorMessage = document.getElementById('errorMessage');
-            const successMessage = document.getElementById('successMessage');
-            
-            // Gestion spéciale pour les emails d'invitation
-            if (emailField.hasAttribute('readonly')) {
-                emailField.title = 'Email fourni par l\'invitation - non modifiable';
-            }
-            
-            // Gestionnaire de soumission du formulaire
-            form.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                // Validation simple
-                const firstName = document.getElementById('firstName').value.trim();
-                const lastName = document.getElementById('lastName').value.trim();
-                const email = document.getElementById('email').value.trim();
-                const phone = document.getElementById('phone').value.trim();
-                const password = document.getElementById('password').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
-                const terms = document.getElementById('terms').checked;
-                
-                // Réinitialiser les messages
-                errorMessage.style.display = 'none';
-                successMessage.style.display = 'none';
-                
-                // Validations
-                if (!firstName || !lastName || !email || !phone || !password || !confirmPassword) {
-                    showError('Tous les champs obligatoires doivent être remplis.');
-                    return;
-                }
-                
-                if (password !== confirmPassword) {
-                    showError('Les mots de passe ne correspondent pas.');
-                    return;
-                }
-                
-                if (password.length < 8) {
-                    showError('Le mot de passe doit contenir au moins 8 caractères.');
-                    return;
-                }
-                
-                if (!terms) {
-                    showError('Vous devez accepter les conditions d\'utilisation.');
-                    return;
-                }
-                
-                // Afficher le spinner de chargement
-                showLoading(true);
-                
-                try {
-                    // Préparer les données du formulaire
-                    const formData = new FormData(form);
-                    
-                    // Envoyer la requête
-                    const response = await fetch('/inscription', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        showSuccess('Compte créé avec succès ! Redirection en cours...');
-                        setTimeout(() => {
-                            window.location.href = '/connexion';
-                        }, 2000);
-                    } else {
-                        showError(data.message || 'Une erreur est survenue lors de la création du compte.');
-                    }
-                } catch (error) {
-                    console.error('Erreur:', error);
-                    showError('Erreur de connexion. Veuillez réessayer.');
-                } finally {
-                    showLoading(false);
-                }
-            });
-            
-            function showLoading(show) {
-                if (show) {
-                    loadingSpinner.style.display = 'inline-block';
-                    submitText.style.opacity = '0.7';
-                    submitBtn.disabled = true;
-                } else {
-                    loadingSpinner.style.display = 'none';
-                    submitText.style.opacity = '1';
-                    submitBtn.disabled = false;
-                }
-            }
-            
-            function showError(message) {
-                errorMessage.textContent = message;
-                errorMessage.style.display = 'block';
-                errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            
-            function showSuccess(message) {
-                successMessage.textContent = message;
-                successMessage.style.display = 'block';
-                successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        });
-    </script>
     
     <script src="{{ url_for('static', filename='js/inscription.js') }}"></script>
-    
 </body>
 </html>

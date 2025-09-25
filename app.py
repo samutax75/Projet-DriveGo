@@ -107,6 +107,7 @@ def init_db():
         telephone TEXT,
         role TEXT DEFAULT 'client',
         profile_picture TEXT DEFAULT "",
+        statut TEXT DEFAULT 'actif',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
 ''')
@@ -120,8 +121,9 @@ def init_db():
             invited_by INTEGER,
             expires_at TIMESTAMP,
             status TEXT DEFAULT 'pending',
+            used_at TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (invited_by) REFERENCES conducteurs (id)
+            FOREIGN KEY (invited_by) REFERENCES users (id)
         )
     ''')
 
@@ -162,7 +164,7 @@ def init_db():
         )
     ''')
     
-    # Table des maintenances - NOUVELLE
+    # Table des maintenances
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS maintenances (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -200,9 +202,10 @@ def init_db():
     ''')
     
     # Migration pour les tables existantes
+    migrate_users_table(cursor)  # NOUVELLE MIGRATION
     migrate_vehicules_table(cursor)
     migrate_missions_table(cursor)
-    migrate_maintenance_table(cursor)  # NOUVELLE MIGRATION
+    migrate_maintenance_table(cursor)
 
     # Insérer les véhicules réels si vide (avec toutes les nouvelles données)
     cursor.execute('SELECT COUNT(*) FROM vehicules')
@@ -263,6 +266,21 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+def migrate_users_table(cursor):
+    """Migration pour ajouter la colonne statut à la table users"""
+    
+    # Vérifier les colonnes existantes
+    cursor.execute("PRAGMA table_info(users)")
+    existing_columns = [col[1] for col in cursor.fetchall()]
+    
+    # Colonne à ajouter si manquante
+    if 'statut' not in existing_columns:
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN statut TEXT DEFAULT 'actif'")
+            print("Colonne 'statut' ajoutée à la table users")
+        except Exception as e:
+            print(f"Erreur lors de l'ajout de la colonne statut: {e}")
 
 def migrate_vehicules_table(cursor):
     """Migration pour ajouter les nouvelles colonnes à la table vehicules existante"""
@@ -433,7 +451,7 @@ def create_upload_directories():
         f"{VEHICLE_UPLOAD_FOLDER}/carte_grise",
         f"{VEHICLE_UPLOAD_FOLDER}/assurance", 
         f"{VEHICLE_UPLOAD_FOLDER}/controle_technique",
-        f"{VEHICLE_UPLOAD_FOLDER}/maintenances"  # NOUVEAU DOSSIER
+        f"{VEHICLE_UPLOAD_FOLDER}/maintenances"
     ]
     
     for directory in directories:
@@ -449,15 +467,9 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_VEHICLE_EXTENSIONS
 
 
-
-
 # ============================================================================
 # Route passer volant 
 # ============================================================================
-
-
-
-
 
 @app.route('/passer_volant')
 def passer_volant():
@@ -693,7 +705,6 @@ def get_mission_status(mission_id):
         print(f"Erreur récupération statut: {e}")
         return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
 
-
 # ============================================================================
 def generate_reset_token(email):
     """Génère un token sécurisé pour reset password"""
@@ -884,7 +895,6 @@ def send_reset_email(email, token):
 # ============================================================================
 # 🛠️ FONCTIONS UTILITAIRES
 # ============================================================================
-
 
 def validate_email(email):
     """Valide le format de l'email"""
@@ -1485,7 +1495,6 @@ def logout():
     return redirect(url_for('index'))
 
 
-
 @app.route('/api/support/incident', methods=['POST'])
 def api_support_incident():
     """Traiter un signalement d'incident et envoyer par email"""
@@ -1908,13 +1917,6 @@ def connexion():
     return render_template('connexion.html')
 
 
-
-
-
-
-
-
-
 def generate_invitation_token():
     """Générer un token d'invitation sécurisé"""
     return secrets.token_urlsafe(32)
@@ -2001,117 +2003,87 @@ def send_invitation_email(email, token, message='', invited_by_name=''):
 # ROUTES POUR LE SYSTÈME D'INVITATION
 # ============================================================================
 
-# @app.route('/api/admin/send-invitation', methods=['POST'])
-# def api_admin_send_invitation():
-#     """Envoyer une invitation par email"""
-#     try:
-#         if 'user_id' not in session:
-#             return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+@app.route('/api/admin/send-invitation', methods=['POST'])
+def api_admin_send_invitation():
+    """Envoyer une invitation par email"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
         
-#         data = request.get_json()
-#         email = data.get('email')
-#         message = data.get('message', '')
+        data = request.get_json()
+        email = data.get('email')
+        message = data.get('message', '')
         
-#         if not email or '@' not in email:
-#             return jsonify({
-#                 'success': False,
-#                 'message': 'Adresse email invalide'
-#             }), 400
+        if not email or '@' not in email:
+            return jsonify({
+                'success': False,
+                'message': 'Adresse email invalide'
+            }), 400
         
-#         conn = sqlite3.connect(DATABASE)
-#         cursor = conn.cursor()
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
         
-#         # Vérifier que l'email n'existe pas déjà
-#         cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
-#         if cursor.fetchone():
-#             conn.close()
-#             return jsonify({
-#                 'success': False,
-#                 'message': 'Cette adresse email est déjà enregistrée'
-#             }), 400
+        # Vérifier que l'email n'existe pas déjà
+        cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Cette adresse email est déjà enregistrée'
+            }), 400
         
-#         # Vérifier s'il y a déjà une invitation non utilisée
-#         cursor.execute('''
-#             SELECT id FROM invitation_tokens 
-#             WHERE email = ? AND used = 0 AND expires_at > datetime('now')
-#         ''', (email,))
-#         if cursor.fetchone():
-#             conn.close()
-#             return jsonify({
-#                 'success': False,
-#                 'message': 'Une invitation est déjà en cours pour cette adresse email'
-#             }), 400
+        # Vérifier s'il y a déjà une invitation non utilisée
+        cursor.execute('''
+            SELECT id FROM invitation_tokens 
+            WHERE email = ? AND used = 0 AND expires_at > datetime('now')
+        ''', (email,))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Une invitation est déjà en cours pour cette adresse email'
+            }), 400
         
-#         # Récupérer le nom de l'utilisateur qui invite
-#         cursor.execute('SELECT nom, prenom FROM users WHERE id = ?', (session['user_id'],))
-#         user = cursor.fetchone()
-#         invited_by_name = f"{user[1]} {user[0]}" if user else "L'équipe"
+        # Récupérer le nom de l'utilisateur qui invite
+        cursor.execute('SELECT nom, prenom FROM users WHERE id = ?', (session['user_id'],))
+        user = cursor.fetchone()
+        invited_by_name = f"{user[1]} {user[0]}" if user else "L'équipe"
         
-#         # Générer le token
-#         token = generate_invitation_token()
-#         expires_at = datetime.now() + timedelta(hours=48)
+        # Générer le token
+        token = generate_invitation_token()
+        expires_at = datetime.now() + timedelta(hours=48)
         
-#         # Sauvegarder l'invitation
-#         cursor.execute('''
-#             INSERT INTO invitation_tokens (email, token, invited_by, message, expires_at)
-#             VALUES (?, ?, ?, ?, ?)
-#         ''', (email, token, session['user_id'], message, expires_at))
+        # Sauvegarder l'invitation
+        cursor.execute('''
+            INSERT INTO invitation_tokens (email, token, invited_by, message, expires_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (email, token, session['user_id'], message, expires_at))
         
-#         conn.commit()
-#         conn.close()
+        conn.commit()
+        conn.close()
         
-#         # Envoyer l'email
-#         if send_invitation_email(email, token, message, invited_by_name):
-#             return jsonify({
-#                 'success': True,
-#                 'message': f'Invitation envoyée avec succès à {email}'
-#             }), 200
-#         else:
-#             return jsonify({
-#                 'success': False,
-#                 'message': 'Erreur lors de l\'envoi de l\'email'
-#             }), 500
+        # Envoyer l'email
+        if send_invitation_email(email, token, message, invited_by_name):
+            return jsonify({
+                'success': True,
+                'message': f'Invitation envoyée avec succès à {email}'
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Erreur lors de l\'envoi de l\'email'
+            }), 500
         
-#     except Exception as e:
-#         print(f"Erreur envoi invitation: {e}")
-#         return jsonify({
-#             'success': False,
-#             'message': 'Erreur lors de l\'envoi de l\'invitation'
-#         }), 500
+    except Exception as e:
+        print(f"Erreur envoi invitation: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erreur lors de l\'envoi de l\'invitation'
+        }), 500
 
 # ============================================================================
 # MODIFICATION DE VOS ROUTES EXISTANTES
 # ============================================================================
-
-# REMPLACEZ votre route inscription existante par celle-ci :
-# @app.route('/inscription')
-# def inscription():
-    """Page d'inscription avec support des invitations"""
-    if 'user_id' in session:
-        return redirect(url_for('index'))
-    
-    # Récupérer le token d'invitation s'il existe
-    token = request.args.get('token')
-    email = ''
-    
-    if token:
-        # Vérifier le token d'invitation
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
-        cursor.execute('''
-            SELECT email FROM invitation_tokens 
-            WHERE token = ? AND used = 0 AND expires_at > datetime('now')
-        ''', (token,))
-        result = cursor.fetchone()
-        conn.close()
-        
-        if result:
-            email = result[0]
-        else:
-            flash('Lien d\'invitation invalide ou expiré.', 'error')
-            return redirect(url_for('connexion'))
-    
-    return render_template('inscription.html', email=email, token=token)
 
 @app.route('/inscription')
 def inscription():
@@ -2168,58 +2140,31 @@ def handle_inscription():
         nom = request.form.get('nom')
         prenom = request.form.get('prenom')
         telephone = request.form.get('telephone', '')
+        fonction = request.form.get('fonction', 'Éducateur/trice')  # NOUVEAU
         token = request.form.get('token')
         
         # Validation basique
-        if not all([email, password, nom, prenom]):
+        if not all([email, password, nom, prenom, fonction]):
             flash('Tous les champs requis doivent être remplis', 'error')
             return redirect(url_for('inscription'))
+        
+        # Adapter le rôle selon le genre automatiquement détecté
+        role_adapte = adapt_user_role(fonction, prenom)  # NOUVEAU
         
         conn = sqlite3.connect(DATABASE)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
         try:
-            # Vérifier si l'utilisateur existe déjà
-            cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
-            if cursor.fetchone():
-                flash('Un compte avec cet email existe déjà', 'error')
-                return redirect(url_for('inscription'))
+            # ... vérifications existantes ...
             
-            # Si token fourni, vérifier et marquer comme utilisé
-            if token:
-                cursor.execute('''
-                    SELECT id, email, expires_at, status 
-                    FROM invitations 
-                    WHERE token = ? AND status = 'sent'
-                ''', (token,))
-                invitation = cursor.fetchone()
-                
-                if invitation:
-                    # Vérifier que l'email correspond
-                    if invitation['email'] != email:
-                        flash('Email non autorisé pour cette invitation', 'error')
-                        return redirect(url_for('inscription'))
-                    
-                    # Marquer le token comme utilisé
-                    from datetime import datetime
-                    cursor.execute('''
-                        UPDATE invitations 
-                        SET status = 'used', used_at = ? 
-                        WHERE token = ?
-                    ''', (datetime.now(), token))
-                else:
-                    flash('Invitation invalide ou expirée', 'error')
-                    return redirect(url_for('inscription'))
-            
-            # Créer le nouvel utilisateur
-            from werkzeug.security import generate_password_hash
+            # Créer le nouvel utilisateur avec le rôle adapté
             password_hash = generate_password_hash(password)
             
             cursor.execute('''
                 INSERT INTO users (email, password_hash, nom, prenom, telephone, role, statut)
-                VALUES (?, ?, ?, ?, ?, 'conducteur', 'actif')
-            ''', (email, password_hash, nom, prenom, telephone))
+                VALUES (?, ?, ?, ?, ?, ?, 'actif')
+            ''', (email, password_hash, nom, prenom, telephone, role_adapte))  # MODIFIÉ
             
             conn.commit()
             
@@ -2379,7 +2324,6 @@ def api_register():
 # ============================================================================
 # 🚗 ROUTES VÉHICULES
 # ============================================================================
-
 @app.route('/gestion_vehicules')
 @login_required
 def gestion_vehicules():
@@ -2428,7 +2372,6 @@ def api_get_vehicules():
             'success': False,
             'message': 'Erreur lors de la récupération des véhicules'
         }), 500
-
 
 # ============================================================================
 # 🚀 ROUTES MISSIONS
@@ -2612,7 +2555,6 @@ def complete_mission(mission_id):
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'message': 'Erreur serveur interne'}), 500
-    
     
 @app.route('/api/missions', methods=['POST'])
 def api_create_mission():
@@ -4065,155 +4007,6 @@ def api_admin_activate_user(user_id):
             'message': 'Erreur lors de la réactivation'
         }), 500
 
-@app.route('/api/admin/send-invitation', methods=['POST'])
-def api_admin_send_invitation():
-    """Envoyer une invitation par email"""
-    try:
-        print("=== DEBUG INVITATION - DEBUT ===")
-        print(f"Session user_id: {session.get('user_id')}")
-        
-        # Vérifier l'authentification
-        if 'user_id' not in session:
-            print("ERREUR: Non authentifié")
-            return jsonify({'success': False, 'message': 'Non authentifié'}), 401
-        
-        print("AUTH OK - Récupération données...")
-        
-        # Récupérer les données JSON
-        data = request.get_json()
-        if not data:
-            print("ERREUR: Pas de données JSON")
-            return jsonify({'success': False, 'message': 'Aucune donnée reçue'}), 400
-        
-        email = data.get('email')
-        message = data.get('message', '')
-        
-        print(f"DONNEES OK - Email: {email}, Message: {message}")
-        
-        # Validation de l'email
-        if not email or '@' not in email:
-            print("ERREUR: Email invalide")
-            return jsonify({
-                'success': False,
-                'message': 'Adresse email invalide'
-            }), 400
-        
-        print("VALIDATION OK - Connexion DB...")
-        
-        # Connexion à la base de données
-        try:
-            db = sqlite3.connect(DATABASE)
-            print("DB CONNEXION OK")
-        except Exception as e:
-            print(f"ERREUR CONNEXION DB: {e}")
-            return jsonify({
-                'success': False,
-                'message': f'Erreur connexion DB: {str(e)}'
-            }), 500
-        
-        db.row_factory = sqlite3.Row
-        cursor = db.cursor()
-        print("DB CURSOR OK")
-        
-        try:
-            print("Test requête simple...")
-            cursor.execute("SELECT 1")
-            test_result = cursor.fetchone()
-            print(f"TEST SIMPLE OK: {test_result}")
-            
-            print("Vérification email existant...")
-            cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
-            existing_user = cursor.fetchone()
-            print(f"EMAIL CHECK OK - Existing: {existing_user}")
-            
-            if existing_user:
-                print(f"ERREUR: Email {email} existe déjà")
-                return jsonify({
-                    'success': False,
-                    'message': 'Un utilisateur avec cet email existe déjà'
-                }), 400
-            
-            print("Vérification invitation existante...")
-            cursor.execute("""
-                SELECT id, status FROM invitations 
-                WHERE email = ? AND status IN ('pending', 'sent')
-            """, (email,))
-            existing_invitation = cursor.fetchone()
-            print(f"INVITATION CHECK OK - Existing: {existing_invitation}")
-            
-            if existing_invitation:
-                print(f"ERREUR: Invitation en cours pour {email}")
-                return jsonify({
-                    'success': False,
-                    'message': 'Une invitation est déjà en cours pour cet email'
-                }), 400
-            
-            print("Génération token...")
-            import secrets
-            token = secrets.token_urlsafe(32)
-            print(f"TOKEN OK: {token[:10]}...")
-            
-            print("Récupération info utilisateur...")
-            cursor.execute("SELECT nom, prenom FROM users WHERE id = ?", (session['user_id'],))
-            user_info = cursor.fetchone()
-            print(f"USER INFO OK: {user_info}")
-            
-            if not user_info:
-                print(f"ERREUR: User {session['user_id']} non trouvé")
-                return jsonify({
-                    'success': False,
-                    'message': 'Utilisateur non trouvé'
-                }), 400
-            
-            invited_by_name = f"{user_info['prenom']} {user_info['nom']}"
-            print(f"INVITED BY: {invited_by_name}")
-            
-            print("Sauvegarde invitation...")
-            from datetime import datetime, timedelta
-            expires_at = datetime.now() + timedelta(hours=48)
-            
-            cursor.execute("""
-                INSERT INTO invitations (email, token, message, invited_by, expires_at, status, created_at)
-                VALUES (?, ?, ?, ?, ?, 'pending', ?)
-            """, (email, token, message, session['user_id'], expires_at, datetime.now()))
-            
-            db.commit()
-            print("SAUVEGARDE OK")
-            
-            print("Envoi email...")
-            email_sent = send_invitation_email(email, token, message, invited_by_name)
-            print(f"EMAIL SENT: {email_sent}")
-            
-            if not email_sent:
-                print("ERREUR: Email non envoyé")
-                return jsonify({
-                    'success': False,
-                    'message': 'Erreur lors de l\'envoi de l\'email'
-                }), 500
-            
-            cursor.execute("UPDATE invitations SET status = 'sent' WHERE token = ?", (token,))
-            db.commit()
-            print("MISE A JOUR STATUS OK")
-            
-            print("SUCCESS COMPLET!")
-            return jsonify({
-                'success': True,
-                'message': f'Invitation envoyée avec succès à {email}'
-            }), 200
-            
-        finally:
-            db.close()
-            print("DB FERMEE")
-        
-    except Exception as e:
-        print(f"ERREUR EXCEPTION GLOBALE: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({
-            'success': False,
-            'message': f'Erreur: {str(e)}'
-        }), 500
-        
 
 # ============================================================================
 # ROUTES API Maintenance ADMINISTRATION

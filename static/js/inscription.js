@@ -1,14 +1,14 @@
-// Gestion de l'inscription avec API Flask
+// Gestion de l'inscription - Version corrigée pour correspondre au HTML
 document.addEventListener('DOMContentLoaded', function() {
-    // Validation en temps réel
     const form = document.getElementById('signupForm');
     const fields = {
-        firstName: document.getElementById('firstName'),
-        lastName: document.getElementById('lastName'),
+        prenom: document.getElementById('prenom'),
+        nom: document.getElementById('nom'),
         email: document.getElementById('email'),
-        phone: document.getElementById('phone'),
+        telephone: document.getElementById('telephone'),
         password: document.getElementById('password'),
         confirmPassword: document.getElementById('confirmPassword'),
+        fonction: document.getElementById('fonction'),
         terms: document.getElementById('terms')
     };
 
@@ -21,86 +21,118 @@ document.addEventListener('DOMContentLoaded', function() {
     // Patterns de validation
     const patterns = {
         email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        phone: /^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/,
+        telephone: /^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/,
         password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
     };
 
     // Messages de validation
     const validationMessages = {
-        firstName: {
+        prenom: {
             empty: 'Le prénom est requis',
-            valid: 'Prénom valide ✓'
+            short: 'Minimum 2 caractères requis',
+            valid: 'Prénom valide'
         },
-        lastName: {
+        nom: {
             empty: 'Le nom est requis',
-            valid: 'Nom valide ✓'
+            short: 'Minimum 2 caractères requis',
+            valid: 'Nom valide'
         },
         email: {
             empty: 'L\'email est requis',
             invalid: 'Format d\'email invalide',
-            valid: 'Email valide ✓'
+            valid: 'Email valide'
         },
-        phone: {
+        telephone: {
             empty: 'Le téléphone est requis',
-            invalid: 'Format de téléphone invalide',
-            valid: 'Téléphone valide ✓'
+            invalid: 'Format de téléphone invalide (ex: 0123456789)',
+            valid: 'Téléphone valide'
         },
         password: {
             empty: 'Le mot de passe est requis',
-            weak: 'Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre',
-            valid: 'Mot de passe fort ✓'
+            short: 'Minimum 8 caractères requis',
+            weak: 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre',
+            valid: 'Mot de passe sécurisé'
         },
         confirmPassword: {
             empty: 'Veuillez confirmer le mot de passe',
             mismatch: 'Les mots de passe ne correspondent pas',
-            valid: 'Mots de passe identiques ✓'
+            valid: 'Mots de passe identiques'
+        },
+        fonction: {
+            empty: 'Veuillez sélectionner votre fonction',
+            valid: 'Fonction sélectionnée'
         }
     };
+
+    // Fonction utilitaire debounce
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
 
     // Fonction de validation
     function validateField(fieldName, value) {
         const validationDiv = document.getElementById(fieldName + 'Validation');
         const field = fields[fieldName];
         
-        if (!validationDiv || !field) return true;
+        if (!validationDiv) return true;
         
         switch(fieldName) {
-            case 'firstName':
-            case 'lastName':
-                if (!value.trim()) {
+            case 'prenom':
+            case 'nom':
+                if (!value || !value.trim()) {
                     showValidation(field, validationDiv, validationMessages[fieldName].empty, false);
+                    return false;
+                }
+                if (value.trim().length < 2) {
+                    showValidation(field, validationDiv, validationMessages[fieldName].short, false);
                     return false;
                 }
                 showValidation(field, validationDiv, validationMessages[fieldName].valid, true);
                 return true;
 
             case 'email':
-                if (!value.trim()) {
+                if (!value || !value.trim()) {
                     showValidation(field, validationDiv, validationMessages.email.empty, false);
                     return false;
                 }
-                if (!patterns.email.test(value)) {
+                if (!patterns.email.test(value.trim())) {
                     showValidation(field, validationDiv, validationMessages.email.invalid, false);
                     return false;
                 }
                 showValidation(field, validationDiv, validationMessages.email.valid, true);
                 return true;
 
-            case 'phone':
-                if (!value.trim()) {
-                    showValidation(field, validationDiv, validationMessages.phone.empty, false);
+            case 'telephone':
+                // Le téléphone n'est pas obligatoire selon votre HTML
+                if (!value || !value.trim()) {
+                    // Pas d'erreur si vide, juste effacer la validation
+                    showValidation(field, validationDiv, '', true);
+                    return true;
+                }
+                // Nettoyer le numéro (enlever espaces, points, tirets)
+                const cleanPhone = value.replace(/[\s\-\.]/g, '');
+                if (!patterns.telephone.test(cleanPhone)) {
+                    showValidation(field, validationDiv, validationMessages.telephone.invalid, false);
                     return false;
                 }
-                if (!patterns.phone.test(value)) {
-                    showValidation(field, validationDiv, validationMessages.phone.invalid, false);
-                    return false;
-                }
-                showValidation(field, validationDiv, validationMessages.phone.valid, true);
+                showValidation(field, validationDiv, validationMessages.telephone.valid, true);
                 return true;
 
             case 'password':
-                if (!value.trim()) {
+                if (!value || !value.trim()) {
                     showValidation(field, validationDiv, validationMessages.password.empty, false);
+                    return false;
+                }
+                if (value.length < 8) {
+                    showValidation(field, validationDiv, validationMessages.password.short, false);
                     return false;
                 }
                 if (!patterns.password.test(value)) {
@@ -111,15 +143,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 return true;
 
             case 'confirmPassword':
-                if (!value.trim()) {
+                if (!value || !value.trim()) {
                     showValidation(field, validationDiv, validationMessages.confirmPassword.empty, false);
                     return false;
                 }
-                if (value !== fields.password.value) {
+                if (fields.password && value !== fields.password.value) {
                     showValidation(field, validationDiv, validationMessages.confirmPassword.mismatch, false);
                     return false;
                 }
                 showValidation(field, validationDiv, validationMessages.confirmPassword.valid, true);
+                return true;
+
+            case 'fonction':
+                if (!value) {
+                    showValidation(field, validationDiv, validationMessages.fonction.empty, false);
+                    return false;
+                }
+                showValidation(field, validationDiv, validationMessages.fonction.valid, true);
                 return true;
 
             default:
@@ -128,127 +168,190 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showValidation(field, validationDiv, message, isValid) {
-        validationDiv.textContent = message;
-        validationDiv.className = `validation-message ${isValid ? 'success' : 'error'}`;
-        field.className = field.className.replace(/\b(valid|invalid)\b/g, '') + (isValid ? ' valid' : ' invalid');
+        if (validationDiv) {
+            validationDiv.textContent = message;
+            validationDiv.className = `validation-message ${isValid ? 'success' : 'error'}`;
+        }
+        
+        if (field) {
+            field.classList.remove('valid', 'invalid');
+            field.classList.add(isValid ? 'valid' : 'invalid');
+        }
     }
 
     // Event listeners pour validation en temps réel
     Object.keys(fields).forEach(fieldName => {
-        if (fields[fieldName] && fieldName !== 'terms') {
-            fields[fieldName].addEventListener('blur', (e) => {
-                validateField(fieldName, e.target.value);
+        const field = fields[fieldName];
+        
+        if (field && fieldName !== 'terms' && fieldName !== 'fonction') {
+            // Validation immédiate à la perte de focus
+            field.addEventListener('blur', (e) => {
+                const value = e.target.value;
+                validateField(fieldName, value);
             });
 
-            fields[fieldName].addEventListener('input', (e) => {
-                if (fieldName === 'confirmPassword' || (fieldName === 'password' && fields.confirmPassword && fields.confirmPassword.value)) {
+            // Validation différée pendant la saisie
+            const debouncedValidation = debounce((value) => {
+                validateField(fieldName, value);
+                
+                // Si on modifie le mot de passe et que la confirmation existe, la revalider
+                if (fieldName === 'password' && fields.confirmPassword && fields.confirmPassword.value) {
                     setTimeout(() => {
                         validateField('confirmPassword', fields.confirmPassword.value);
                     }, 100);
                 }
+            }, 400);
+
+            field.addEventListener('input', (e) => {
+                debouncedValidation(e.target.value);
             });
         }
     });
 
-    // Gestion du formulaire
+    // Event listener spécifique pour le select fonction
+    if (fields.fonction) {
+        fields.fonction.addEventListener('change', (e) => {
+            validateField('fonction', e.target.value);
+        });
+    }
+
+    // Gestion de la soumission du formulaire
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // Validation complète
-        let isValid = true;
+        // Masquer les messages précédents
+        hideMessages();
+        
+        // Validation complète de tous les champs
+        let isFormValid = true;
+        const validationResults = {};
+
+        // Valider tous les champs sauf 'terms'
         Object.keys(fields).forEach(fieldName => {
             if (fieldName !== 'terms' && fields[fieldName]) {
-                if (!validateField(fieldName, fields[fieldName].value)) {
-                    isValid = false;
+                const field = fields[fieldName];
+                const value = field.value;
+                const isValid = validateField(fieldName, value);
+                validationResults[fieldName] = isValid;
+                
+                if (!isValid) {
+                    isFormValid = false;
                 }
             }
         });
 
-        // Vérifier les conditions
+        // Vérifier les conditions d'utilisation
         if (fields.terms && !fields.terms.checked) {
-            showError('Vous devez accepter les conditions d\'utilisation');
-            isValid = false;
+            showError('Vous devez accepter les conditions d\'utilisation pour continuer.');
+            isFormValid = false;
         }
 
-        if (!isValid) {
+        // Si le formulaire n'est pas valide, arrêter et faire défiler vers la première erreur
+        if (!isFormValid) {
+            const firstErrorField = document.querySelector('.validation-message.error, input.invalid, select.invalid');
+            if (firstErrorField) {
+                firstErrorField.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }
             return;
         }
 
-        // Préparation des données pour l'API Flask
-        const formData = {
-            email: fields.email.value.trim(),
-            password: fields.password.value,
-            nom: fields.lastName.value.trim(),
-            prenom: fields.firstName.value.trim(),
-            telephone: fields.phone ? fields.phone.value.trim() : ''
-        };
+        // Préparer les données pour l'envoi
+        const formData = new FormData(form);
 
-        // Affichage du loading
-        const submitBtn = document.getElementById('submitBtn');
-        const submitText = document.getElementById('submitText');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        
-        if (submitBtn) submitBtn.disabled = true;
-        if (loadingSpinner) loadingSpinner.style.display = 'inline-block';
-        if (submitText) submitText.textContent = 'Création en cours...';
+        // Afficher le state de chargement
+        setLoadingState(true);
 
         try {
-            // Appel à l'API Flask
-            const response = await fetch('/api/register', {
+            // Envoyer le formulaire directement (pas d'API JSON ici car votre backend attend du FormData)
+            const response = await fetch(form.action, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData)
+                body: formData
             });
 
-            const data = await response.json();
-
-            if (data.success) {
-                // Succès
-                showSuccess(data.message + ' Redirection en cours...');
-                
-                // Redirection après 2 secondes
+            // Vérifier si la réponse est une redirection (succès)
+            if (response.redirected) {
+                showSuccess('Compte créé avec succès ! Redirection en cours...');
                 setTimeout(() => {
-                    window.location.href = data.redirect || '/connexion';
-                    }, 2000);
+                    window.location.href = response.url;
+                }, 2000);
+                return;
+            }
 
-
+            // Si pas de redirection, traiter comme une erreur
+            const responseText = await response.text();
+            
+            // Vérifier s'il y a un message d'erreur dans la réponse HTML
+            if (responseText.includes('error') || responseText.includes('erreur')) {
+                // Parser la réponse HTML pour extraire le message d'erreur si possible
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(responseText, 'text/html');
+                const errorElement = doc.querySelector('.flash-error, .error-message');
+                const errorMessage = errorElement ? errorElement.textContent.trim() : 'Une erreur est survenue lors de la création du compte.';
+                
+                showError(errorMessage);
             } else {
-                // Erreur retournée par l'API
-                showError(data.message);
-                resetSubmitButton();
+                showSuccess('Compte créé avec succès ! Redirection en cours...');
+                setTimeout(() => {
+                    window.location.href = '/connexion';
+                }, 2000);
             }
 
         } catch (error) {
             console.error('Erreur lors de l\'inscription:', error);
-            showError('Une erreur s\'est produite lors de la création du compte. Veuillez réessayer.');
-            resetSubmitButton();
+            showError('Erreur de connexion. Veuillez vérifier votre connexion internet et réessayer.');
+        } finally {
+            setLoadingState(false);
         }
     });
 
-    function resetSubmitButton() {
+    // Fonction pour gérer l'état de chargement
+    function setLoadingState(isLoading) {
         const submitBtn = document.getElementById('submitBtn');
         const submitText = document.getElementById('submitText');
         const loadingSpinner = document.getElementById('loadingSpinner');
         
-        if (submitBtn) submitBtn.disabled = false;
-        if (loadingSpinner) loadingSpinner.style.display = 'none';
-        if (submitText) submitText.textContent = 'Créer mon compte';
+        if (submitBtn) {
+            submitBtn.disabled = isLoading;
+        }
+        
+        if (loadingSpinner) {
+            loadingSpinner.style.display = isLoading ? 'inline-block' : 'none';
+        }
+        
+        if (submitText) {
+            const emailField = document.getElementById('email');
+            const hasInvitation = emailField && emailField.value && emailField.hasAttribute('readonly');
+            
+            if (isLoading) {
+                submitText.textContent = 'Création en cours...';
+            } else {
+                submitText.textContent = hasInvitation ? 'Finaliser mon inscription' : 'Créer mon compte';
+            }
+        }
+    }
+
+    // Fonctions de gestion des messages
+    function hideMessages() {
+        const errorDiv = document.getElementById('errorMessage');
+        const successDiv = document.getElementById('successMessage');
+        
+        if (errorDiv) errorDiv.style.display = 'none';
+        if (successDiv) successDiv.style.display = 'none';
     }
 
     function showError(message) {
         const errorDiv = document.getElementById('errorMessage');
         const successDiv = document.getElementById('successMessage');
         
+        if (successDiv) successDiv.style.display = 'none';
+        
         if (errorDiv) {
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
             errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        
-        if (successDiv) {
-            successDiv.style.display = 'none';
         }
     }
 
@@ -256,76 +359,40 @@ document.addEventListener('DOMContentLoaded', function() {
         const errorDiv = document.getElementById('errorMessage');
         const successDiv = document.getElementById('successMessage');
         
+        if (errorDiv) errorDiv.style.display = 'none';
+        
         if (successDiv) {
             successDiv.textContent = message;
             successDiv.style.display = 'block';
             successDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-        
-        if (errorDiv) {
-            errorDiv.style.display = 'none';
-        }
     }
 
-    // Effet parallaxe sur le header
-    window.addEventListener('scroll', () => {
-        const header = document.querySelector('header');
-        if (header) {
-            const scrolled = window.pageYOffset;
-            
-            if (scrolled > 100) {
-                header.style.background = 'rgba(255, 255, 255, 0.98)';
-                header.style.boxShadow = '0 2px 25px rgba(0, 0, 0, 0.15)';
-            } else {
-                header.style.background = 'rgba(255, 255, 255, 0.95)';
-                header.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.1)';
-            }
-        }
-    });
-
-    // Initialisation
-    const errorMessage = document.getElementById('errorMessage');
-    const successMessage = document.getElementById('successMessage');
-    
-    if (errorMessage) errorMessage.style.display = 'none';
-    if (successMessage) successMessage.style.display = 'none';
-});
-
-
-
-
-// Ajoutez cette fonction au début de votre inscription.js
-document.addEventListener('DOMContentLoaded', function() {
-    // Récupérer le token depuis le champ caché
-    const tokenField = document.querySelector('input[name="token"]');
-    const token = tokenField ? tokenField.value : '';
-    
-    // Si un email est pré-rempli (invitation), désactiver sa modification
+    // Gestion spéciale pour les emails d'invitation (readonly)
     const emailField = document.getElementById('email');
-    if (emailField.value && emailField.hasAttribute('readonly')) {
+    if (emailField && emailField.hasAttribute('readonly')) {
         emailField.style.cursor = 'not-allowed';
-    }
-    
-    // Modifier votre fonction de soumission existante pour inclure le token
-    document.getElementById('signupForm').addEventListener('submit', function(e) {
-        e.preventDefault();
+        emailField.title = 'Email fourni par l\'invitation - non modifiable';
         
-        // Votre validation existante...
-        
-        // Ajouter le token aux données
-        const formData = new FormData(this);
-        if (token) {
-            formData.append('token', token);
-        }
-        
-        // Votre code d'envoi existant...
-        fetch('/inscription', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Votre gestion de réponse existante...
+        // Empêcher la modification
+        emailField.addEventListener('keydown', (e) => {
+            e.preventDefault();
         });
-    });
+        
+        emailField.addEventListener('paste', (e) => {
+            e.preventDefault();
+        });
+    }
+
+    // Auto-focus sur le premier champ (UX)
+    if (fields.prenom) {
+        setTimeout(() => {
+            fields.prenom.focus();
+        }, 300);
+    }
+
+    // Initialisation - masquer les messages au chargement
+    hideMessages();
+
+    console.log('Script d\'inscription chargé avec succès');
 });
