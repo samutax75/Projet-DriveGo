@@ -5,3 +5,7 @@ database.db
 .venv/
 .env
 
+.DS_Store
+static/.DS_Store
+static/uploads/
+uploads/

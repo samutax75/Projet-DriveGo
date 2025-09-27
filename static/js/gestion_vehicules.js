@@ -1558,6 +1558,19 @@ function generateUserMissionsList() {
 
     if (userMissions.length === 0) {
         return `
+            <div style="text-align: center; margin-bottom: 20px;">
+                <button onclick="exportMissionsToPDF()" class="btn btn-primary" style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                ">
+                    📄 Exporter en PDF
+                </button>
+            </div>
             <p style="text-align: center; color: #6b7280; padding: 40px;">
                 🔍 Aucune mission enregistrée
             </p>
@@ -1566,8 +1579,19 @@ function generateUserMissionsList() {
 
     let exportButton = `
         <div style="text-align: center; margin-bottom: 20px;">
-            <button onclick="exportMissionsToPDF()" class="btn btn-primary">
-                📄 Exporter en PDF
+            <button onclick="exportMissionsToPDF()" class="btn btn-primary" style="
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                transition: all 0.3s ease;
+            " onmouseover="this.style.transform='translateY(-2px)'"
+               onmouseout="this.style.transform='translateY(0)'">
+                📄 Exporter en PDF avec filtres
             </button>
         </div>
     `;
@@ -1653,6 +1677,7 @@ function generateUserMissionsList() {
 }
 
 
+
 function calculateConsommation(niveauDepart, niveauArrivee, pleinEffectue) {
     const convertToPercent = (niveau) => {
         if (!isNaN(niveau)) return parseInt(niveau);
@@ -1696,56 +1721,276 @@ function updateMissionsList() {
 // FONCTIONS D'EXPORT PDF
 // ========================================
 
+// Remplacez votre fonction exportMissionsToPDF par celle-ci :
+
+
 async function exportMissionsToPDF() {
     try {
-        showNotification('🔄 Génération du PDF en cours...', 'info');
-
-        const allMissions = [...activeMissions, ...completedMissions];
-        const userMissions = allMissions.filter(m => m.userId === currentUser?.id);
-
-        if (userMissions.length === 0) {
-            showNotification('❌ Aucune mission à exporter', 'warning');
+        // Afficher le sélecteur de période
+        const filterOptions = await showDateFilterModal();
+        
+        if (!filterOptions) {
+            // L'utilisateur a annulé
             return;
         }
-
-        const htmlContent = generatePDFContent(userMissions);
-        const filename = `missions_${currentUser.prenom}_${new Date().toISOString().split('T')[0]}.pdf`;
+        
+        console.log('Export PDF avec filtres:', filterOptions);
+        showNotification('Génération du PDF en cours...', 'info');
 
         const response = await fetch('/api/missions/export-pdf', {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ html_content: htmlContent, filename: filename })
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(filterOptions)
         });
 
-        if (!response.ok) throw new Error('Erreur lors de la génération du PDF');
+        console.log('Réponse:', response.status, response.statusText);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Erreur serveur:', errorText);
+            throw new Error(`Erreur ${response.status}: ${errorText}`);
+        }
 
         const blob = await response.blob();
+        console.log('PDF reçu:', blob.size, 'bytes');
+
         const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        let filename = `missions_${new Date().toISOString().split('T')[0]}`;
+        if (filterOptions.filter_type !== 'all') {
+            filename += `_${filterOptions.filter_type}`;
+        }
+        filename += '.pdf';
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
 
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        showNotification('PDF téléchargé avec succès', 'success');
 
-        if (isMobile) {
-            try {
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                a.style.display = 'none';
-                document.body.appendChild(a);
-                a.click();
+    } catch (error) {
+        console.error('Erreur export PDF:', error);
+        showNotification(`Erreur: ${error.message}`, 'error');
+    }
+}
+
+// Ajoutez cette nouvelle fonction pour le modal de sélection
+function showDateFilterModal() {
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+
+        const content = document.createElement('div');
+        content.style.cssText = `
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        `;
+
+        content.innerHTML = `
+            <h3 style="margin-top: 0; color: #1f2937; text-align: center;">
+                📅 Sélectionner la période
+            </h3>
+            <p style="color: #6b7280; text-align: center; margin-bottom: 25px;">
+                Choisissez la période pour votre rapport PDF
+            </p>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">
+                    Période prédéfinie:
+                </label>
+                <select id="periodSelect" style="
+                    width: 100%;
+                    padding: 12px;
+                    border: 2px solid #e5e7eb;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    background: white;
+                " onchange="toggleCustomDates()">
+                    <option value="all">📊 Toutes les missions</option>
+                    <option value="week">📅 Cette semaine</option>
+                    <option value="last_week">📅 Semaine dernière</option>
+                    <option value="month">📅 Ce mois</option>
+                    <option value="last_month">📅 Mois dernier</option>
+                    <option value="custom">🗓️ Période personnalisée</option>
+                </select>
+            </div>
+            
+            <div id="customDatesSection" style="display: none; margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 8px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #374151; font-size: 12px;">
+                            Date de début:
+                        </label>
+                        <input type="date" id="startDate" style="
+                            width: 100%;
+                            padding: 8px;
+                            border: 1px solid #d1d5db;
+                            border-radius: 6px;
+                            font-size: 13px;
+                        ">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #374151; font-size: 12px;">
+                            Date de fin:
+                        </label>
+                        <input type="date" id="endDate" style="
+                            width: 100%;
+                            padding: 8px;
+                            border: 1px solid #d1d5db;
+                            border-radius: 6px;
+                            font-size: 13px;
+                        ">
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="cancelBtn" style="
+                    background: #6b7280;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    font-size: 14px;
+                ">Annuler</button>
+                <button id="generateBtn" style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    font-size: 14px;
+                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                ">📄 Générer PDF</button>
+            </div>
+        `;
+
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+
+        // Définir les dates par défaut
+        const today = new Date();
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        startDate.value = thirtyDaysAgo.toISOString().split('T')[0];
+        endDate.value = today.toISOString().split('T')[0];
+
+        // Gestionnaires d'événements
+        document.getElementById('cancelBtn').onclick = () => {
+            document.body.removeChild(modal);
+            resolve(null);
+        };
+
+        document.getElementById('generateBtn').onclick = () => {
+            const periodSelect = document.getElementById('periodSelect');
+            const filterType = periodSelect.value;
+            
+            let filterOptions = {
+                filter_type: filterType
+            };
+            
+            if (filterType === 'custom') {
+                const startDateValue = document.getElementById('startDate').value;
+                const endDateValue = document.getElementById('endDate').value;
                 
-                setTimeout(() => {
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                }, 100);
-
-                showNotification('✅ PDF téléchargé - Vérifiez vos téléchargements', 'success');
+                if (!startDateValue || !endDateValue) {
+                    alert('Veuillez sélectionner les dates de début et de fin');
+                    return;
+                }
                 
-            } catch (downloadError) {
-                console.warn('Téléchargement direct échoué:', downloadError);
-                createManualDownloadLink(url, filename);
+                if (new Date(startDateValue) > new Date(endDateValue)) {
+                    alert('La date de début doit être antérieure à la date de fin');
+                    return;
+                }
+                
+                filterOptions.start_date = startDateValue;
+                filterOptions.end_date = endDateValue;
             }
+            
+            document.body.removeChild(modal);
+            resolve(filterOptions);
+        };
+
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+                resolve(null);
+            }
+        };
+    });
+}
+
+// Fonction pour afficher/masquer la section dates personnalisées
+function toggleCustomDates() {
+    const periodSelect = document.getElementById('periodSelect');
+    const customSection = document.getElementById('customDatesSection');
+    
+    if (periodSelect.value === 'custom') {
+        customSection.style.display = 'block';
+    } else {
+        customSection.style.display = 'none';
+    }
+}
+
+// Fonction dédiée au téléchargement du PDF
+async function downloadPDFFile(blob, filename) {
+    const url = window.URL.createObjectURL(blob);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    try {
+        if (isMobile) {
+            // Pour mobile : téléchargement avec gestion d'erreur
+            console.log('📱 Téléchargement mobile détecté');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 100);
+            
+            // Message d'aide pour mobile
+            setTimeout(() => {
+                showNotification('📱 Vérifiez votre dossier Téléchargements', 'info');
+            }, 1000);
+            
         } else {
+            // Pour desktop : téléchargement standard
+            console.log('💻 Téléchargement desktop');
             const a = document.createElement('a');
             a.href = url;
             a.download = filename;
@@ -1753,16 +1998,15 @@ async function exportMissionsToPDF() {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-
-            showNotification('✅ PDF téléchargé avec succès', 'success');
         }
-
-    } catch (error) {
-        console.error('Erreur lors de l\'export PDF:', error);
-        showNotification('❌ Erreur lors de la génération du PDF', 'error');
+    } catch (downloadError) {
+        console.warn('⚠️ Téléchargement direct échoué:', downloadError);
+        // Fallback : afficher un lien manuel
+        createManualDownloadLink(url, filename);
     }
 }
 
+// Fonction améliorée pour le lien manuel
 function createManualDownloadLink(url, filename) {
     const modal = document.createElement('div');
     modal.style.cssText = `
@@ -1771,48 +2015,62 @@ function createManualDownloadLink(url, filename) {
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0,0,0,0.7);
+        background-color: rgba(0,0,0,0.8);
         display: flex;
         justify-content: center;
         align-items: center;
         z-index: 10000;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     `;
 
     const content = document.createElement('div');
     content.style.cssText = `
         background: white;
-        padding: 20px;
-        border-radius: 10px;
+        padding: 30px;
+        border-radius: 15px;
         text-align: center;
         max-width: 90%;
-        max-height: 90%;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     `;
 
     content.innerHTML = `
-        <h3>Téléchargement PDF</h3>
-        <p>Cliquez sur le lien ci-dessous pour télécharger votre PDF :</p>
+        <h3 style="margin-top: 0; color: #1f2937;">📄 Téléchargement PDF</h3>
+        <p style="color: #6b7280; margin: 20px 0;">
+            Le téléchargement automatique a échoué.<br>
+            Cliquez sur le bouton ci-dessous pour télécharger manuellement :
+        </p>
         <a href="${url}" download="${filename}" style="
             display: inline-block;
-            background: #007bff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 10px 20px;
+            padding: 15px 30px;
             text-decoration: none;
-            border-radius: 5px;
-            margin: 10px;
-        ">📄 Télécharger ${filename}</a>
+            border-radius: 25px;
+            margin: 20px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        " onmouseover="this.style.transform='translateY(-2px)'"
+           onmouseout="this.style.transform='translateY(0)'">
+            📄 Télécharger ${filename}
+        </a>
         <br>
-        <button onclick="this.closest('.modal').remove(); window.URL.revokeObjectURL('${url}')" style="
+        <button onclick="this.closest('.modal-download').remove(); window.URL.revokeObjectURL('${url}')" style="
             background: #6c757d;
             color: white;
             border: none;
-            padding: 5px 15px;
-            border-radius: 3px;
-            margin-top: 10px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-top: 15px;
             cursor: pointer;
+            font-size: 14px;
         ">Fermer</button>
+        <p style="font-size: 12px; color: #9ca3af; margin-top: 15px;">
+            Si le problème persiste, contactez le support technique.
+        </p>
     `;
 
-    modal.className = 'modal';
+    modal.className = 'modal-download';
     modal.appendChild(content);
     document.body.appendChild(modal);
 
@@ -1823,223 +2081,7 @@ function createManualDownloadLink(url, filename) {
         }
     });
 
-    showNotification('📱 Lien de téléchargement affiché', 'info');
-}
-
-function generatePDFContent(missions) {
-    const sortedMissions = [...missions].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
-    
-    let missionsHTML = '';
-    sortedMissions.forEach(mission => {
-        const consommation = mission.carburantDepart && mission.carburantArrivee ? 
-            calculateConsommation(mission.carburantDepart, mission.carburantArrivee, mission.pleinEffectue) : '';
-            
-        missionsHTML += `
-            <div class="mission-pdf-item">
-                <div class="mission-pdf-header">
-                    <h3>${mission.destination}</h3>
-                    <span class="status-badge ${mission.status}">
-                        ${mission.status === 'active' ? 'En cours' : 'Terminée'}
-                    </span>
-                </div>
-                <div class="mission-pdf-details">
-                    <div class="detail-row">
-                        <span class="label">Véhicule:</span>
-                        <span class="value">${mission.vehicleName}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">Conducteur principal:</span>
-                        <span class="value">${mission.nom}</span>
-                    </div>
-                    ${mission.conducteur2 ? `
-                    <div class="detail-row">
-                        <span class="label">2ème conducteur:</span>
-                        <span class="value">${mission.conducteur2}</span>
-                    </div>
-                    ` : ''}
-                    <div class="detail-row">
-                        <span class="label">Date:</span>
-                        <span class="value">${new Date(mission.missionDate).toLocaleDateString('fr-FR')}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">Créneau:</span>
-                        <span class="value">${getCreneauText(mission.creneau)}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">Nature:</span>
-                        <span class="value">${mission.missionNature}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">Passagers:</span>
-                        <span class="value">${mission.passengers}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">Horaire:</span>
-                        <span class="value">${mission.departureTime}${mission.arrivalTime ? ' - ' + mission.arrivalTime : ''}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">Kilométrage:</span>
-                        <span class="value">Départ: ${mission.kmDepart} km${mission.kmArrivee ? `, Arrivée: ${mission.kmArrivee} km` : ''}</span>
-                    </div>
-                    ${mission.distanceParcourue ? `
-                    <div class="detail-row">
-                        <span class="label">Distance parcourue:</span>
-                        <span class="value">${mission.distanceParcourue} km</span>
-                    </div>
-                    ` : ''}
-                    ${mission.carburantDepart ? `
-                    <div class="detail-row">
-                        <span class="label">Carburant départ:</span>
-                        <span class="value">${getCarburantText(mission.carburantDepart)}</span>
-                    </div>
-                    ` : ''}
-                    ${mission.carburantArrivee ? `
-                    <div class="detail-row">
-                        <span class="label">Carburant arrivée:</span>
-                        <span class="value">${getCarburantText(mission.carburantArrivee)}</span>
-                    </div>
-                    ` : ''}
-                    ${mission.pleinEffectue ? `
-                    <div class="detail-row">
-                        <span class="label">Plein effectué:</span>
-                        <span class="value">✅ Oui</span>
-                    </div>
-                    ` : ''}
-                    ${consommation ? `
-                    <div class="detail-row">
-                        <span class="label">Consommation:</span>
-                        <span class="value">${consommation}</span>
-                    </div>
-                    ` : ''}
-                    ${mission.notes ? `
-                    <div class="detail-row">
-                        <span class="label">Notes:</span>
-                        <span class="value">${mission.notes}</span>
-                    </div>
-                    ` : ''}
-                    ${mission.photos && mission.photos.length > 0 ? `
-                    <div class="detail-row">
-                        <span class="label">Photos:</span>
-                        <span class="value">${mission.photos.length} photo(s) jointe(s)</span>
-                    </div>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-    });
-
-    return `
-        <!DOCTYPE html>
-        <html lang="fr">
-        <head>
-            <meta charset="UTF-8">
-            <title>Rapport de Missions - ${currentUser.prenom}</title>
-            <style>
-                body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    margin: 0;
-                    padding: 20px;
-                    color: #1f2937;
-                    line-height: 1.6;
-                }
-                .header {
-                    text-align: center;
-                    margin-bottom: 40px;
-                    border-bottom: 2px solid #e5e7eb;
-                    padding-bottom: 20px;
-                }
-                .header h1 {
-                    color: #667eea;
-                    margin-bottom: 10px;
-                }
-                .header .subtitle {
-                    color: #6b7280;
-                    font-size: 1.1rem;
-                }
-                .mission-pdf-item {
-                    border: 1px solid #e5e7eb;
-                    border-radius: 10px;
-                    margin-bottom: 20px;
-                    padding: 20px;
-                    page-break-inside: avoid;
-                }
-                .mission-pdf-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 15px;
-                    border-bottom: 1px solid #f3f4f6;
-                    padding-bottom: 10px;
-                }
-                .mission-pdf-header h3 {
-                    margin: 0;
-                    color: #1f2937;
-                }
-                .status-badge {
-                    padding: 5px 12px;
-                    border-radius: 15px;
-                    font-size: 0.85rem;
-                    font-weight: 500;
-                }
-                .status-badge.active {
-                    background: #fef3c7;
-                    color: #92400e;
-                }
-                .status-badge.completed {
-                    background: #d1fae5;
-                    color: #065f46;
-                }
-                .mission-pdf-details {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 10px;
-                }
-                .detail-row {
-                    display: flex;
-                    justify-content: space-between;
-                    padding: 8px 0;
-                }
-                .label {
-                    font-weight: 600;
-                    color: #374151;
-                }
-                .value {
-                    color: #6b7280;
-                }
-                .footer {
-                    text-align: center;
-                    margin-top: 40px;
-                    padding-top: 20px;
-                    border-top: 1px solid #e5e7eb;
-                    color: #6b7280;
-                    font-size: 0.9rem;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>📊 Rapport de Missions</h1>
-                <div class="subtitle">
-                    <strong>${currentUser.prenom}</strong><br>
-                    Généré le ${new Date().toLocaleDateString('fr-FR', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                    })}
-                </div>
-            </div>
-            
-            <div class="missions-content">
-                ${missionsHTML}
-            </div>
-            
-            <div class="footer">
-                <p>DriveGo - Système de Gestion du Parc Automobile</p>
-                <p>Document généré automatiquement le ${new Date().toLocaleString('fr-FR')}</p>
-            </div>
-        </body>
-        </html>
-    `;
+    showNotification('📱 Lien de téléchargement manuel affiché', 'info');
 }
 
 // ========================================

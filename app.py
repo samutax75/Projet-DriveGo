@@ -32,6 +32,15 @@ from itsdangerous import URLSafeTimedSerializer
 from flask_mail import Mail, Message
 from dotenv import load_dotenv
 import string
+import pdfkit
+import logging
+from flask import make_response
+# Ajoutez ces imports en haut de votre fichier app.py (après les autres imports)
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.colors import HexColor
+from flask import send_file
 
 load_dotenv()
 app = Flask(__name__)
@@ -891,10 +900,425 @@ def send_reset_email(email, token):
     )
     mail.send(msg)
     
+# ============================================================================
+#  FONCTIONS PDF
+# ============================================================================
 
+
+@app.route("/api/missions/export-pdf", methods=["POST"])
+def export_missions_to_pdf():
+    try:
+        print("=== DÉBUT GÉNÉRATION PDF ===")
+        
+        # Vérification session
+        if "user_id" not in session:
+            return jsonify({"error": "Non authentifié"}), 401
+        
+        user_id = session['user_id']
+        user_prenom = session.get('prenom', 'Utilisateur')
+        user_nom = session.get('nom', '')
+        
+        # Récupérer les paramètres de filtrage depuis la requête
+        data = request.get_json() or {}
+        filter_type = data.get('filter_type')  # 'all', 'week', 'month', 'custom'
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        
+        print(f"Filtres: {filter_type}, {start_date}, {end_date}")
+        
+        # Connexion base de données
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Vérifier table missions
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='missions'")
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({"error": "Table missions non trouvée"}), 404
+        
+        # Construire la requête SQL avec filtres
+        base_query = """
+            SELECT 
+                m.id, m.date_mission, m.heure_debut, m.heure_fin,
+                m.motif, m.destination, m.nb_passagers, 
+                m.km_depart, m.km_arrivee, m.statut,
+                m.carburant_depart, m.carburant_arrivee, 
+                m.plein_effectue, m.notes, m.conducteur2,
+                v.nom as vehicule_nom, v.immatriculation,
+                m.control_status, m.transferred_to_name, m.transferred_at_time,
+                m.transfer_notes
+            FROM missions m
+            LEFT JOIN vehicules v ON m.vehicule_id = v.id
+            WHERE (m.user_id = ? OR m.transferred_to_user_id = ?)
+        """
+        
+        params = [user_id, user_id]
+        filter_description = "Toutes les missions"
+        
+        # Ajouter les filtres de date
+        if filter_type == 'week':
+            # Cette semaine
+            base_query += " AND DATE(m.date_mission) >= DATE('now', 'weekday 0', '-7 days') AND DATE(m.date_mission) < DATE('now', 'weekday 0')"
+            filter_description = "Cette semaine"
+        elif filter_type == 'month':
+            # Ce mois
+            base_query += " AND DATE(m.date_mission) >= DATE('now', 'start of month') AND DATE(m.date_mission) < DATE('now', 'start of month', '+1 month')"
+            filter_description = "Ce mois"
+        elif filter_type == 'last_week':
+            # Semaine dernière
+            base_query += " AND DATE(m.date_mission) >= DATE('now', 'weekday 0', '-14 days') AND DATE(m.date_mission) < DATE('now', 'weekday 0', '-7 days')"
+            filter_description = "Semaine dernière"
+        elif filter_type == 'last_month':
+            # Mois dernier
+            base_query += " AND DATE(m.date_mission) >= DATE('now', 'start of month', '-1 month') AND DATE(m.date_mission) < DATE('now', 'start of month')"
+            filter_description = "Mois dernier"
+        elif filter_type == 'custom' and start_date and end_date:
+            # Période personnalisée
+            base_query += " AND DATE(m.date_mission) >= ? AND DATE(m.date_mission) <= ?"
+            params.extend([start_date, end_date])
+            filter_description = f"Du {start_date} au {end_date}"
+        
+        base_query += " ORDER BY m.created_at DESC"
+        
+        # Exécuter la requête
+        cursor.execute(base_query, params)
+        missions = cursor.fetchall()
+        conn.close()
+        
+        print(f"Missions trouvées avec filtres: {len(missions)}")
+        
+        # Créer le PDF avec design professionnel
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer, pagesize=A4)
+        width, height = A4
+        
+        # Couleurs du thème
+        primary_blue = HexColor('#667eea')
+        dark_blue = HexColor('#4c63d2')
+        light_blue = HexColor('#e0e7ff')
+        dark_gray = HexColor('#1f2937')
+        medium_gray = HexColor('#6b7280')
+        light_gray = HexColor('#f3f4f6')
+        success_green = HexColor('#10b981')
+        warning_orange = HexColor('#f59e0b')
+        perce_neige_blue = HexColor('#2563eb')
+        
+        # === EN-TÊTE AVEC DÉGRADÉ ===
+        # Arrière-plan dégradé
+        for i in range(80):
+            shade = 0.3 + (i / 80) * 0.5
+            p.setFillColorRGB(0.15 * shade, 0.4 * shade, 0.9 * shade)
+            p.rect(0, height - 80 + i, width, 1, fill=1, stroke=0)
+        
+        # === LOGO PERCE-NEIGE ===
+        logo_x, logo_y = 70, height - 40
+        p.setFillColor(HexColor('#ffffff'))
+        p.circle(logo_x, logo_y, 20, fill=1, stroke=0)
+        
+        p.setStrokeColor(perce_neige_blue)
+        p.setLineWidth(2)
+        p.circle(logo_x, logo_y, 20, fill=0, stroke=1)
+        
+        # Fleur stylisée
+        p.setFillColor(perce_neige_blue)
+        for i in range(6):
+            angle = i * 60
+            import math
+            petal_x = logo_x + 8 * math.cos(math.radians(angle))
+            petal_y = logo_y + 8 * math.sin(math.radians(angle))
+            p.circle(petal_x, petal_y, 3, fill=1, stroke=0)
+        
+        p.setFillColor(warning_orange)
+        p.circle(logo_x, logo_y, 4, fill=1, stroke=0)
+        
+        p.setFillColor(HexColor('#ffffff'))
+        p.setFont("Helvetica-Bold", 8)
+        p.drawString(logo_x - 15, logo_y + 25, "FONDATION")
+        p.drawString(logo_x - 18, logo_y - 32, "PERCE-NEIGE")
+        
+        # Titre principal
+        p.setFillColor(HexColor('#ffffff'))
+        p.setFont("Helvetica-Bold", 24)
+        p.drawString(130, height - 45, "RAPPORT DE MISSIONS")
+        
+        p.setFont("Helvetica", 14)
+        p.drawString(130, height - 65, "DriveGo - Gestion du Parc Automobile")
+        
+        # === SECTION INFORMATIONS UTILISATEUR ET FILTRES ===
+        y_pos = height - 110
+        
+        # Encadré utilisateur
+        p.setFillColor(light_gray)
+        p.roundRect(40, y_pos - 40, width - 80, 55, 8, fill=1, stroke=0)
+        
+        p.setFillColor(dark_gray)
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(60, y_pos - 8, f"Conducteur: {user_prenom} {user_nom}")
+        
+        p.setFont("Helvetica", 10)
+        p.drawString(60, y_pos - 22, f"Rapport généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}")
+        
+        # NOUVEAU: Affichage du filtre appliqué
+        p.setFont("Helvetica-Bold", 10)
+        p.setFillColor(primary_blue)
+        p.drawString(60, y_pos - 36, f"Période: {filter_description}")
+        
+        # Date et heure à droite
+        p.setFont("Helvetica", 10)
+        p.setFillColor(medium_gray)
+        p.drawRightString(width - 60, y_pos - 8, f"Date: {datetime.now().strftime('%d/%m/%Y')}")
+        p.drawRightString(width - 60, y_pos - 22, f"Heure: {datetime.now().strftime('%H:%M')}")
+        
+        y_pos -= 85
+        
+        if len(missions) == 0:
+            # Message "aucune mission" avec style
+            p.setFillColor(light_blue)
+            p.roundRect(40, y_pos - 80, width - 80, 100, 12, fill=1, stroke=0)
+            
+            p.setFillColor(primary_blue)
+            p.setFont("Helvetica-Bold", 18)
+            p.drawCentredString(width/2, y_pos - 30, "Aucune mission trouvée")
+            
+            p.setFont("Helvetica", 12)
+            p.setFillColor(medium_gray)
+            p.drawCentredString(width/2, y_pos - 50, f"Aucune mission pour la période: {filter_description}")
+            
+        else:
+            # === SECTION STATISTIQUES ===
+            missions_actives = len([m for m in missions if m[9] == 'active'])
+            missions_terminees = len([m for m in missions if m[9] == 'completed'])
+            missions_transferees = len([m for m in missions if m[17] == 'transferred'])
+            
+            # Titre section
+            p.setFillColor(primary_blue)
+            p.setFont("Helvetica-Bold", 16)
+            p.drawString(40, y_pos, "📊 STATISTIQUES")
+            
+            # Ligne décorative
+            p.setStrokeColor(primary_blue)
+            p.setLineWidth(2)
+            p.line(40, y_pos - 8, 200, y_pos - 8)
+            
+            y_pos -= 30
+            
+            # Cartes statistiques
+            stats = [
+                ("Total", len(missions), primary_blue),
+                ("Actives", missions_actives, warning_orange),
+                ("Terminées", missions_terminees, success_green),
+                ("Transférées", missions_transferees, dark_blue)
+            ]
+            
+            card_width = (width - 120) / 4
+            for i, (label, value, color) in enumerate(stats):
+                x = 40 + i * (card_width + 10)
+                
+                # Carte avec ombre
+                p.setFillColorRGB(0.9, 0.9, 0.9)
+                p.roundRect(x + 2, y_pos - 42, card_width, 40, 6, fill=1, stroke=0)
+                
+                # Carte principale
+                p.setFillColor(HexColor('#ffffff'))
+                p.setStrokeColor(color)
+                p.setLineWidth(1)
+                p.roundRect(x, y_pos - 40, card_width, 40, 6, fill=1, stroke=1)
+                
+                # Valeur
+                p.setFillColor(color)
+                p.setFont("Helvetica-Bold", 20)
+                p.drawCentredString(x + card_width/2, y_pos - 18, str(value))
+                
+                # Label
+                p.setFont("Helvetica", 10)
+                p.setFillColor(medium_gray)
+                p.drawCentredString(x + card_width/2, y_pos - 32, label)
+            
+            y_pos -= 80
+            
+            # === SECTION MISSIONS ===
+            p.setFillColor(primary_blue)
+            p.setFont("Helvetica-Bold", 16)
+            p.drawString(40, y_pos, "🎯 DÉTAIL DES MISSIONS")
+            
+            p.setStrokeColor(primary_blue)
+            p.setLineWidth(2)
+            p.line(40, y_pos - 8, 250, y_pos - 8)
+            
+            y_pos -= 30
+            
+            for i, mission in enumerate(missions, 1):
+                # Nouvelle page si nécessaire
+                if y_pos < 140:
+                    p.showPage()
+                    y_pos = height - 50
+                
+                # === CARTE MISSION ===
+                card_height = 130
+                
+                # Ombre de la carte
+                p.setFillColorRGB(0.9, 0.9, 0.9)
+                p.roundRect(42, y_pos - card_height - 2, width - 84, card_height, 8, fill=1, stroke=0)
+                
+                # Carte principale
+                p.setFillColor(HexColor('#ffffff'))
+                p.setStrokeColor(light_gray)
+                p.setLineWidth(1)
+                p.roundRect(40, y_pos - card_height, width - 80, card_height, 8, fill=1, stroke=1)
+                
+                # Bande colorée selon le statut
+                if mission[9] == 'active':
+                    status_color = warning_orange
+                    status_text = "EN COURS"
+                else:
+                    status_color = success_green
+                    status_text = "TERMINÉE"
+                
+                if mission[17] == 'transferred':
+                    status_color = dark_blue
+                    status_text += " (TRANSFÉRÉE)"
+                
+                p.setFillColor(status_color)
+                p.roundRect(40, y_pos - 25, width - 80, 25, 8, fill=1, stroke=0)
+                
+                # Numéro et destination (en-tête)
+                p.setFillColor(HexColor('#ffffff'))
+                p.setFont("Helvetica-Bold", 14)
+                p.drawString(55, y_pos - 18, f"Mission {i}: {mission[5]}")
+                
+                p.setFont("Helvetica-Bold", 10)
+                p.drawRightString(width - 55, y_pos - 18, status_text)
+                
+                # Contenu de la mission
+                content_y = y_pos - 45
+                left_x = 55
+                
+                # Colonne gauche
+                details_left = [
+                    ("🚗 Véhicule:", f"{mission[15] or 'N/A'} ({mission[16] or 'N/A'})"),
+                    ("📅 Date:", mission[1]),
+                    ("🕐 Horaire:", f"{mission[2]}" + (f" - {mission[3]}" if mission[3] else "")),
+                    ("🎯 Nature:", mission[4]),
+                ]
+                
+                for label, value in details_left:
+                    p.setFont("Helvetica-Bold", 9)
+                    p.setFillColor(medium_gray)
+                    p.drawString(left_x, content_y, label)
+                    
+                    p.setFont("Helvetica", 9)
+                    p.setFillColor(dark_gray)
+                    display_value = value[:30] + "..." if len(str(value)) > 30 else str(value)
+                    p.drawString(left_x + 70, content_y, display_value)
+                    content_y -= 16
+                
+                # Colonne droite
+                content_y = y_pos - 45
+                right_x = width/2 + 30
+                
+                details_right = [
+                    ("👥 Passagers:", str(mission[6])),
+                    ("🛣️ Km départ:", f"{mission[7]} km"),
+                ]
+                
+                if mission[8]:
+                    details_right.append(("🏁 Km arrivée:", f"{mission[8]} km"))
+                
+                if mission[7] and mission[8]:
+                    distance = mission[8] - mission[7]
+                    details_right.append(("📏 Distance:", f"{distance} km"))
+                
+                if mission[14]:
+                    details_right.append(("👤 2ème conducteur:", mission[14]))
+                
+                if mission[17] == 'transferred' and mission[18]:
+                    details_right.append(("🔄 Transféré à:", mission[18]))
+                    if mission[19]:
+                        details_right.append(("⏰ Transfert:", mission[19]))
+                
+                for label, value in details_right:
+                    p.setFont("Helvetica-Bold", 9)
+                    p.setFillColor(medium_gray)
+                    p.drawString(right_x, content_y, label)
+                    
+                    p.setFont("Helvetica", 9)
+                    p.setFillColor(dark_gray)
+                    display_value = str(value)[:20] + "..." if len(str(value)) > 20 else str(value)
+                    p.drawString(right_x + 70, content_y, display_value)
+                    content_y -= 16
+                
+                # Notes en bas si présentes
+                if mission[13]:
+                    notes_y = y_pos - card_height + 25
+                    
+                    p.setFillColor(dark_gray)
+                    p.setFont("Helvetica-Bold", 9)
+                    p.drawString(55, notes_y, "📝 Notes:")
+                    
+                    p.setFont("Helvetica", 8)
+                    notes_text = mission[13]
+                    max_length = 90
+                    
+                    if len(notes_text) <= max_length:
+                        p.drawString(55, notes_y - 12, notes_text)
+                    else:
+                        line1 = notes_text[:max_length]
+                        if ' ' in line1:
+                            cut_point = line1.rfind(' ')
+                            line1 = notes_text[:cut_point]
+                            line2 = notes_text[cut_point:].strip()
+                        else:
+                            line1 = notes_text[:max_length]
+                            line2 = notes_text[max_length:]
+                        
+                        p.drawString(55, notes_y - 12, line1)
+                        
+                        if len(line2) > max_length:
+                            line2 = line2[:max_length-3] + "..."
+                        p.drawString(55, notes_y - 24, line2)
+                
+                y_pos -= card_height + 25
+        
+        # === PIED DE PAGE ===
+        footer_y = 40
+        
+        p.setStrokeColor(primary_blue)
+        p.setLineWidth(1)
+        p.line(40, footer_y + 15, width - 40, footer_y + 15)
+        
+        p.setFillColor(medium_gray)
+        p.setFont("Helvetica", 8)
+        p.drawString(40, footer_y, "DriveGo - Fondation Perce-Neige")
+        p.drawRightString(width - 40, footer_y, f"Document confidentiel - Page 1")
+        
+        p.showPage()
+        p.save()
+        buffer.seek(0)
+        
+        # Nom de fichier avec filtre
+        filter_suffix = ""
+        if filter_type and filter_type != 'all':
+            filter_suffix = f"_{filter_type}"
+        
+        filename = f"rapport_missions_{user_prenom}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{filter_suffix}.pdf"
+        
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=filename,
+            mimetype="application/pdf"
+        )
+        
+    except Exception as e:
+        print(f"ERREUR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 # ============================================================================
 # 🛠️ FONCTIONS UTILITAIRES
 # ============================================================================
+
+
 
 def validate_email(email):
     """Valide le format de l'email"""
@@ -1130,7 +1554,7 @@ def support():
 def admin_dashboard():
     """Page d'administration"""
     if 'user_id' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('connexion'))
     
     return render_template('admin_dashboard.html')
 
@@ -2102,13 +2526,13 @@ def inscription():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT email, expires_at, status 
-            FROM invitations 
-            WHERE token = ? AND status = 'sent'
+            SELECT email, expires_at 
+            FROM invitation_tokens
+            WHERE token = ?
         ''', (token,))
         result = cursor.fetchone()
         conn.close()
-        
+        print("result:", result)
         if result:
             # Vérifier que l'invitation n'a pas expiré
             from datetime import datetime
@@ -2118,6 +2542,7 @@ def inscription():
                     email = result['email']
                     readonly_email = True
                 else:
+                    print("le lien a expirer")
                     flash('Lien d\'invitation expiré.', 'error')
                     return redirect(url_for('connexion'))
             except:
